@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+
 import com.ropa.smartfashionecommerce.R
 class ProductAdapter(private val items: List<Product>) :
     RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
