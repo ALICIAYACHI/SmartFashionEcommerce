@@ -8,6 +8,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -36,14 +42,13 @@ class RegisterActivity : ComponentActivity() {
 @Composable
 fun RegisterScreen() {
     var fullName by remember { mutableStateOf("") }
-    var emailPhone by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Imagen de fondo
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Imagen de fondo (mantén drawable/fondo2 en res/drawable)
         Image(
             painter = painterResource(id = R.drawable.fondo2),
             contentDescription = "Background",
@@ -51,7 +56,7 @@ fun RegisterScreen() {
             modifier = Modifier.fillMaxSize()
         )
 
-        // Capa oscura
+        // Capa oscura para contraste
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -67,86 +72,149 @@ fun RegisterScreen() {
         ) {
             // Título
             Text(
-                text = "Crea tu cuenta nueva",
-                fontSize = 26.sp,
+                text = "SmartFashion",
+                fontSize = 32.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
             )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Campo: Nombre completo
-            OutlinedTextField(
-                value = fullName,
-                onValueChange = { fullName = it },
-                placeholder = { Text("Nombre completo", color = Color.LightGray) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.Gray,
-                    cursorColor = Color.White,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Campo: Número de teléfono o email
-            OutlinedTextField(
-                value = emailPhone,
-                onValueChange = { emailPhone = it },
-                placeholder = { Text("Número de teléfono o email", color = Color.LightGray) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.Gray,
-                    cursorColor = Color.White,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Campo: Contraseña
-            OutlinedTextField(
-                value = password,
-                onValueChange = { password = it },
-                placeholder = { Text("Contraseña", color = Color.LightGray) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.Gray,
-                    cursorColor = Color.White,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                )
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Campo: Confirmar contraseña
-            OutlinedTextField(
-                value = confirmPassword,
-                onValueChange = { confirmPassword = it },
-                placeholder = { Text("Confirmar contraseña", color = Color.LightGray) },
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.White,
-                    unfocusedBorderColor = Color.Gray,
-                    cursorColor = Color.White,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
-                )
+            Text(
+                text = "Crea tu cuenta",
+                fontSize = 16.sp,
+                color = Color.LightGray,
+                modifier = Modifier.padding(top = 4.dp)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón Crear Cuenta
+            // Nombre completo
+            OutlinedTextField(
+                value = fullName,
+                onValueChange = { fullName = it },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = "Nombre",
+                        tint = Color.White
+                    )
+                },
+                placeholder = { Text("Nombre completo", color = Color.LightGray) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.White,
+                    unfocusedBorderColor = Color.Gray,
+                    cursorColor = Color.White,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Correo electrónico
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Email,
+                        contentDescription = "Correo",
+                        tint = Color.White
+                    )
+                },
+                placeholder = { Text("Correo electrónico", color = Color.LightGray) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.White,
+                    unfocusedBorderColor = Color.Gray,
+                    cursorColor = Color.White,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Teléfono
+            OutlinedTextField(
+                value = phone,
+                onValueChange = { phone = it },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Phone,
+                        contentDescription = "Teléfono",
+                        tint = Color.White
+                    )
+                },
+                placeholder = { Text("Teléfono", color = Color.LightGray) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.White,
+                    unfocusedBorderColor = Color.Gray,
+                    cursorColor = Color.White,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Contraseña
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = "Contraseña",
+                        tint = Color.White
+                    )
+                },
+                placeholder = { Text("Contraseña", color = Color.LightGray) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.White,
+                    unfocusedBorderColor = Color.Gray,
+                    cursorColor = Color.White,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Confirmar contraseña
+            OutlinedTextField(
+                value = confirmPassword,
+                onValueChange = { confirmPassword = it },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Check,
+                        contentDescription = "Confirmar contraseña",
+                        tint = Color.White
+                    )
+                },
+                placeholder = { Text("Confirmar contraseña", color = Color.LightGray) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.White,
+                    unfocusedBorderColor = Color.Gray,
+                    cursorColor = Color.White,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                )
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Botón
             Button(
-                onClick = { /* TODO: lógica de registro */ },
+                onClick = { /* TODO: lógica registro */ },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -154,60 +222,21 @@ fun RegisterScreen() {
                     containerColor = Color.White,
                     contentColor = Color.Black
                 ),
-                shape = RoundedCornerShape(4.dp)
+                shape = RoundedCornerShape(6.dp)
             ) {
-                Text("Crear Cuenta", fontWeight = FontWeight.Bold)
+                Text("Registrarse", fontWeight = FontWeight.Bold)
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Texto "O regístrate con"
-            Text(
-                "O regístrate con",
-                color = Color.LightGray,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Botón Google con icono
-            OutlinedButton(
-                onClick = { /* TODO: Google registro */ },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.White
-                ),
-                border = ButtonDefaults.outlinedButtonBorder
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.google),
-                        contentDescription = "Google Icon",
-                        modifier = Modifier
-                            .size(24.dp)
-                            .padding(end = 8.dp)
-                    )
-                    Text("Google", color = Color.White, fontWeight = FontWeight.Bold)
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            // Volver a login
             Row {
-                Text("¿Ya tienes una cuenta? ", color = Color.LightGray, fontSize = 14.sp)
+                Text("¿Ya tienes cuenta? ", color = Color.LightGray, fontSize = 14.sp)
                 Text(
-                    "Inicia Sesión",
+                    "Inicia sesión",
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { /* TODO: navegar a login */ }
+                    modifier = Modifier.clickable { /* TODO navegar login */ }
                 )
             }
         }

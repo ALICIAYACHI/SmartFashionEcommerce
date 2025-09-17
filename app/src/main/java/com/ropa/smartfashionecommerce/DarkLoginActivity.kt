@@ -8,6 +8,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -63,13 +66,19 @@ fun DarkLoginScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Título
+            // Título principal
             Text(
-                text = "Inicia sesión\ncon tu cuenta",
-                fontSize = 26.sp,
+                text = "SmartFashion",
+                fontSize = 32.sp,
                 color = Color.White,
                 fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center
+            )
+            Text(
+                text = "Inicia sesión con tu cuenta",
+                fontSize = 16.sp,
+                color = Color.LightGray,
+                modifier = Modifier.padding(top = 4.dp)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
@@ -78,8 +87,16 @@ fun DarkLoginScreen() {
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Email,
+                        contentDescription = "Correo",
+                        tint = Color.White
+                    )
+                },
                 placeholder = { Text("Número de teléfono o email", color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.White,
                     unfocusedBorderColor = Color.Gray,
@@ -95,8 +112,16 @@ fun DarkLoginScreen() {
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Filled.Lock,
+                        contentDescription = "Contraseña",
+                        tint = Color.White
+                    )
+                },
                 placeholder = { Text("Contraseña", color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.White,
                     unfocusedBorderColor = Color.Gray,
@@ -122,6 +147,16 @@ fun DarkLoginScreen() {
             ) {
                 Text("Iniciar Sesión", fontWeight = FontWeight.Bold)
             }
+
+            // Olvidaste tu contraseña
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "¿Olvidaste tu contraseña?",
+                color = Color.White,
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable { /* TODO: recuperar contraseña */ }
+            )
 
             Spacer(modifier = Modifier.height(20.dp))
 
