@@ -41,15 +41,12 @@ fun DarkLoginScreen() {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // Imagen de fondo (asegúrate que exista en res/drawable/fondo.png)
         Image(
             painter = painterResource(id = R.drawable.fondo),
             contentDescription = "Background",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
         )
-
-        // Capa oscura encima
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -63,7 +60,6 @@ fun DarkLoginScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Título
             Text(
                 text = "Inicia sesión\ncon tu cuenta",
                 fontSize = 26.sp,
@@ -90,8 +86,6 @@ fun DarkLoginScreen() {
             )
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // Input contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -107,8 +101,6 @@ fun DarkLoginScreen() {
             )
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            // Botón iniciar sesión
             Button(
                 onClick = { /* TODO: lógica de login */ },
                 modifier = Modifier
