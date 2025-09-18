@@ -32,6 +32,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".miperfil.MiPerfilActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
     </application>
 
 </manifest>

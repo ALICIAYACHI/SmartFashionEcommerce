@@ -8,6 +8,10 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.ropa.smartfashionecommerce.R
+import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
+import android.content.Intent
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+
 
 class CatalogActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,6 +30,13 @@ class CatalogActivity : AppCompatActivity() {
 
         // Adapter
         recyclerView.adapter = ProductAdapter(dummyList)
+
+        // 🔹 Botón para ir a Mi Perfil
+        val btnPerfil = findViewById<FloatingActionButton>(R.id.btn_perfil)
+        btnPerfil.setOnClickListener {
+            val intent = Intent(this, MiPerfilActivity::class.java)
+            startActivity(intent)
+        }
     }
 }
 
