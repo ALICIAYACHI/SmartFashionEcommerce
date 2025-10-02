@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "453125572731",
+    "project_id": "smartfashionecommerce",
+    "storage_bucket": "smartfashionecommerce.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:453125572731:android:e2074552385804645efade",
+        "android_client_info": {
+          "package_name": "com.ropa.smartfashionecommerce"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "453125572731-to01ojhpkn71pd6f307bl2dhi01sjv6m.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ropa.smartfashionecommerce",
+            "certificate_hash": "169a3cdd64ddcc5139e8f7c4576a9737e02c14c7"
+          }
+        },
+        {
+          "client_id": "453125572731-ku60usi69c00n5vdl4umbm222v0nl8ui.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAW2UY1ySXt0uZfG0a-X2reYivp_oRwViw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "453125572731-ku60usi69c00n5vdl4umbm222v0nl8ui.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

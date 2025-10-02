@@ -11,20 +11,16 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartFashionEcommerce">
+
+        <!-- Catálogo -->
         <activity
             android:name=".catalog.CatalogActivity"
             android:theme="@style/Theme.Catalog"
-            android:exported="true" >
+            android:exported="true" />
 
-        </activity>
+        <!-- DarkLogin será la actividad principal -->
         <activity
             android:name=".DarkLoginActivity"
-            android:exported="true">
-
-        </activity>
-        <activity
-            android:name=".detalles.DetailsActivity"
-            android:theme="@style/Theme.SmartFashionEcommerce"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -32,6 +28,33 @@
             </intent-filter>
         </activity>
 
+        <!-- RegisterActivity (Crear Cuenta) -->
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="true" />
+
+        <!-- MainActivity (opcional, según tu flujo) -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true" />
+
+        <!-- Recuperar contraseña -->
+        <activity
+            android:name=".RecoverPasswordActivity"
+            android:exported="true" />
+
+        <!-- Email enviado -->
+        <activity
+            android:name=".EmailSentActivity"
+            android:exported="true" />
+
+        <!-- Detalles -->
+        <activity
+            android:name=".detalles.DetailsActivity"
+            android:theme="@style/Theme.SmartFashionEcommerce"
+            android:exported="true" />
+
+        <!-- Mi perfil -->
         <activity
             android:name=".miperfil.MiPerfilActivity"
             android:exported="true"

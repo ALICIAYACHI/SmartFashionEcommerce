@@ -1,5 +1,7 @@
 package com.ropa.smartfashionecommerce
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -14,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,7 +30,7 @@ class RecoverPasswordActivity : ComponentActivity() {
         setContent {
             SmartFashionEcommerceTheme {
                 RecoverPasswordScreen(
-                    onBackToLogin = { finish() } // vuelve atrás
+                    onBackToLogin = { finish() } // volver atrás
                 )
             }
         }
@@ -36,12 +39,13 @@ class RecoverPasswordActivity : ComponentActivity() {
 
 @Composable
 fun RecoverPasswordScreen(onBackToLogin: () -> Unit = {}) {
+    val context = LocalContext.current
     var email by remember { mutableStateOf("") }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5)) // gris muy claro
+            .background(Color(0xFFF5F5F5))
     ) {
         Card(
             modifier = Modifier
@@ -51,11 +55,9 @@ fun RecoverPasswordScreen(onBackToLogin: () -> Unit = {}) {
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(
-                modifier = Modifier
-                    .padding(24.dp),
+                modifier = Modifier.padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Título
                 Text(
                     text = "SmartFashion",
                     fontSize = 28.sp,
@@ -88,10 +90,7 @@ fun RecoverPasswordScreen(onBackToLogin: () -> Unit = {}) {
                     onValueChange = { email = it },
                     modifier = Modifier.fillMaxWidth(),
                     leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Filled.Email,
-                            contentDescription = null
-                        )
+                        Icon(imageVector = Icons.Filled.Email, contentDescription = null)
                     },
                     placeholder = { Text("Correo electrónico") },
                     singleLine = true
@@ -100,7 +99,11 @@ fun RecoverPasswordScreen(onBackToLogin: () -> Unit = {}) {
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
-                    onClick = { /* TODO: enviar enlace */ },
+                    onClick = {
+                        val intent = Intent(context, EmailSentActivity::class.java)
+                        context.startActivity(intent)
+                        (context as? Activity)?.finish()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),

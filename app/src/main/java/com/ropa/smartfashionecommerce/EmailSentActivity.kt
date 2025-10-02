@@ -1,5 +1,7 @@
 package com.ropa.smartfashionecommerce
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,16 +9,13 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Text
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -30,23 +29,20 @@ class EmailSentActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             SmartFashionEcommerceTheme {
-                EmailSentScreen(
-                    onBackToLogin = {
-                        // TODO: Navegar al login
-                        finish()
-                    }
-                )
+                EmailSentScreen()
             }
         }
     }
 }
 
 @Composable
-fun EmailSentScreen(onBackToLogin: () -> Unit) {
+fun EmailSentScreen() {
+    val context = LocalContext.current
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5)), // fondo gris claro
+            .background(Color(0xFFF5F5F5)),
         contentAlignment = Alignment.Center
     ) {
         Card(
@@ -62,9 +58,8 @@ fun EmailSentScreen(onBackToLogin: () -> Unit) {
                     .fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Logo SmartFashion
                 Text(
-                    text = "Smart" + "Fashion",
+                    text = "SmartFashion",
                     fontSize = 26.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color.Black
@@ -72,7 +67,6 @@ fun EmailSentScreen(onBackToLogin: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Subtítulo
                 Text(
                     text = "Recuperar Contraseña",
                     fontSize = 18.sp,
@@ -92,7 +86,7 @@ fun EmailSentScreen(onBackToLogin: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Icono de correo enviado (asegúrate que exista en drawable: email_sent.png)
+                // Imagen de correo enviado
                 Image(
                     painter = painterResource(id = R.drawable.email_sent),
                     contentDescription = "Correo enviado",
@@ -120,9 +114,12 @@ fun EmailSentScreen(onBackToLogin: () -> Unit) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Botón volver al login
                 Button(
-                    onClick = onBackToLogin,
+                    onClick = {
+                        val intent = Intent(context, DarkLoginActivity::class.java)
+                        context.startActivity(intent)
+                        (context as? Activity)?.finish()
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(50.dp),
@@ -143,6 +140,6 @@ fun EmailSentScreen(onBackToLogin: () -> Unit) {
 @Composable
 fun EmailSentPreview() {
     SmartFashionEcommerceTheme {
-        EmailSentScreen(onBackToLogin = {})
+        EmailSentScreen()
     }
 }
