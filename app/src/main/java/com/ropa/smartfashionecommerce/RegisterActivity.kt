@@ -1,6 +1,8 @@
 package com.ropa.smartfashionecommerce
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -9,23 +11,22 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.ropa.smartfashionecommerce.catalog.CatalogActivity
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 class RegisterActivity : ComponentActivity() {
@@ -41,14 +42,18 @@ class RegisterActivity : ComponentActivity() {
 
 @Composable
 fun RegisterScreen() {
+    val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()
+
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Imagen de fondo (mantén drawable/fondo2 en res/drawable)
         Image(
             painter = painterResource(id = R.drawable.fondo2),
             contentDescription = "Background",
@@ -56,7 +61,6 @@ fun RegisterScreen() {
             modifier = Modifier.fillMaxSize()
         )
 
-        // Capa oscura para contraste
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -70,34 +74,16 @@ fun RegisterScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Título
-            Text(
-                text = "SmartFashion",
-                fontSize = 32.sp,
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
-            )
-            Text(
-                text = "Crea tu cuenta",
-                fontSize = 16.sp,
-                color = Color.LightGray,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            Text("SmartFashion", fontSize = 32.sp, color = Color.White, fontWeight = FontWeight.Bold)
+            Text("Crea tu cuenta", fontSize = 16.sp, color = Color.LightGray)
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Nombre completo
+            // Nombre
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = "Nombre",
-                        tint = Color.White
-                    )
-                },
+                leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null, tint = Color.White) },
                 placeholder = { Text("Nombre completo", color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -112,17 +98,11 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Correo electrónico
+            // Email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.Email,
-                        contentDescription = "Correo",
-                        tint = Color.White
-                    )
-                },
+                leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null, tint = Color.White) },
                 placeholder = { Text("Correo electrónico", color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -141,13 +121,7 @@ fun RegisterScreen() {
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.Phone,
-                        contentDescription = "Teléfono",
-                        tint = Color.White
-                    )
-                },
+                leadingIcon = { Icon(Icons.Filled.Phone, contentDescription = null, tint = Color.White) },
                 placeholder = { Text("Teléfono", color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -166,14 +140,18 @@ fun RegisterScreen() {
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                leadingIcon = {
+                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null, tint = Color.White) },
+                trailingIcon = {
+                    val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                     Icon(
-                        imageVector = Icons.Filled.Lock,
-                        contentDescription = "Contraseña",
+                        imageVector = image,
+                        contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                        modifier = Modifier.clickable { passwordVisible = !passwordVisible },
                         tint = Color.White
                     )
                 },
                 placeholder = { Text("Contraseña", color = Color.LightGray) },
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -191,14 +169,18 @@ fun RegisterScreen() {
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
-                leadingIcon = {
+                leadingIcon = { Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White) },
+                trailingIcon = {
+                    val image = if (confirmPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                     Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = "Confirmar contraseña",
+                        imageVector = image,
+                        contentDescription = if (confirmPasswordVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                        modifier = Modifier.clickable { confirmPasswordVisible = !confirmPasswordVisible },
                         tint = Color.White
                     )
                 },
                 placeholder = { Text("Confirmar contraseña", color = Color.LightGray) },
+                visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -212,16 +194,26 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Botón
             Button(
-                onClick = { /* TODO: lógica registro */ },
+                onClick = {
+                    if (password == confirmPassword && email.isNotEmpty() && password.isNotEmpty()) {
+                        auth.createUserWithEmailAndPassword(email, password)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    Toast.makeText(context, "Cuenta creada con éxito", Toast.LENGTH_SHORT).show()
+                                    context.startActivity(Intent(context, CatalogActivity::class.java))
+                                } else {
+                                    Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                    } else {
+                        Toast.makeText(context, "Verifica los campos", Toast.LENGTH_SHORT).show()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Black
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                 shape = RoundedCornerShape(6.dp)
             ) {
                 Text("Registrarse", fontWeight = FontWeight.Bold)
@@ -236,17 +228,11 @@ fun RegisterScreen() {
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { /* TODO navegar login */ }
+                    modifier = Modifier.clickable {
+                        context.startActivity(Intent(context, DarkLoginActivity::class.java))
+                    }
                 )
             }
         }
-    }
-}
-
-@Preview(showSystemUi = true)
-@Composable
-fun RegisterPreview() {
-    SmartFashionEcommerceTheme {
-        RegisterScreen()
     }
 }

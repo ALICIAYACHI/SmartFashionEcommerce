@@ -1,6 +1,8 @@
 package com.ropa.smartfashionecommerce
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -11,18 +13,25 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
+import com.ropa.smartfashionecommerce.catalog.CatalogActivity
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 class DarkLoginActivity : ComponentActivity() {
@@ -38,13 +47,15 @@ class DarkLoginActivity : ComponentActivity() {
 
 @Composable
 fun DarkLoginScreen() {
+    val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()
+
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
 
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        // Imagen de fondo (asegúrate que exista en res/drawable/fondo.png)
+    Box(modifier = Modifier.fillMaxSize()) {
+        // Fondo
         Image(
             painter = painterResource(id = R.drawable.fondo),
             contentDescription = "Background",
@@ -52,7 +63,7 @@ fun DarkLoginScreen() {
             modifier = Modifier.fillMaxSize()
         )
 
-        // Capa oscura encima
+        // Capa oscura
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -66,7 +77,6 @@ fun DarkLoginScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Título principal
             Text(
                 text = "SmartFashion",
                 fontSize = 32.sp,
@@ -83,18 +93,12 @@ fun DarkLoginScreen() {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Input email
+            // Email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                leadingIcon = {
-                    Icon(
-                        imageVector = Icons.Filled.Email,
-                        contentDescription = "Correo",
-                        tint = Color.White
-                    )
-                },
-                placeholder = { Text("Número de teléfono o email", color = Color.LightGray) },
+                leadingIcon = { Icon(Icons.Filled.Email, contentDescription = "Correo", tint = Color.White) },
+                placeholder = { Text("Correo electrónico", color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -108,18 +112,22 @@ fun DarkLoginScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Input contraseña
+            // Contraseña con ojito
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                leadingIcon = {
+                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = "Contraseña", tint = Color.White) },
+                trailingIcon = {
+                    val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                     Icon(
-                        imageVector = Icons.Filled.Lock,
-                        contentDescription = "Contraseña",
+                        imageVector = image,
+                        contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña",
+                        modifier = Modifier.clickable { passwordVisible = !passwordVisible },
                         tint = Color.White
                     )
                 },
                 placeholder = { Text("Contraseña", color = Color.LightGray) },
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -133,70 +141,66 @@ fun DarkLoginScreen() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Botón iniciar sesión
+            // Botón Iniciar Sesión
             Button(
-                onClick = { /* TODO: lógica de login */ },
+                onClick = {
+                    if (email.isNotEmpty() && password.isNotEmpty()) {
+                        auth.signInWithEmailAndPassword(email, password)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+                                    context.startActivity(Intent(context, CatalogActivity::class.java))
+                                } else {
+                                    Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
+                    } else {
+                        Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+                    }
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Black
-                ),
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                 shape = RoundedCornerShape(4.dp)
             ) {
                 Text("Iniciar Sesión", fontWeight = FontWeight.Bold)
             }
 
-            // Olvidaste tu contraseña
             Spacer(modifier = Modifier.height(12.dp))
+
+            // Olvidaste contraseña
             Text(
                 text = "¿Olvidaste tu contraseña?",
                 color = Color.White,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { /* TODO: recuperar contraseña */ }
+                modifier = Modifier.clickable {
+                    context.startActivity(Intent(context, RecoverPasswordActivity::class.java))
+                }
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Texto "O inicia sesión con"
-            Text(
-                "O inicia sesión con",
-                color = Color.LightGray,
-                fontSize = 14.sp,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Botón Google con icono
-            OutlinedButton(
-                onClick = { /* TODO: Google login */ },
+            // Botón Google
+            Button(
+                onClick = { /* Google Sign-In */ },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = Color.White
-                ),
-                border = ButtonDefaults.outlinedButtonBorder
+                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                shape = RoundedCornerShape(6.dp)
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
-                ) {
-                    Image(
-                        painter = painterResource(id = R.drawable.google),
-                        contentDescription = "Google Icon",
-                        modifier = Modifier
-                            .size(24.dp)
-                            .padding(end = 8.dp)
-                    )
-                    Text("Google", color = Color.White, fontWeight = FontWeight.Bold)
-                }
+                Image(
+                    painter = painterResource(id = R.drawable.ic_google),
+                    contentDescription = "Google",
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Continuar con Google", fontWeight = FontWeight.Bold)
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Crear cuenta
             Row {
@@ -206,7 +210,9 @@ fun DarkLoginScreen() {
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable { /* TODO: navegación a registro */ }
+                    modifier = Modifier.clickable {
+                        context.startActivity(Intent(context, RegisterActivity::class.java))
+                    }
                 )
             }
         }
