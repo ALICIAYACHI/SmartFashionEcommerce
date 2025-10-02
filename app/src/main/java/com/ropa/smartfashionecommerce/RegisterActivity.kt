@@ -54,6 +54,7 @@ fun RegisterScreen() {
     var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Fondo
         Image(
             painter = painterResource(id = R.drawable.fondo2),
             contentDescription = "Background",
@@ -61,6 +62,7 @@ fun RegisterScreen() {
             modifier = Modifier.fillMaxSize()
         )
 
+        // Capa oscura
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -83,7 +85,7 @@ fun RegisterScreen() {
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
-                leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null, tint = Color.White) },
+                leadingIcon = { Icon(Icons.Filled.Person, contentDescription = "Nombre", tint = Color.White) },
                 placeholder = { Text("Nombre completo", color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -102,7 +104,7 @@ fun RegisterScreen() {
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
-                leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null, tint = Color.White) },
+                leadingIcon = { Icon(Icons.Filled.Email, contentDescription = "Correo", tint = Color.White) },
                 placeholder = { Text("Correo electrónico", color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -121,7 +123,7 @@ fun RegisterScreen() {
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
-                leadingIcon = { Icon(Icons.Filled.Phone, contentDescription = null, tint = Color.White) },
+                leadingIcon = { Icon(Icons.Filled.Phone, contentDescription = "Teléfono", tint = Color.White) },
                 placeholder = { Text("Teléfono", color = Color.LightGray) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
@@ -140,7 +142,7 @@ fun RegisterScreen() {
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null, tint = Color.White) },
+                leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = "Contraseña", tint = Color.White) },
                 trailingIcon = {
                     val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                     Icon(
@@ -169,7 +171,7 @@ fun RegisterScreen() {
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
-                leadingIcon = { Icon(Icons.Filled.Check, contentDescription = null, tint = Color.White) },
+                leadingIcon = { Icon(Icons.Filled.Check, contentDescription = "Confirmar contraseña", tint = Color.White) },
                 trailingIcon = {
                     val image = if (confirmPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                     Icon(
@@ -194,9 +196,14 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Botón de registro
             Button(
                 onClick = {
-                    if (password == confirmPassword && email.isNotEmpty() && password.isNotEmpty()) {
+                    if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                        Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+                    } else if (password != confirmPassword) {
+                        Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
+                    } else {
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
@@ -206,8 +213,6 @@ fun RegisterScreen() {
                                     Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                                 }
                             }
-                    } else {
-                        Toast.makeText(context, "Verifica los campos", Toast.LENGTH_SHORT).show()
                     }
                 },
                 modifier = Modifier

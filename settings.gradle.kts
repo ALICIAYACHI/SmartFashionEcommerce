@@ -1,5 +1,6 @@
 pluginManagement {
     repositories {
+        // Repositorio de Google (Android, Firebase, Play Services)
         google {
             content {
                 includeGroupByRegex("com\\.android.*")
@@ -7,18 +8,21 @@ pluginManagement {
                 includeGroupByRegex("androidx.*")
             }
         }
+        // Repositorios adicionales
         mavenCentral()
         gradlePluginPortal()
+        // jcenter() // ⚠️ Usar solo si alguna dependencia antigua lo necesita
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google()
-        mavenCentral()
+        google()        // ✅ Siempre primero
+        mavenCentral()  // ✅ Repositorio central
+        // jcenter()    // ⚠️ Solo si es necesario
     }
 }
 
 rootProject.name = "SmartFashionEcommerce"
 include(":app")
- 

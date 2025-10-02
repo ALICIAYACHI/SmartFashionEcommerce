@@ -12,13 +12,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartFashionEcommerce">
 
-        <!-- Catálogo -->
-        <activity
-            android:name=".catalog.CatalogActivity"
-            android:theme="@style/Theme.Catalog"
-            android:exported="true" />
-
-        <!-- DarkLogin será la actividad principal -->
+        <!-- Login principal -->
         <activity
             android:name=".DarkLoginActivity"
             android:exported="true">
@@ -28,14 +22,15 @@
             </intent-filter>
         </activity>
 
-        <!-- RegisterActivity (Crear Cuenta) -->
+        <!-- Pantalla principal tras login -->
+        <activity
+            android:name=".HomeActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <!-- Registro -->
         <activity
             android:name=".RegisterActivity"
-            android:exported="true" />
-
-        <!-- MainActivity (opcional, según tu flujo) -->
-        <activity
-            android:name=".MainActivity"
             android:exported="true" />
 
         <!-- Recuperar contraseña -->
@@ -46,6 +41,12 @@
         <!-- Email enviado -->
         <activity
             android:name=".EmailSentActivity"
+            android:exported="true" />
+
+        <!-- Catálogo (si aún lo usas en otra parte) -->
+        <activity
+            android:name=".catalog.CatalogActivity"
+            android:theme="@style/Theme.Catalog"
             android:exported="true" />
 
         <!-- Detalles -->
@@ -60,14 +61,16 @@
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
+        <!-- Favoritos -->
         <activity
             android:name=".FavActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce"/>
+
+        <!-- MainActivity (solo si la usas en otro flujo) -->
         <activity
-            android:name=".HomeActivity"
-            android:exported="true"
-            android:theme="@style/Theme.SmartFashionEcommerce"/>
+            android:name=".MainActivity"
+            android:exported="true" />
     </application>
 
 </manifest>

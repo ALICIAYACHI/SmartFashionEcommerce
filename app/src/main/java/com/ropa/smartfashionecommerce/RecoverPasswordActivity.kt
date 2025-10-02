@@ -3,6 +3,7 @@ package com.ropa.smartfashionecommerce
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -22,6 +23,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.FirebaseAuth
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 class RecoverPasswordActivity : ComponentActivity() {
@@ -40,7 +42,9 @@ class RecoverPasswordActivity : ComponentActivity() {
 @Composable
 fun RecoverPasswordScreen(onBackToLogin: () -> Unit = {}) {
     val context = LocalContext.current
+    val auth = FirebaseAuth.getInstance()
     var email by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -100,9 +104,24 @@ fun RecoverPasswordScreen(onBackToLogin: () -> Unit = {}) {
 
                 Button(
                     onClick = {
-                        val intent = Intent(context, EmailSentActivity::class.java)
-                        context.startActivity(intent)
-                        (context as? Activity)?.finish()
+                        if (email.isEmpty()) {
+                            Toast.makeText(context, "Por favor ingresa tu correo", Toast.LENGTH_SHORT).show()
+                            return@Button
+                        }
+
+                        isLoading = true
+                        auth.sendPasswordResetEmail(email)
+                            .addOnCompleteListener { task ->
+                                isLoading = false
+                                if (task.isSuccessful) {
+                                    Toast.makeText(context, "Correo enviado correctamente", Toast.LENGTH_SHORT).show()
+                                    val intent = Intent(context, EmailSentActivity::class.java)
+                                    context.startActivity(intent)
+                                    (context as? Activity)?.finish()
+                                } else {
+                                    Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                                }
+                            }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -111,9 +130,14 @@ fun RecoverPasswordScreen(onBackToLogin: () -> Unit = {}) {
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Black,
                         contentColor = Color.White
-                    )
+                    ),
+                    enabled = email.isNotEmpty() && !isLoading
                 ) {
-                    Text("Enviar Enlace de Recuperación")
+                    if (isLoading) {
+                        CircularProgressIndicator(color = Color.White, strokeWidth = 2.dp, modifier = Modifier.size(20.dp))
+                    } else {
+                        Text("Enviar Enlace de Recuperación")
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))

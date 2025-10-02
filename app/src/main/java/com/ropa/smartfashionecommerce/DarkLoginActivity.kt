@@ -2,9 +2,12 @@ package com.ropa.smartfashionecommerce
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -30,32 +33,134 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount
+import com.google.android.gms.auth.api.signin.GoogleSignInClient
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
-import com.ropa.smartfashionecommerce.catalog.CatalogActivity
+import com.google.firebase.auth.GoogleAuthProvider
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 class DarkLoginActivity : ComponentActivity() {
+
+    private lateinit var auth: FirebaseAuth
+    private lateinit var googleSignInClient: GoogleSignInClient
+    private lateinit var googleSignInLauncher: ActivityResultLauncher<Intent>
+
+    companion object {
+        private const val TAG = "DarkLoginActivity"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Firebase Auth
+        auth = FirebaseAuth.getInstance()
+
+        // Google Sign-In config (REQUIRES default_web_client_id in res/values/strings.xml)
+        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+            .requestIdToken(getString(R.string.default_web_client_id)) // <- asegúrate de tenerlo en strings.xml
+            .requestEmail()
+            .build()
+
+        googleSignInClient = GoogleSignIn.getClient(this, gso)
+
+        // Registrar launcher para Google Sign-In
+        googleSignInLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            val data = result.data
+            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+            try {
+                val account: GoogleSignInAccount? = task.getResult(ApiException::class.java)
+                val idToken = account?.idToken
+                if (!idToken.isNullOrEmpty()) {
+                    firebaseAuthWithGoogle(idToken)
+                } else {
+                    Toast.makeText(this, "Error obteniendo token de Google", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: ApiException) {
+                Log.w(TAG, "Google sign in failed", e)
+                Toast.makeText(this, "Error al iniciar con Google", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Log.e(TAG, "Google sign in exception", e)
+                Toast.makeText(this, "Error al iniciar con Google", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         setContent {
             SmartFashionEcommerceTheme {
-                DarkLoginScreen()
+                DarkLoginScreen(
+                    onEmailLogin = { email, password -> signInWithEmail(email, password) },
+                    onForgotPassword = {
+                        startActivity(Intent(this, RecoverPasswordActivity::class.java))
+                    },
+                    onGoogleLogin = { signInWithGoogle() },
+                    onCreateAccount = {
+                        startActivity(Intent(this, RegisterActivity::class.java))
+                    }
+                )
             }
         }
     }
+
+    private fun signInWithEmail(email: String, password: String) {
+        if (email.isBlank() || password.isBlank()) {
+            Toast.makeText(this, "Completa todos los campos", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        auth.signInWithEmailAndPassword(email, password)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    Toast.makeText(this, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
+                    navigateToHome()
+                } else {
+                    Toast.makeText(this, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+    }
+
+    private fun signInWithGoogle() {
+        val signInIntent = googleSignInClient.signInIntent
+        googleSignInLauncher.launch(signInIntent)
+    }
+
+    private fun firebaseAuthWithGoogle(idToken: String) {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(credential)
+            .addOnCompleteListener(this) { task ->
+                if (task.isSuccessful) {
+                    Toast.makeText(this, "Bienvenido con Google", Toast.LENGTH_SHORT).show()
+                    navigateToHome()
+                } else {
+                    Toast.makeText(this, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
+                }
+            }
+    }
+
+    private fun navigateToHome() {
+        startActivity(Intent(this, HomeActivity::class.java))
+        finish()
+    }
 }
 
+/** Composable UI (idéntica a tu diseño, con callbacks para la lógica) */
 @Composable
-fun DarkLoginScreen() {
+fun DarkLoginScreen(
+    onEmailLogin: (String, String) -> Unit,
+    onForgotPassword: () -> Unit,
+    onGoogleLogin: () -> Unit,
+    onCreateAccount: () -> Unit
+) {
     val context = LocalContext.current
-    val auth = FirebaseAuth.getInstance()
 
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Fondo
         Image(
             painter = painterResource(id = R.drawable.fondo),
             contentDescription = "Background",
@@ -63,7 +168,6 @@ fun DarkLoginScreen() {
             modifier = Modifier.fillMaxSize()
         )
 
-        // Capa oscura
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -93,7 +197,6 @@ fun DarkLoginScreen() {
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            // Email
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -112,7 +215,6 @@ fun DarkLoginScreen() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Contraseña con ojito
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -143,21 +245,7 @@ fun DarkLoginScreen() {
 
             // Botón Iniciar Sesión
             Button(
-                onClick = {
-                    if (email.isNotEmpty() && password.isNotEmpty()) {
-                        auth.signInWithEmailAndPassword(email, password)
-                            .addOnCompleteListener { task ->
-                                if (task.isSuccessful) {
-                                    Toast.makeText(context, "Inicio de sesión exitoso", Toast.LENGTH_SHORT).show()
-                                    context.startActivity(Intent(context, CatalogActivity::class.java))
-                                } else {
-                                    Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
-                                }
-                            }
-                    } else {
-                        Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
-                    }
-                },
+                onClick = { onEmailLogin(email.trim(), password) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -175,16 +263,14 @@ fun DarkLoginScreen() {
                 color = Color.White,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable {
-                    context.startActivity(Intent(context, RecoverPasswordActivity::class.java))
-                }
+                modifier = Modifier.clickable { onForgotPassword() }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Botón Google
             Button(
-                onClick = { /* Google Sign-In */ },
+                onClick = { onGoogleLogin() },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
@@ -202,7 +288,6 @@ fun DarkLoginScreen() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Crear cuenta
             Row {
                 Text("¿Aún no tienes cuenta? ", color = Color.LightGray, fontSize = 14.sp)
                 Text(
@@ -210,9 +295,7 @@ fun DarkLoginScreen() {
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable {
-                        context.startActivity(Intent(context, RegisterActivity::class.java))
-                    }
+                    modifier = Modifier.clickable { onCreateAccount() }
                 )
             }
         }
@@ -223,6 +306,11 @@ fun DarkLoginScreen() {
 @Composable
 fun DarkLoginPreview() {
     SmartFashionEcommerceTheme {
-        DarkLoginScreen()
+        DarkLoginScreen(
+            onEmailLogin = { _, _ -> },
+            onForgotPassword = {},
+            onGoogleLogin = {},
+            onCreateAccount = {}
+        )
     }
 }

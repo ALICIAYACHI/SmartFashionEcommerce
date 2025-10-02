@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 
-    // 👇 Importante: aplicar el plugin de Google Services
+    // 👇 Google Services SIEMPRE al final
     id("com.google.gms.google-services")
 }
 
@@ -47,10 +47,16 @@ android {
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.3"
     }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
 }
 
 dependencies {
-    // Core
+    // Core AndroidX
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -65,13 +71,16 @@ dependencies {
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.recyclerview)
 
-    // ✅ Material Icons Extended (ojito de contraseña)
+    // ✅ Material Icons Extended (para Visibility / VisibilityOff)
     implementation("androidx.compose.material:material-icons-extended:1.5.0")
 
-    // Firebase
+    // Firebase BOM (maneja versiones automáticamente)
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
+
+    // ✅ Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Test
     testImplementation(libs.junit)
