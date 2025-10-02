@@ -1,5 +1,6 @@
 package com.ropa.smartfashionecommerce
 
+import android.app.Activity
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,6 +25,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -71,10 +73,13 @@ fun FavApp() {
                 )
             },
             navigationIcon = {
-                IconButton(onClick = { /* Volver al catálogo */ }) {
+                val context = LocalContext.current
+                val activity = context as? Activity
+                IconButton(onClick = { activity?.finish() }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
                 }
-            },
+            }
+            ,
             actions = {
                 IconButton(onClick = { /* Perfil */ }) {
                     Icon(Icons.Default.Person, contentDescription = "Perfil")

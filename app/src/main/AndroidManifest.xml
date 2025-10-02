@@ -23,7 +23,7 @@
 
         </activity>
         <activity
-            android:name=".detalles.DetailsActivity"
+            android:name=".HomeActivity"
             android:theme="@style/Theme.SmartFashionEcommerce"
             android:exported="true">
             <intent-filter>
@@ -36,6 +36,11 @@
             android:name=".miperfil.MiPerfilActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <activity
+            android:name=".FavActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce"/>
 
     </application>
 
