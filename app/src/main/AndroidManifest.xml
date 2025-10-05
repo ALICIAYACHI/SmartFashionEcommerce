@@ -43,7 +43,7 @@
             android:name=".EmailSentActivity"
             android:exported="true" />
 
-        <!-- Catálogo (si aún lo usas en otra parte) -->
+        <!-- Catálogo -->
         <activity
             android:name=".catalog.CatalogActivity"
             android:theme="@style/Theme.Catalog"
@@ -67,10 +67,23 @@
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce"/>
 
-        <!-- MainActivity (solo si la usas en otro flujo) -->
+        <!-- ✅ App Links para Firebase Auth -->
         <activity
-            android:name=".MainActivity"
-            android:exported="true" />
+            android:name=".LinkHandlerActivity"
+            android:exported="true">
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:scheme="https"
+                    android:host="smartfashionecommerce.firebaseapp.com"
+                    android:pathPrefix="/__/auth/action" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>
