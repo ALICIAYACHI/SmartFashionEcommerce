@@ -1,6 +1,7 @@
 package com.ropa.smartfashionecommerce
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,7 +17,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -31,6 +31,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ropa.smartfashionecommerce.carrito.Carrito
+import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 data class FavoriteItem(
@@ -57,6 +59,7 @@ class FavActivity : ComponentActivity() {
 @Composable
 fun FavApp() {
     var favoriteItems by remember { mutableStateOf(getFavoriteItems()) }
+    val context = LocalContext.current
 
     Column(
         modifier = Modifier
@@ -73,18 +76,24 @@ fun FavApp() {
                 )
             },
             navigationIcon = {
-                val context = LocalContext.current
                 val activity = context as? Activity
                 IconButton(onClick = { activity?.finish() }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
                 }
-            }
-            ,
+            },
             actions = {
-                IconButton(onClick = { /* Perfil */ }) {
+                // Perfil
+                IconButton(onClick = {
+                    val intent = Intent(context, MiPerfilActivity::class.java)
+                    context.startActivity(intent)
+                }) {
                     Icon(Icons.Default.Person, contentDescription = "Perfil")
                 }
-                IconButton(onClick = { /* Carrito */ }) {
+                // Carrito
+                IconButton(onClick = {
+                    val intent = Intent(context, Carrito::class.java)
+                    context.startActivity(intent)
+                }) {
                     Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito")
                 }
             },
@@ -124,7 +133,11 @@ fun FavApp() {
                                 if (it.id == product.id) it.copy(isFavorite = false) else it
                             }.filter { it.isFavorite }
                         },
-                        onAddToCart = { /* Agregar al carrito */ }
+                        onAddToCart = { product ->
+                            // Aquí puedes agregar la lógica real de carrito
+                            val intent = Intent(context, Carrito::class.java)
+                            context.startActivity(intent)
+                        }
                     )
                 }
             }
@@ -161,7 +174,6 @@ fun FavoriteProductCard(
                     modifier = Modifier
                         .fillMaxSize()
                         .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-
                 )
 
                 IconButton(

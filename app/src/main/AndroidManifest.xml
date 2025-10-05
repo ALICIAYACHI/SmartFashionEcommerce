@@ -10,9 +10,10 @@
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.SmartFashionEcommerce">
+        android:theme="@style/Theme.SmartFashionEcommerce"
+        tools:targetApi="31">
 
-        <!-- Login principal -->
+        <!-- 🟢 Login principal -->
         <activity
             android:name=".DarkLoginActivity"
             android:exported="true">
@@ -22,50 +23,56 @@
             </intent-filter>
         </activity>
 
-        <!-- Pantalla principal tras login -->
+        <!-- 🏠 Pantalla principal tras login -->
         <activity
             android:name=".HomeActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
-        <!-- Registro -->
+        <!-- 🧍 Registro de usuario -->
         <activity
             android:name=".RegisterActivity"
             android:exported="true" />
 
-        <!-- Recuperar contraseña -->
+        <!-- 🔑 Recuperar contraseña -->
         <activity
             android:name=".RecoverPasswordActivity"
             android:exported="true" />
 
-        <!-- Email enviado -->
+        <!-- 📧 Email enviado (confirmación de recuperación) -->
         <activity
             android:name=".EmailSentActivity"
             android:exported="true" />
 
-        <!-- Catálogo -->
+        <!-- 🛍️ Catálogo -->
         <activity
             android:name=".catalog.CatalogActivity"
-            android:theme="@style/Theme.Catalog"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.Catalog" />
 
-        <!-- Detalles -->
+        <!-- 🔍 Detalles del producto -->
         <activity
             android:name=".detalles.DetailsActivity"
-            android:theme="@style/Theme.SmartFashionEcommerce"
-            android:exported="true" />
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
 
-        <!-- Mi perfil -->
+        <!-- 👤 Mi perfil -->
         <activity
             android:name=".miperfil.MiPerfilActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
-        <!-- Favoritos -->
+        <!-- ❤️ Favoritos -->
         <activity
             android:name=".FavActivity"
             android:exported="true"
-            android:theme="@style/Theme.SmartFashionEcommerce"/>
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <!-- 🛒 Carrito -->
+        <activity
+            android:name=".carrito.Carrito"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
 
         <!-- ✅ App Links para Firebase Auth -->
         <activity
@@ -73,7 +80,6 @@
             android:exported="true">
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
@@ -85,5 +91,4 @@
         </activity>
 
     </application>
-
 </manifest>

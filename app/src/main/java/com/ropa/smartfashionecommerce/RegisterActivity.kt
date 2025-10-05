@@ -26,7 +26,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
-import com.ropa.smartfashionecommerce.catalog.CatalogActivity
+import com.google.firebase.auth.UserProfileChangeRequest
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 class RegisterActivity : ComponentActivity() {
@@ -81,7 +81,7 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Nombre
+            // Nombre completo
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
@@ -196,7 +196,7 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Botón de registro
+            // 🔹 Botón de registro
             Button(
                 onClick = {
                     if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
@@ -207,8 +207,18 @@ fun RegisterScreen() {
                         auth.createUserWithEmailAndPassword(email, password)
                             .addOnCompleteListener { task ->
                                 if (task.isSuccessful) {
+                                    val user = auth.currentUser
+                                    val profileUpdates = UserProfileChangeRequest.Builder()
+                                        .setDisplayName(fullName)
+                                        .build()
+                                    user?.updateProfile(profileUpdates)
+
                                     Toast.makeText(context, "Cuenta creada con éxito", Toast.LENGTH_SHORT).show()
-                                    context.startActivity(Intent(context, CatalogActivity::class.java))
+
+                                    // 🔹 Ir al HomeActivity
+                                    val intent = Intent(context, HomeActivity::class.java)
+                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                                    context.startActivity(intent)
                                 } else {
                                     Toast.makeText(context, "Error: ${task.exception?.message}", Toast.LENGTH_LONG).show()
                                 }
@@ -218,7 +228,10 @@ fun RegisterScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color.Black
+                ),
                 shape = RoundedCornerShape(6.dp)
             ) {
                 Text("Registrarse", fontWeight = FontWeight.Bold)
@@ -226,6 +239,7 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            // 🔹 Ir a login
             Row {
                 Text("¿Ya tienes cuenta? ", color = Color.LightGray, fontSize = 14.sp)
                 Text(

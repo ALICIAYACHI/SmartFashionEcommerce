@@ -1,12 +1,17 @@
 package com.ropa.smartfashionecommerce.miperfil
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
-import com.ropa.smartfashionecommerce.R
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
-class MiPerfilActivity : AppCompatActivity() {
+class MiPerfilActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_mi_perfil)
+        setContent {
+            SmartFashionEcommerceTheme {
+                MiPerfilScreen(onBack = { finish() })
+            }
+        }
     }
 }

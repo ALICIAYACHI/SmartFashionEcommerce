@@ -1,5 +1,6 @@
 package com.ropa.smartfashionecommerce
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,24 +13,22 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import com.ropa.smartfashionecommerce.R
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.zIndex
+import com.ropa.smartfashionecommerce.carrito.Carrito
+import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
-import android.content.Intent
-import androidx.compose.ui.platform.LocalContext
-
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -50,23 +49,18 @@ fun FashionApp() {
             .background(Color.White)
     ) {
         BrandCategories()
-
         BannerSection()
-
         ProductList()
-
         HomeScreen()
-
     }
 }
-
 
 @Composable
 fun BrandCategories() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(12.dp , 30.dp, 12.dp, 12.dp),
+            .padding(12.dp, 30.dp, 12.dp, 12.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text("ZARA", fontSize = 11.sp, fontWeight = FontWeight.Bold)
@@ -143,10 +137,11 @@ fun ProductCard(product: Product) {
     }
 }
 
-
 @Composable
 fun HomeScreen() {
     val context = LocalContext.current
+    var selectedTab by remember { mutableStateOf("Home") }
+
     Scaffold(
         bottomBar = {
             Box(
@@ -163,38 +158,51 @@ fun HomeScreen() {
                         .clip(RoundedCornerShape(50.dp))
                         .zIndex(3f)
                         .height(80.dp)
-
-
                 ) {
+                    // Home
                     NavigationBarItem(
-                        modifier = Modifier.padding(0.dp ,30.dp ,0.dp ,0.dp),
-                        selected = true,
-                        onClick = { },
+                        modifier = Modifier.padding(0.dp, 30.dp, 0.dp, 0.dp),
+                        selected = selectedTab == "Home",
+                        onClick = { selectedTab = "Home" },
                         label = { Text("Home") },
                         icon = { Icon(painterResource(id = R.drawable.home2), contentDescription = null) }
                     )
+
+                    // Cart
                     NavigationBarItem(
-                        modifier = Modifier.padding(0.dp ,30.dp ,0.dp ,0.dp),
-                        selected = false,
-                        onClick = { },
+                        modifier = Modifier.padding(0.dp, 30.dp, 0.dp, 0.dp),
+                        selected = selectedTab == "Cart",
+                        onClick = {
+                            selectedTab = "Cart"
+                            val intent = Intent(context, Carrito::class.java)
+                            context.startActivity(intent)
+                        },
                         label = { Text("Cart") },
                         icon = { Icon(painterResource(id = R.drawable.carritocompra), contentDescription = null) }
                     )
+
+                    // Favorites
                     NavigationBarItem(
                         modifier = Modifier.padding(0.dp, 30.dp, 0.dp, 0.dp),
-                        selected = false,
+                        selected = selectedTab == "Favorites",
                         onClick = {
+                            selectedTab = "Favorites"
                             val intent = Intent(context, FavActivity::class.java)
                             context.startActivity(intent)
                         },
                         label = { Text("Favorites") },
                         icon = { Icon(painterResource(id = R.drawable.heart), contentDescription = null) }
                     )
-                    NavigationBarItem(
 
-                        modifier = Modifier.padding(0.dp ,30.dp ,0.dp ,0.dp),
-                        selected = false,
-                        onClick = { },
+                    // Profile
+                    NavigationBarItem(
+                        modifier = Modifier.padding(0.dp, 30.dp, 0.dp, 0.dp),
+                        selected = selectedTab == "Profile",
+                        onClick = {
+                            selectedTab = "Profile"
+                            val intent = Intent(context, MiPerfilActivity::class.java)
+                            context.startActivity(intent)
+                        },
                         label = { Text("Profile") },
                         icon = { Icon(painterResource(id = R.drawable.person), contentDescription = null) }
                     )
@@ -208,15 +216,14 @@ fun HomeScreen() {
                 .padding(innerPadding)
                 .background(Color.White)
         ) {
-            items(2) { index ->
+            items(2) {
                 Text(
-                    text = "Aca va a ir los demas productos "
+                    text = "Aquí van a ir los demás productos"
                 )
             }
         }
     }
 }
-
 
 @Preview(showSystemUi = true)
 @Composable
