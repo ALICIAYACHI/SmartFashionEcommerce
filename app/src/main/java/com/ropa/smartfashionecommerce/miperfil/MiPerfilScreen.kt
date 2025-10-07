@@ -16,123 +16,184 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.google.firebase.ktx.Firebase
+import com.google.firebase.auth.ktx.auth
+
 import com.ropa.smartfashionecommerce.DarkLoginActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MiPerfilScreen(onBack: () -> Unit) {
+fun MiPerfilScreen(
+    onBack: () -> Unit
+) {
     val context = LocalContext.current
-    val auth = FirebaseAuth.getInstance()
-    val user = auth.currentUser
-
-    var nombre by remember { mutableStateOf(user?.displayName ?: "Usuario") }
-    val correo = user?.email ?: "correo@ejemplo.com"
-    var editando by remember { mutableStateOf(false) }
+    val user = Firebase.auth.currentUser
+    val displayName = user?.displayName ?: "Usuario"
+    val email = user?.email ?: "correo@ejemplo.com"
+    val photoUrl = user?.photoUrl
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mi Perfil") },
+                title = { Text("Mi Perfil", color = Color.White) },
                 navigationIcon = {
-                    IconButton(onClick = { onBack() }) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Volver")
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Atrás", tint = Color.White)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF212121))
             )
-        }
-    ) { innerPadding ->
+        },
+        containerColor = Color(0xFFF5F5F5)
+    ) { padding ->
         Column(
             modifier = Modifier
-                .padding(innerPadding)
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
                 .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Top
+                .background(Brush.verticalGradient(listOf(Color.White, Color(0xFFEAEAEA))))
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 🔹 Datos del usuario
-            Text(
-                text = "Hola, $nombre 👋",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = correo,
-                fontSize = 16.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 🔹 Edición del nombre
-            if (editando) {
-                OutlinedTextField(
-                    value = nombre,
-                    onValueChange = { nombre = it },
-                    label = { Text("Nombre") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                Button(
-                    onClick = {
-                        guardarNombreFirebase(nombre)
-                        editando = false
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Icon(Icons.Filled.Save, contentDescription = "Guardar")
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Guardar cambios")
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // 🔹 Menú de opciones
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            // Imagen de perfil
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .background(
+                        brush = Brush.linearGradient(
+                            listOf(Color(0xFF000000), Color(0xFF757575))
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                OpcionPerfil("Editar Perfil", Icons.Default.Edit) {
-                    editando = true
-                }
-                OpcionPerfil("Historial de Compras", Icons.Default.History) {
-                    // Aquí podrías abrir la actividad de historial
-                }
-                OpcionPerfil("Direcciones Guardadas", Icons.Default.LocationOn) {
-                    // Abrir actividad de direcciones
-                }
-                OpcionPerfil("Métodos de Pago", Icons.Default.CreditCard) {
-                    // Abrir actividad de métodos de pago
-                }
-                OpcionPerfil("Notificaciones", Icons.Default.Notifications) {
-                    // Configurar notificaciones
-                }
-                OpcionPerfil("Privacidad", Icons.Default.Lock) {
-                    // Configuración de privacidad
-                }
-                OpcionPerfil("Ayuda y Soporte", Icons.Default.HelpOutline) {
-                    // Abrir centro de ayuda
-                }
-
-                // 🔴 Cerrar sesión
-                OpcionPerfil(
-                    titulo = "Cerrar Sesión",
-                    icono = Icons.Default.Logout,
-                    isLogout = true
-                ) {
-                    auth.signOut()
-                    val intent = Intent(context, DarkLoginActivity::class.java)
-                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
-                    context.startActivity(intent)
-                }
+                Image(
+                    painter = rememberAsyncImagePainter(photoUrl ?: R.drawable.ic_person),
+                    contentDescription = "Foto de perfil",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(110.dp)
+                        .clip(CircleShape)
+                        .border(2.dp, Color.White, CircleShape)
+                )
             }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Nombre y correo
+            Text(
+                text = displayName,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.Black
+            )
+
+            Text(
+                text = email,
+                fontSize = 14.sp,
+                color = Color.Gray
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Tarjetas de opciones
+            ProfileOptionCard(
+                icon = Icons.Default.ShoppingBag,
+                title = "Mis pedidos",
+                subtitle = "Historial y seguimiento de compras",
+                onClick = { Toast.makeText(context, "Abrir mis pedidos", Toast.LENGTH_SHORT).show() }
+            )
+
+            ProfileOptionCard(
+                icon = Icons.Default.Settings,
+                title = "Configuración",
+                subtitle = "Preferencias de cuenta y notificaciones",
+                onClick = { Toast.makeText(context, "Abrir configuración", Toast.LENGTH_SHORT).show() }
+            )
+
+            ProfileOptionCard(
+                icon = Icons.Default.ExitToApp,
+                title = "Cerrar sesión",
+                subtitle = "Salir de tu cuenta",
+                onClick = {
+                    Firebase.auth.signOut()
+                    Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
+                    (context as? Activity)?.finish()
+                }
+            )
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Text(
+                text = "Versión 1.0.0",
+                color = Color.Gray,
+                fontSize = 12.sp,
+                fontStyle = FontStyle.Italic
+            )
         }
     }
 }
+
+@Composable
+fun ProfileOptionCard(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(Color(0xFFF0F0F0), shape = CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = Color.Black,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = title,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    color = Color.Black
+                )
+                Text(
+                    text = subtitle,
+                    fontSize = 13.sp,
+                    color = Color.Gray
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = Color.Gray
+            )
+        }
+    }
+}
+
 
 @Composable
 fun OpcionPerfil(

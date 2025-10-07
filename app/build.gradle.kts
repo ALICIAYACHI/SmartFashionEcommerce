@@ -1,10 +1,13 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
 
-    // 👇 Google Services SIEMPRE al final
-    id("com.google.gms.google-services")
+        alias(libs.plugins.android.application) // plugin de Android
+        alias(libs.plugins.kotlin.android)     // plugin de Kotlin
+        alias(libs.plugins.kotlin.compose)     // plugin Compose Compiler obligatorio
+        id("org.jetbrains.kotlin.plugin.serialization") // opcional
+        id("org.jetbrains.kotlin.kapt") // opcional
+        id("com.google.gms.google-services") // Firebase
+
+
 }
 
 android {
@@ -57,37 +60,48 @@ android {
 
 dependencies {
     // Core AndroidX
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
+    implementation("androidx.core:core-ktx:1.12.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.6.2")
+    implementation("androidx.activity:activity-compose:1.8.2")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation("androidx.constraintlayout:constraintlayout:2.2.0")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0") // o la última
+
+    // Compose
+    implementation(platform("androidx.compose:compose-bom:2025.09.00"))
+    implementation("androidx.compose.ui:ui:1.5.3")
+    implementation("androidx.compose.ui:ui-graphics:1.5.3")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.5.3")
+    implementation("androidx.compose.material3:material3:1.2.1")
+    implementation("androidx.compose.material:material-icons-extended:1.5.0")
     implementation(libs.androidx.recyclerview)
 
-    // ✅ Material Icons Extended (para Visibility / VisibilityOff)
-    implementation("androidx.compose.material:material-icons-extended:1.5.0")
 
-    // Firebase BOM (maneja versiones automáticamente)
+    // Coil para imágenes
+    implementation("io.coil-kt:coil-compose:2.4.0")
+
+    // Firebase BOM
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
-    implementation("com.google.firebase:firebase-analytics")
-    implementation("com.google.firebase:firebase-auth")
 
-    // ✅ Google Sign-In
+
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-common-ktx")
+
+    // Accompanist (barra de estado, etc.)
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
+
+    // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Test
-    testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+    testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test.ext:junit:1.1.7")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.2")
+    androidTestImplementation(platform("androidx.compose:compose-bom:2025.09.00"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.5.3")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.5.3")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.5.3")
 }
