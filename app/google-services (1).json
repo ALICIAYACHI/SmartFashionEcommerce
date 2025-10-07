@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "453125572731-vv0aeqr6iqctn3c4lj5idcvnpbjn95ce.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.ropa.smartfashionecommerce",
+            "certificate_hash": "2d47001326c255f8dfca9230163c7a10ee5d1bb8"
+          }
+        },
+        {
           "client_id": "453125572731-ku60usi69c00n5vdl4umbm222v0nl8ui.apps.googleusercontent.com",
           "client_type": 3
         }
