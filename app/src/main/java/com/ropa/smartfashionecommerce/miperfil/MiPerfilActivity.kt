@@ -10,6 +10,7 @@ class MiPerfilActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             SmartFashionEcommerceTheme {
+                // Usamos la versión con el menú inferior
                 MiPerfilScreen(onBack = { finish() })
             }
         }

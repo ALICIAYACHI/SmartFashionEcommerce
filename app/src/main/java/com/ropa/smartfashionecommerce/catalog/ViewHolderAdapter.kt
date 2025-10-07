@@ -1,20 +1,27 @@
 package com.ropa.smartfashionecommerce.catalog
 
+import android.content.Context
+import android.content.Intent
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
-
 import com.ropa.smartfashionecommerce.R
-class ProductAdapter(private val items: List<Product>) :
-    RecyclerView.Adapter<ProductAdapter.ProductViewHolder>() {
+import com.ropa.smartfashionecommerce.detalles.DetailsActivity
 
-    inner class ProductViewHolder(val view: View) : RecyclerView.ViewHolder(view) {
-        val image = view.findViewById<ImageView>(R.id.image_produc)
-        val name = view.findViewById<TextView>(R.id.name_producto)
-        val price = view.findViewById<TextView>(R.id.produc_price)
+class ViewHolderAdapter(
+    private val context: Context,
+    private val productList: List<Product>
+) : RecyclerView.Adapter<ViewHolderAdapter.ProductViewHolder>() {
+
+    inner class ProductViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        val image: ImageView = itemView.findViewById(R.id.image_producto)
+        val name: TextView = itemView.findViewById(R.id.name_producto)
+        val price: TextView = itemView.findViewById(R.id.product_price)
+        val btnDetails: Button = itemView.findViewById(R.id.btn_details)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductViewHolder {
@@ -24,11 +31,20 @@ class ProductAdapter(private val items: List<Product>) :
     }
 
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
-        val item = items[position]
-        holder.name.text = item.name
-        holder.price.text = item.price
-        holder.image.setImageResource(item.imageRes)
+        val product = productList[position]
+        holder.image.setImageResource(product.imageRes)
+        holder.name.text = product.name
+        holder.price.text = product.price
+
+        // Click en botón para abrir DetailsActivity
+        holder.btnDetails.setOnClickListener {
+            val intent = Intent(context, DetailsActivity::class.java)
+            intent.putExtra("name", product.name)
+            intent.putExtra("price", product.price)
+            intent.putExtra("imageRes", product.imageRes)
+            context.startActivity(intent)
+        }
     }
 
-    override fun getItemCount() = items.size
+    override fun getItemCount(): Int = productList.size
 }

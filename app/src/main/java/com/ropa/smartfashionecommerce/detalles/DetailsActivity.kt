@@ -9,6 +9,13 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.ropa.smartfashionecommerce.R
+import android.content.Intent
+import com.ropa.smartfashionecommerce.HomeActivity
+import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
+
+
+
+
 
 class DetailsActivity : AppCompatActivity() {
 
@@ -80,7 +87,9 @@ class DetailsActivity : AppCompatActivity() {
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.nav_home -> {
-                    Toast.makeText(this, "Home", Toast.LENGTH_SHORT).show()
+                    // Abrir HomeActivity
+                    val intent = Intent(this, HomeActivity::class.java)
+                    startActivity(intent)
                     true
                 }
                 R.id.nav_cart -> {
@@ -88,12 +97,14 @@ class DetailsActivity : AppCompatActivity() {
                     true
                 }
                 R.id.nav_profile -> {
-                    Toast.makeText(this, "Perfil", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(this, MiPerfilActivity::class.java)
+                    startActivity(intent)
                     true
                 }
                 else -> false
             }
         }
+
     }
 
     // Adapter simple para la lista horizontal "More from..."

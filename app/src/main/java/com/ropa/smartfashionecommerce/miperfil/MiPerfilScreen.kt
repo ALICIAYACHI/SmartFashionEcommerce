@@ -1,8 +1,11 @@
 package com.ropa.smartfashionecommerce.miperfil
 
+import android.app.Activity
 import android.content.Intent
-import androidx.compose.foundation.clickable
+import android.widget.Toast
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -10,16 +13,23 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
-import com.google.firebase.ktx.Firebase
 import com.google.firebase.auth.ktx.auth
-
+import com.google.firebase.ktx.Firebase
 import com.ropa.smartfashionecommerce.DarkLoginActivity
+import com.ropa.smartfashionecommerce.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,7 +38,7 @@ fun MiPerfilScreen(
 ) {
     val context = LocalContext.current
     val user = Firebase.auth.currentUser
-    val displayName = user?.displayName ?: "Usuario"
+    var displayName by remember { mutableStateOf(user?.displayName ?: "Usuario") }
     val email = user?.email ?: "correo@ejemplo.com"
     val photoUrl = user?.photoUrl
 
@@ -80,13 +90,31 @@ fun MiPerfilScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Nombre y correo
-            Text(
-                text = displayName,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
+            // Campo editable de nombre
+            var nuevoNombre by remember { mutableStateOf(displayName) }
+
+            OutlinedTextField(
+                value = nuevoNombre,
+                onValueChange = { nuevoNombre = it },
+                label = { Text("Nombre") },
+                singleLine = true,
+                shape = RoundedCornerShape(10.dp)
             )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    guardarNombreFirebase(nuevoNombre)
+                    displayName = nuevoNombre
+                    Toast.makeText(context, "Nombre actualizado", Toast.LENGTH_SHORT).show()
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Black)
+            ) {
+                Text("Guardar Cambios", color = Color.White)
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = email,
@@ -96,7 +124,7 @@ fun MiPerfilScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Tarjetas de opciones
+            // Opciones del perfil
             ProfileOptionCard(
                 icon = Icons.Default.ShoppingBag,
                 title = "Mis pedidos",
@@ -118,6 +146,8 @@ fun MiPerfilScreen(
                 onClick = {
                     Firebase.auth.signOut()
                     Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
+                    val intent = Intent(context, DarkLoginActivity::class.java)
+                    context.startActivity(intent)
                     (context as? Activity)?.finish()
                 }
             )
@@ -189,41 +219,6 @@ fun ProfileOptionCard(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
                 tint = Color.Gray
-            )
-        }
-    }
-}
-
-
-@Composable
-fun OpcionPerfil(
-    titulo: String,
-    icono: androidx.compose.ui.graphics.vector.ImageVector,
-    isLogout: Boolean = false,
-    onClick: (() -> Unit)? = null
-) {
-    val colorTexto = if (isLogout) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
-    val colorIcono = if (isLogout) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick?.invoke() },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        shape = RoundedCornerShape(10.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(icono, contentDescription = null, tint = colorIcono)
-            Spacer(modifier = Modifier.width(16.dp))
-            Text(
-                text = titulo,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Medium,
-                color = colorTexto
             )
         }
     }

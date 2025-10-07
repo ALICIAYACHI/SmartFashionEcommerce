@@ -8,10 +8,16 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,94 +28,177 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.tooling.preview.Preview
 import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
+import androidx.compose.foundation.lazy.items
+import com.ropa.smartfashionecommerce.catalog.CatalogActivity
+
+
+
+// Modelo de producto
+data class Product(val name: String, val price: String, val image: Int)
+
+// Lista de productos de ejemplo
+val productList = listOf(
+    Product("Women's Sweater", "€ 300.00", R.drawable.fondo),
+    Product("Casual Wear", "€ 280.00", R.drawable.fondo2),
+    Product("Lady Pant", "€ 790.00", R.drawable.fondo),
+    Product("Women Pant", "€ 790.00", R.drawable.fondo),
+    Product("Jacket", "€ 450.00", R.drawable.fondo),
+    Product("Dress", "€ 650.00", R.drawable.fondo2)
+)
+
+// Lista de categorías
+val categories = listOf("ZARA", "VOGUE", "CHANEL", "RALPH")
 
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             SmartFashionEcommerceTheme {
-                FashionApp()
+                FashionHomeScreen()
             }
         }
     }
 }
 
 @Composable
-fun FashionApp() {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        BrandCategories()
-        BannerSection()
-        ProductList()
-        HomeScreen()
-    }
-}
+fun FashionHomeScreen() {
+    val context = LocalContext.current
+    var selectedTab by remember { mutableStateOf("Home") }
 
-@Composable
-fun BrandCategories() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(12.dp, 30.dp, 12.dp, 12.dp),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text("ZARA", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Text("VOGUE", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Text("CHANEL", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Text("Ralph", fontSize = 11.sp, fontWeight = FontWeight.Bold)
-    }
-}
+    Scaffold(
+        bottomBar = {
+            NavigationBar(
+                containerColor = Color.White,
+                tonalElevation = 4.dp
+            ) {
+                NavigationBarItem(
+                    selected = selectedTab == "Home",
+                    onClick = { selectedTab = "Home" },
+                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                    label = { Text("Home") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == "Cart",
+                    onClick = {
+                        selectedTab = "Cart"
+                        context.startActivity(Intent(context, Carrito::class.java))
+                    },
+                    icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Cart") },
+                    label = { Text("Cart") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == "Favorites",
+                    onClick = {
+                        selectedTab = "Favorites"
+                        // Usamos el context ya definido arriba
+                        context.startActivity(Intent(context, FavActivity::class.java))
+                    },
+                    icon = { Icon(Icons.Default.Favorite, contentDescription = "Favorites") },
+                    label = { Text("Favorites") }
+                )
 
-@Composable
-fun BannerSection() {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(220.dp)
-            .padding(8.dp)
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.imagendehomeprincipal),
-            contentDescription = "Banner",
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
-        Text(
-            text = "VOGUE",
-            fontSize = 42.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color.White,
-            modifier = Modifier.align(Alignment.Center)
-        )
-    }
-}
+                NavigationBarItem(
+                    selected = selectedTab == "Profile",
+                    onClick = {
+                        selectedTab = "Profile"
+                        context.startActivity(Intent(context, MiPerfilActivity::class.java))
+                    },
+                    icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
+                    label = { Text("Profile") }
+                )
+            }
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .background(Color.White)
+        ) {
+            // Banner principal
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .padding(8.dp)
+                    .clip(RoundedCornerShape(16.dp))
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.imagendehomeprincipal),
+                    contentDescription = "Banner",
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
+                Text(
+                    text = "VOGUE",
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            }
 
-data class Product(val name: String, val price: String, val image: Int)
+            Spacer(modifier = Modifier.height(16.dp))
 
-val productList = listOf(
-    Product("Women's Sweater", "€ 300.00", R.drawable.fondo),
-    Product("Casual Wear", "€ 280.00", R.drawable.fondo2),
-    Product("Lady Pant", "€ 790.00", R.drawable.fondo),
-    Product("Women Pant", "€ 790.00", R.drawable.fondo)
-)
+            // Categorías scroll horizontal
+            Text(
+                text = "Categorías",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+            )
 
-@Composable
-fun ProductList() {
-    LazyRow(
-        modifier = Modifier.padding(8.dp)
-    ) {
-        items(productList) { product ->
-            ProductCard(product)
+            LazyRow(
+                modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)
+            ) {
+                val categories = listOf("ZARA", "VOGUE", "CHANEL", "RALPH")
+                items(categories) { category ->
+                    val context = LocalContext.current
+                    Box(
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color.LightGray.copy(alpha = 0.3f))
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                            .clickable {
+                                // Solo abrimos CatalogActivity si la categoría es ZARA
+                                if (category == "ZARA") {
+                                    context.startActivity(Intent(context, CatalogActivity::class.java))
+                                }
+                            }
+                    ) {
+                        Text(category, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+                }
+            }
+
+
+
+            // Productos grid
+            Text(
+                text = "Productos",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+            )
+
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(2),
+                contentPadding = PaddingValues(8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxHeight()
+            ) {
+                items(productList) { product ->
+                    ProductCard(product)
+                }
+            }
         }
     }
 }
@@ -118,18 +207,19 @@ fun ProductList() {
 fun ProductCard(product: Product) {
     Column(
         modifier = Modifier
-            .width(160.dp)
-            .padding(8.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color.White)
             .clickable { }
+            .padding(8.dp)
     ) {
         Image(
             painter = painterResource(id = product.image),
             contentDescription = product.name,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
                 .height(180.dp)
                 .fillMaxWidth()
-                .background(Color.LightGray, RoundedCornerShape(12.dp)),
-            contentScale = ContentScale.Crop
+                .clip(RoundedCornerShape(12.dp))
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(product.name, fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -137,98 +227,10 @@ fun ProductCard(product: Product) {
     }
 }
 
-@Composable
-fun HomeScreen() {
-    val context = LocalContext.current
-    var selectedTab by remember { mutableStateOf("Home") }
-
-    Scaffold(
-        bottomBar = {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp)
-                    .clip(RoundedCornerShape(50.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                NavigationBar(
-                    containerColor = Color.Black.copy(alpha = 0.1f),
-                    modifier = Modifier
-                        .width(350.dp)
-                        .clip(RoundedCornerShape(50.dp))
-                        .zIndex(3f)
-                        .height(80.dp)
-                ) {
-                    // Home
-                    NavigationBarItem(
-                        modifier = Modifier.padding(0.dp, 30.dp, 0.dp, 0.dp),
-                        selected = selectedTab == "Home",
-                        onClick = { selectedTab = "Home" },
-                        label = { Text("Home") },
-                        icon = { Icon(painterResource(id = R.drawable.home2), contentDescription = null) }
-                    )
-
-                    // Cart
-                    NavigationBarItem(
-                        modifier = Modifier.padding(0.dp, 30.dp, 0.dp, 0.dp),
-                        selected = selectedTab == "Cart",
-                        onClick = {
-                            selectedTab = "Cart"
-                            val intent = Intent(context, Carrito::class.java)
-                            context.startActivity(intent)
-                        },
-                        label = { Text("Cart") },
-                        icon = { Icon(painterResource(id = R.drawable.carritocompra), contentDescription = null) }
-                    )
-
-                    // Favorites
-                    NavigationBarItem(
-                        modifier = Modifier.padding(0.dp, 30.dp, 0.dp, 0.dp),
-                        selected = selectedTab == "Favorites",
-                        onClick = {
-                            selectedTab = "Favorites"
-                            val intent = Intent(context, FavActivity::class.java)
-                            context.startActivity(intent)
-                        },
-                        label = { Text("Favorites") },
-                        icon = { Icon(painterResource(id = R.drawable.heart), contentDescription = null) }
-                    )
-
-                    // Profile
-                    NavigationBarItem(
-                        modifier = Modifier.padding(0.dp, 30.dp, 0.dp, 0.dp),
-                        selected = selectedTab == "Profile",
-                        onClick = {
-                            selectedTab = "Profile"
-                            val intent = Intent(context, MiPerfilActivity::class.java)
-                            context.startActivity(intent)
-                        },
-                        label = { Text("Profile") },
-                        icon = { Icon(painterResource(id = R.drawable.person), contentDescription = null) }
-                    )
-                }
-            }
-        }
-    ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(Color.White)
-        ) {
-            items(2) {
-                Text(
-                    text = "Aquí van a ir los demás productos"
-                )
-            }
-        }
-    }
-}
-
 @Preview(showSystemUi = true)
 @Composable
 fun HomePreview() {
     SmartFashionEcommerceTheme {
-        FashionApp()
+        FashionHomeScreen()
     }
 }
