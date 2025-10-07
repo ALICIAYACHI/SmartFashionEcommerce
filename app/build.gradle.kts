@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 
-    // 👇 Google Services SIEMPRE al final
+    // 👇 Google Services SIEMPRE al final (correcto)
     id("com.google.gms.google-services")
 }
 
@@ -74,7 +74,7 @@ dependencies {
     // ✅ Material Icons Extended (para Visibility / VisibilityOff)
     implementation("androidx.compose.material:material-icons-extended:1.5.0")
 
-    // Firebase BOM (maneja versiones automáticamente)
+    // ✅ Firebase BOM (maneja versiones automáticamente)
     implementation(platform("com.google.firebase:firebase-bom:34.3.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth")
