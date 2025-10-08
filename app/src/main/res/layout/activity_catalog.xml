@@ -98,13 +98,14 @@
 
         <!-- Texto a la derecha -->
         <androidx.cardview.widget.CardView
+            android:id="@+id/filter_card"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:cardCornerRadius="16dp"
             app:cardBackgroundColor="@color/catalog_background_icon"
-            android:padding="16dp"
+            android:padding="16dp">
 
             >
 

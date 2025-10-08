@@ -7,6 +7,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.google.android.material.button.MaterialButton
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.ropa.smartfashionecommerce.HomeActivity
 import com.ropa.smartfashionecommerce.R
 import com.ropa.smartfashionecommerce.carrito.Carrito
@@ -20,11 +22,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 
-// Aquí importas la clase Product desde Product.kt
-import com.ropa.smartfashionecommerce.catalog.Product
-// Clase de ejemplo para producto
-
-
 class CatalogActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,17 +29,51 @@ class CatalogActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_catalog)
 
+        // 📌 Aquí obtenemos la categoría del Intent
+        val category = intent.getStringExtra("CATEGORY") ?: "Hombres"
+
+        // 📌 Creamos la lista de productos según la categoría
+        val dummyList = when (category) {
+            "Hombres" -> listOf(
+                Product("Camisa Hombre", "S/120", R.drawable.fondo),
+                Product("Pantalón Hombre", "S/150", R.drawable.fondo),
+                Product("Zapatos Hombre", "S/200", R.drawable.fondo),
+                Product("Camisa Hombre", "S/120", R.drawable.fondo),
+                Product("Camisa Hombre", "S/120", R.drawable.fondo),
+                Product("Camisa Hombre", "S/120", R.drawable.fondo)
+            )
+            "Mujeres" -> listOf(
+                Product("Blusa Mujer", "S/130", R.drawable.fondo2),
+                Product("Falda Mujer", "S/160", R.drawable.fondo2),
+                Product("Tacones Mujer", "S/220", R.drawable.fondo2),
+                Product("Camisa Hombre", "S/120", R.drawable.fondo2),
+                Product("Camisa Hombre", "S/120", R.drawable.fondo2),
+                Product("Camisa Hombre", "S/120", R.drawable.fondo2)
+
+            )
+            "Niños" -> listOf(
+                Product("Camiseta Niño", "S/80", R.drawable.nino),
+                Product("Pantalón Niño", "S/100", R.drawable.nino),
+                Product("Zapatillas Niño", "S/120", R.drawable.nino),
+                Product("Camisa Hombre", "S/120", R.drawable.nino),
+                Product("Camisa Hombre", "S/120", R.drawable.nino),
+                Product("Camisa Hombre", "S/120", R.drawable.nino)
+            )
+            else -> emptyList()
+        }
+
+
         // RecyclerView con Grid
         val recyclerView = findViewById<RecyclerView>(R.id.products_recycler_view)
         recyclerView.layoutManager = GridLayoutManager(this, 2)
 
-        val dummyList = List(10) { index ->
-            Product("Prenda $index", "S/ ${100 + index}", R.drawable.fondo)
-        }
-
         recyclerView.adapter = ViewHolderAdapter(this, dummyList)
 
-
+        // Botón de filtro (el CardView que contiene el icono)
+        val filterButton = findViewById<androidx.cardview.widget.CardView>(R.id.filter_card)
+        filterButton.setOnClickListener {
+            showFilterBottomSheet()
+        }
 
         // FAB para ir a MiPerfil
         val btnPerfil = findViewById<FloatingActionButton>(R.id.btn_perfil)
@@ -98,4 +129,43 @@ class CatalogActivity : AppCompatActivity() {
             }
         }
     }
+
+    // 🌟 Ventana inferior de filtro elegante
+    private fun showFilterBottomSheet() {
+        val dialog = BottomSheetDialog(this)
+        val view = layoutInflater.inflate(R.layout.bottomsheet_filter, null)
+        dialog.setContentView(view)
+
+        val btnHombres = view.findViewById<MaterialButton>(R.id.btnHombres)
+        val btnMujeres = view.findViewById<MaterialButton>(R.id.btnMujeres)
+        val btnNinos = view.findViewById<MaterialButton>(R.id.btnNinos)
+
+        // Al tocar cada botón, abrimos el CatalogActivity con la categoría elegida
+        btnHombres.setOnClickListener {
+            dialog.dismiss()
+            val intent = Intent(this, CatalogActivity::class.java)
+            intent.putExtra("CATEGORY", "Hombres")
+            startActivity(intent)
+            finish() // opcional: para cerrar la anterior y evitar duplicados
+        }
+
+        btnMujeres.setOnClickListener {
+            dialog.dismiss()
+            val intent = Intent(this, CatalogActivity::class.java)
+            intent.putExtra("CATEGORY", "Mujeres")
+            startActivity(intent)
+            finish()
+        }
+
+        btnNinos.setOnClickListener {
+            dialog.dismiss()
+            val intent = Intent(this, CatalogActivity::class.java)
+            intent.putExtra("CATEGORY", "Niños")
+            startActivity(intent)
+            finish()
+        }
+
+        dialog.show()
+    }
+
 }
