@@ -25,7 +25,7 @@
 
         <!-- 🏠 Pantalla principal tras login -->
         <activity
-            android:name=".HomeActivity"
+            android:name=".home.HomeActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
@@ -50,9 +50,15 @@
             android:exported="true"
             android:theme="@style/Theme.Catalog" />
 
-        <!-- 🔍 Detalles del producto -->
+        <!-- 🔍 Detalles antiguos del producto -->
         <activity
             android:name=".detalles.DetailsActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <!-- 🆕 Nuevo detalle de producto -->
+        <activity
+            android:name=".detalles.ProductDetailActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
@@ -70,7 +76,7 @@
 
         <!-- ❤️ Favoritos -->
         <activity
-            android:name=".FavActivity"
+            android:name=".home.FavActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 

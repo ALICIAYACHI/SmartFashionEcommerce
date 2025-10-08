@@ -2,9 +2,11 @@ package com.ropa.smartfashionecommerce.miperfil
 
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -14,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.google.firebase.auth.EmailAuthProvider
@@ -31,6 +34,11 @@ fun CambiarContrasenaDialog(
     var nuevaContrasena by remember { mutableStateOf("") }
     var confirmarContrasena by remember { mutableStateOf("") }
     var cargando by remember { mutableStateOf(false) }
+
+    // 👁️ Estados para mostrar/ocultar las contraseñas
+    var mostrarActual by remember { mutableStateOf(false) }
+    var mostrarNueva by remember { mutableStateOf(false) }
+    var mostrarConfirmar by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Surface(
@@ -60,42 +68,62 @@ fun CambiarContrasenaDialog(
                 )
                 Spacer(modifier = Modifier.height(20.dp))
 
-                // 🧾 Campos de texto
+                // 🧾 Contraseña actual
                 OutlinedTextField(
                     value = contrasenaActual,
                     onValueChange = { contrasenaActual = it },
                     label = { Text("Contraseña actual", color = Color(0xFF424242)) },
                     textStyle = TextStyle(color = Color.Black),
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (mostrarActual) VisualTransformation.None else PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    trailingIcon = {
+                        val image = if (mostrarActual) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
+                        IconButton(onClick = { mostrarActual = !mostrarActual }) {
+                            Icon(imageVector = image, contentDescription = null, tint = Color.Gray)
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // 🧾 Nueva contraseña
                 OutlinedTextField(
                     value = nuevaContrasena,
                     onValueChange = { nuevaContrasena = it },
                     label = { Text("Nueva contraseña", color = Color(0xFF424242)) },
                     textStyle = TextStyle(color = Color.Black),
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (mostrarNueva) VisualTransformation.None else PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    trailingIcon = {
+                        val image = if (mostrarNueva) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
+                        IconButton(onClick = { mostrarNueva = !mostrarNueva }) {
+                            Icon(imageVector = image, contentDescription = null, tint = Color.Gray)
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(10.dp))
 
+                // 🧾 Confirmar nueva contraseña
                 OutlinedTextField(
                     value = confirmarContrasena,
                     onValueChange = { confirmarContrasena = it },
                     label = { Text("Confirmar nueva contraseña", color = Color(0xFF424242)) },
                     textStyle = TextStyle(color = Color.Black),
                     singleLine = true,
-                    visualTransformation = PasswordVisualTransformation(),
+                    visualTransformation = if (mostrarConfirmar) VisualTransformation.None else PasswordVisualTransformation(),
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(10.dp),
+                    trailingIcon = {
+                        val image = if (mostrarConfirmar) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
+                        IconButton(onClick = { mostrarConfirmar = !mostrarConfirmar }) {
+                            Icon(imageVector = image, contentDescription = null, tint = Color.Gray)
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(25.dp))

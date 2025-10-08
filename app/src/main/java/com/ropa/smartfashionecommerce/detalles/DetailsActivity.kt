@@ -10,7 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.ropa.smartfashionecommerce.R
 import android.content.Intent
-import com.ropa.smartfashionecommerce.HomeActivity
+import com.ropa.smartfashionecommerce.home.HomeActivity
 import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
 
 

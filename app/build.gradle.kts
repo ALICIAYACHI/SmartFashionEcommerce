@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.ropa.smartfashionecommerce"
-    compileSdk = 36 //
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.ropa.smartfashionecommerce"
@@ -61,16 +61,17 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation(libs.androidx.material3)
+
+    // ✅ Material 3 (última versión estable para evitar warnings)
+    implementation("androidx.compose.material3:material3:1.3.0")
+
     // ✅ MotionLayout (para animaciones y BottomSheet personalizados)
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-
 
     // ✅ UI adicionales
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
     implementation(libs.androidx.activity)
-
     implementation(libs.androidx.recyclerview)
 
     // ✅ Material Icons Extended
@@ -89,6 +90,9 @@ dependencies {
 
     // ✅ Navegación Compose
     implementation("androidx.navigation:navigation-compose:2.8.0")
+
+    // ✅ Gson para guardar y cargar el carrito
+    implementation("com.google.code.gson:gson:2.10.1")
 
     // ✅ Tests
     testImplementation(libs.junit)

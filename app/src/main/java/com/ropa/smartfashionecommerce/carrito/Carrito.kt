@@ -26,16 +26,18 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ropa.smartfashionecommerce.HomeActivity
 import com.ropa.smartfashionecommerce.R
+import com.ropa.smartfashionecommerce.home.HomeActivity
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
+// ----------------------- Carrito Activity -----------------------
 class Carrito : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        CartManager.initialize(this)
+
         setContent {
             SmartFashionEcommerceTheme {
                 ShoppingCartScreen(this)
@@ -44,23 +46,16 @@ class Carrito : ComponentActivity() {
     }
 }
 
+// ----------------------- Shopping Cart Screen -----------------------
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ShoppingCartScreen(activity: ComponentActivity? = null) {
     val context = LocalContext.current
-    var cartItems by remember {
-        mutableStateOf(
-            mutableListOf(
-                CartItem("Blusa Elegante Negra", "M", "Negro", 2, 89.90, R.drawable.modelo_ropa),
-                CartItem("Vestido Dorado Noche", "S", "Dorado", 1, 159.90, R.drawable.fondo2)
-            )
-        )
-    }
+    val cartItems by remember { mutableStateOf(CartManager.cartItems) }
 
-    // Calculamos totales
-    val subtotal = cartItems.sumOf { it.quantity * it.price }
-    val igv = subtotal * 0.18
-    val total = subtotal + igv
+    val subtotal = remember { derivedStateOf { CartManager.getTotal() } }
+    val igv = subtotal.value * 0.18
+    val total = subtotal.value + igv
 
     Scaffold(
         topBar = {
@@ -70,185 +65,122 @@ fun ShoppingCartScreen(activity: ComponentActivity? = null) {
                         "SmartFashion",
                         modifier = Modifier.fillMaxWidth(),
                         textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 24.sp,
+                        color = Color.Black
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = {
-                        // Volver al HomeActivity
                         val intent = Intent(context, HomeActivity::class.java)
                         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         context.startActivity(intent)
                     }) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Volver"
-                        )
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.Black)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFDFDFD))
             )
         },
         content = { paddingValues ->
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFFE3E2E2))
+                    .background(Color(0xFFECECEC))
                     .padding(paddingValues)
-                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .padding(16.dp)
             ) {
                 Text(
-                    text = "Carrito de compras",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 22.sp
-                    ),
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    "🛍️ Carrito de compras",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 26.sp,
+                    modifier = Modifier.padding(bottom = 16.dp),
+                    color = Color.Black
                 )
 
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    items(cartItems, key = { it.name }) { item ->
-                        CartItemCard(
-                            item = item,
-                            onIncrease = {
-                                item.quantity++
-                                cartItems = cartItems.toMutableList()
-                            },
-                            onDecrease = {
-                                if (item.quantity > 1) {
-                                    item.quantity--
-                                    cartItems = cartItems.toMutableList()
-                                }
-                            },
-                            onDelete = {
-                                cartItems.remove(item)
-                                cartItems = cartItems.toMutableList()
-                            }
-                        )
+                if (cartItems.isEmpty()) {
+                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text("Tu carrito está vacío", fontSize = 18.sp, color = Color.Gray)
                     }
-                }
-
-                OrderSummary(
-                    productCount = cartItems.size,
-                    subtotal = subtotal,
-                    igv = igv,
-                    total = total,
-                    onFinish = {
-                        if (activity != null) {
-                            AlertDialog.Builder(activity)
-                                .setTitle("Compra realizada")
-                                .setMessage("Tu pedido ha sido procesado exitosamente 🎉")
-                                .setPositiveButton("Aceptar") { dialog, _ ->
-                                    dialog.dismiss()
-                                }
-                                .show()
+                } else {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        items(cartItems, key = { it.name + it.size + it.color }) { item ->
+                            CartItemCard(
+                                item = item,
+                                onIncrease = { CartManager.updateQuantity(item, item.quantity + 1) },
+                                onDecrease = {
+                                    if (item.quantity > 1) CartManager.updateQuantity(item, item.quantity - 1)
+                                },
+                                onDelete = { CartManager.removeItem(item) }
+                            )
                         }
-                        cartItems = mutableListOf()
                     }
-                )
+
+                    OrderSummary(
+                        productCount = cartItems.size,
+                        subtotal = subtotal.value,
+                        igv = igv,
+                        total = total,
+                        onFinish = {
+                            if (activity != null) {
+                                AlertDialog.Builder(activity)
+                                    .setTitle("✅ Compra realizada")
+                                    .setMessage("Tu pedido ha sido procesado exitosamente 🎉")
+                                    .setPositiveButton("Aceptar") { dialog, _ -> dialog.dismiss() }
+                                    .show()
+                            }
+                            CartManager.clear()
+                        }
+                    )
+                }
             }
         }
     )
 }
 
+// ----------------------- Cart Item Card -----------------------
 @Composable
-fun CartItemCard(
-    item: CartItem,
-    onIncrease: () -> Unit,
-    onDecrease: () -> Unit,
-    onDelete: () -> Unit
-) {
+fun CartItemCard(item: CartItem, onIncrease: () -> Unit, onDecrease: () -> Unit, onDelete: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(
                 painter = painterResource(id = item.imageRes),
                 contentDescription = item.name,
                 modifier = Modifier
-                    .size(80.dp)
-                    .clip(RoundedCornerShape(10.dp)),
+                    .size(90.dp)
+                    .clip(RoundedCornerShape(12.dp)),
                 contentScale = ContentScale.Crop
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(14.dp))
 
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.name, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text("Talla: ${item.size} | Color: ${item.color}", fontSize = 13.sp, color = Color.Gray)
+                Text(item.name, fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+                Text("Talla: ${item.size} | Color: ${item.color}", fontSize = 14.sp, color = Color.DarkGray)
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Botón disminuir
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color.Black)
-                                .clickable { onDecrease() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("-", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        }
-
-                        Text(
-                            "${item.quantity}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            modifier = Modifier
-                                .widthIn(min = 24.dp)
-                                .padding(horizontal = 8.dp),
-                            textAlign = TextAlign.Center
-                        )
-
-                        // Botón aumentar
-                        Box(
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(Color.Black)
-                                .clickable { onIncrease() },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text("+", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                        }
+                        ControlButton("-", onClick = onDecrease)
+                        Text("${item.quantity}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black, modifier = Modifier.padding(horizontal = 8.dp))
+                        ControlButton("+", onClick = onIncrease)
                     }
 
-                    // Precio y eliminar
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(horizontalAlignment = Alignment.End) {
-                            Text(
-                                "S/ ${String.format("%.2f", item.quantity * item.price)}",
-                                color = Color(0xFF0099CC),
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                "S/ ${String.format("%.2f", item.price)}/u",
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
+                            Text("S/ ${"%.2f".format(item.quantity * item.price)}", color = Color(0xFF007ACC), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text("S/ ${"%.2f".format(item.price)}/u", fontSize = 12.sp, color = Color.Gray)
                         }
-
-                        IconButton(onClick = { onDelete() }) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Eliminar",
-                                tint = Color(0xFFD32F2F)
-                            )
+                        IconButton(onClick = onDelete) {
+                            Icon(Icons.Default.Delete, contentDescription = "Eliminar", tint = Color(0xFFD32F2F))
                         }
                     }
                 }
@@ -258,75 +190,59 @@ fun CartItemCard(
 }
 
 @Composable
-fun OrderSummary(
-    productCount: Int,
-    subtotal: Double,
-    igv: Double,
-    total: Double,
-    onFinish: () -> Unit
-) {
+fun ControlButton(symbol: String, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .background(Color(0xFF007ACC))
+            .clickable { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(symbol, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+    }
+}
+
+// ----------------------- Order Summary -----------------------
+@Composable
+fun OrderSummary(productCount: Int, subtotal: Double, igv: Double, total: Double, onFinish: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(4.dp)
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text("Resumen del pedido", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Spacer(modifier = Modifier.height(8.dp))
+        Column(modifier = Modifier.padding(18.dp)) {
+            Text("Resumen del pedido", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(10.dp))
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Subtotal ($productCount productos)")
-                Text("S/ ${String.format("%.2f", subtotal)}")
+                Text("Subtotal ($productCount productos)", color = Color.Black)
+                Text("S/ ${"%.2f".format(subtotal)}", color = Color.Black)
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("IGV (18%)")
-                Text("S/ ${String.format("%.2f", igv)}")
+                Text("IGV (18%)", color = Color.Black)
+                Text("S/ ${"%.2f".format(igv)}", color = Color.Black)
             }
 
-            Divider(modifier = Modifier.padding(vertical = 8.dp))
+            Divider(modifier = Modifier.padding(vertical = 10.dp), color = Color.Gray)
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Total", fontWeight = FontWeight.Bold)
-                Text(
-                    "S/ ${String.format("%.2f", total)}",
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF0099CC),
-                    fontSize = 18.sp
-                )
+                Text("Total", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+                Text("S/ ${"%.2f".format(total)}", fontWeight = FontWeight.ExtraBold, color = Color(0xFF007ACC), fontSize = 20.sp)
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { onFinish() },
+                onClick = onFinish,
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Black,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(10.dp)
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
+                shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Finalizar compra", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
         }
-    }
-}
-
-data class CartItem(
-    val name: String,
-    val size: String,
-    val color: String,
-    var quantity: Int,
-    val price: Double,
-    val imageRes: Int
-)
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-fun PreviewShoppingCartScreen() {
-    SmartFashionEcommerceTheme {
-        ShoppingCartScreen()
     }
 }

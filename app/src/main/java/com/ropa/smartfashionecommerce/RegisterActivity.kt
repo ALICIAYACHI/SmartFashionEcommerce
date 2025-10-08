@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.UserProfileChangeRequest
+import com.ropa.smartfashionecommerce.home.HomeActivity
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 class RegisterActivity : ComponentActivity() {
@@ -56,7 +57,7 @@ fun RegisterScreen() {
     Box(modifier = Modifier.fillMaxSize()) {
         // Fondo
         Image(
-            painter = painterResource(id = R.drawable.fondo2),
+            painter = painterResource(id = R.drawable.register),
             contentDescription = "Background",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()

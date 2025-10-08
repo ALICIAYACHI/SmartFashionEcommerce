@@ -9,10 +9,10 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.ropa.smartfashionecommerce.HomeActivity
 import com.ropa.smartfashionecommerce.R
 import com.ropa.smartfashionecommerce.carrito.Carrito
-import com.ropa.smartfashionecommerce.FavActivity
+import com.ropa.smartfashionecommerce.home.HomeActivity
+import com.ropa.smartfashionecommerce.home.FavActivity
 import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -29,27 +29,24 @@ class CatalogActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_catalog)
 
-        // 📌 Aquí obtenemos la categoría del Intent
         val category = intent.getStringExtra("CATEGORY") ?: "Hombres"
 
-        // 📌 Creamos la lista de productos según la categoría
         val dummyList = when (category) {
             "Hombres" -> listOf(
-                Product("Camisa Hombre", "S/120", R.drawable.fondo),
-                Product("Pantalón Hombre", "S/150", R.drawable.fondo),
-                Product("Zapatos Hombre", "S/200", R.drawable.fondo),
-                Product("Camisa Hombre", "S/120", R.drawable.fondo),
-                Product("Camisa Hombre", "S/120", R.drawable.fondo),
-                Product("Camisa Hombre", "S/120", R.drawable.fondo)
+                Product("Camisa Hombre", "S/120", R.drawable.hombres),
+                Product("Pantalón Hombre", "S/150", R.drawable.hombres),
+                Product("Zapatos Hombre", "S/200", R.drawable.hombres),
+                Product("Camisa Hombre", "S/120", R.drawable.hombres),
+                Product("Camisa Hombre", "S/120", R.drawable.hombres),
+                Product("Camisa Hombre", "S/120", R.drawable.hombres)
             )
             "Mujeres" -> listOf(
-                Product("Blusa Mujer", "S/130", R.drawable.fondo2),
-                Product("Falda Mujer", "S/160", R.drawable.fondo2),
-                Product("Tacones Mujer", "S/220", R.drawable.fondo2),
-                Product("Camisa Hombre", "S/120", R.drawable.fondo2),
-                Product("Camisa Hombre", "S/120", R.drawable.fondo2),
-                Product("Camisa Hombre", "S/120", R.drawable.fondo2)
-
+                Product("Blusa Mujer", "S/130", R.drawable.mujeres),
+                Product("Falda Mujer", "S/160", R.drawable.mujeres),
+                Product("Tacones Mujer", "S/220", R.drawable.mujeres),
+                Product("Camisa Hombre", "S/120", R.drawable.mujeres),
+                Product("Camisa Hombre", "S/120", R.drawable.mujeres),
+                Product("Camisa Hombre", "S/120", R.drawable.mujeres)
             )
             "Niños" -> listOf(
                 Product("Camiseta Niño", "S/80", R.drawable.nino),
@@ -62,26 +59,18 @@ class CatalogActivity : AppCompatActivity() {
             else -> emptyList()
         }
 
-
-        // RecyclerView con Grid
         val recyclerView = findViewById<RecyclerView>(R.id.products_recycler_view)
         recyclerView.layoutManager = GridLayoutManager(this, 2)
-
         recyclerView.adapter = ViewHolderAdapter(this, dummyList)
 
-        // Botón de filtro (el CardView que contiene el icono)
         val filterButton = findViewById<androidx.cardview.widget.CardView>(R.id.filter_card)
-        filterButton.setOnClickListener {
-            showFilterBottomSheet()
-        }
+        filterButton.setOnClickListener { showFilterBottomSheet() }
 
-        // FAB para ir a MiPerfil
         val btnPerfil = findViewById<FloatingActionButton>(R.id.btn_perfil)
         btnPerfil.setOnClickListener {
             startActivity(Intent(this, MiPerfilActivity::class.java))
         }
 
-        // Bottom Navigation en Compose
         val composeView = findViewById<ComposeView>(R.id.bottom_navigation_compose)
         composeView.setContent {
             var selectedTab by remember { mutableStateOf("Catalog") }
@@ -103,7 +92,9 @@ class CatalogActivity : AppCompatActivity() {
                     selected = selectedTab == "Cart",
                     onClick = {
                         selectedTab = "Cart"
-                        startActivity(Intent(this@CatalogActivity, Carrito::class.java))
+                        val intent = Intent(this@CatalogActivity, Carrito::class.java)
+                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                        startActivity(intent)
                     },
                     icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Cart") },
                     label = { Text("Cart") }
@@ -130,7 +121,6 @@ class CatalogActivity : AppCompatActivity() {
         }
     }
 
-    // 🌟 Ventana inferior de filtro elegante
     private fun showFilterBottomSheet() {
         val dialog = BottomSheetDialog(this)
         val view = layoutInflater.inflate(R.layout.bottomsheet_filter, null)
@@ -140,15 +130,13 @@ class CatalogActivity : AppCompatActivity() {
         val btnMujeres = view.findViewById<MaterialButton>(R.id.btnMujeres)
         val btnNinos = view.findViewById<MaterialButton>(R.id.btnNinos)
 
-        // Al tocar cada botón, abrimos el CatalogActivity con la categoría elegida
         btnHombres.setOnClickListener {
             dialog.dismiss()
             val intent = Intent(this, CatalogActivity::class.java)
             intent.putExtra("CATEGORY", "Hombres")
             startActivity(intent)
-            finish() // opcional: para cerrar la anterior y evitar duplicados
+            finish()
         }
-
         btnMujeres.setOnClickListener {
             dialog.dismiss()
             val intent = Intent(this, CatalogActivity::class.java)
@@ -156,7 +144,6 @@ class CatalogActivity : AppCompatActivity() {
             startActivity(intent)
             finish()
         }
-
         btnNinos.setOnClickListener {
             dialog.dismiss()
             val intent = Intent(this, CatalogActivity::class.java)
@@ -167,5 +154,4 @@ class CatalogActivity : AppCompatActivity() {
 
         dialog.show()
     }
-
 }

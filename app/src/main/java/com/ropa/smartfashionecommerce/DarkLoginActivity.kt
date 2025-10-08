@@ -36,6 +36,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.android.gms.auth.api.identity.BeginSignInRequest
 import com.google.android.gms.auth.api.identity.Identity
+import com.ropa.smartfashionecommerce.home.HomeActivity
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 class DarkLoginActivity : ComponentActivity() {
@@ -193,7 +194,7 @@ fun DarkLoginScreen(
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
-            painter = painterResource(id = R.drawable.fondo),
+            painter = painterResource(id = R.drawable.login),
             contentDescription = "Fondo",
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()
