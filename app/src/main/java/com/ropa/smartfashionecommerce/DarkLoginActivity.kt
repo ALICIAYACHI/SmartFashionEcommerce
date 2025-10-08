@@ -1,5 +1,6 @@
 package com.ropa.smartfashionecommerce
 
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -22,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -168,9 +170,26 @@ fun DarkLoginScreen(
     onGoogleLogin: () -> Unit,
     onCreateAccount: () -> Unit
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val sharedPreferences = context.getSharedPreferences("SmartFashionPrefs", Context.MODE_PRIVATE)
+
+    var email by remember { mutableStateOf(sharedPreferences.getString("email", "") ?: "") }
+    var password by remember { mutableStateOf(sharedPreferences.getString("password", "") ?: "") }
+    var rememberMe by remember { mutableStateOf(sharedPreferences.getBoolean("rememberMe", false)) }
     var passwordVisible by remember { mutableStateOf(false) }
+
+    fun saveLoginData() {
+        with(sharedPreferences.edit()) {
+            if (rememberMe) {
+                putString("email", email)
+                putString("password", password)
+                putBoolean("rememberMe", true)
+            } else {
+                clear()
+            }
+            apply()
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Image(
@@ -209,11 +228,12 @@ fun DarkLoginScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Campo de correo
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
                 leadingIcon = { Icon(Icons.Filled.Email, contentDescription = null, tint = Color.White) },
-                placeholder = { Text("Correo electrónico", color = Color.LightGray) },
+                placeholder = { Text("Ingrese su correo electrónico", color = Color.LightGray) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -227,6 +247,7 @@ fun DarkLoginScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Campo de contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -253,30 +274,58 @@ fun DarkLoginScreen(
                 )
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // 🔹 Fila Recordarme + Olvidó contraseña
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = rememberMe,
+                        onCheckedChange = { rememberMe = it },
+                        colors = CheckboxDefaults.colors(checkedColor = Color.White, uncheckedColor = Color.White)
+                    )
+                    Text("¡Recordarme!", color = Color.White, fontSize = 14.sp)
+                }
+
+                Text(
+                    text = "¿Olvidó su contraseña?",
+                    color = Color(0xFFFFC107),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable { onForgotPassword() }
+                )
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
 
             Button(
-                onClick = { onEmailLogin(email.trim(), password.trim()) },
+                onClick = {
+                    saveLoginData()
+                    onEmailLogin(email.trim(), password.trim())
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.White, contentColor = Color.Black),
                 shape = RoundedCornerShape(4.dp)
             ) {
-                Text("Iniciar Sesión", fontWeight = FontWeight.Bold)
+                Text("INICIAR SESIÓN", fontWeight = FontWeight.Bold)
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "¿Olvidaste tu contraseña?",
-                color = Color.White,
+                text = "O inicia sesión con",
+                color = Color.LightGray,
                 fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.clickable { onForgotPassword() }
+                modifier = Modifier.padding(vertical = 8.dp)
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = { onGoogleLogin() },
@@ -292,7 +341,7 @@ fun DarkLoginScreen(
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Continuar con Google", fontWeight = FontWeight.Bold)
+                Text("Iniciar Sesión con Google", fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -300,7 +349,7 @@ fun DarkLoginScreen(
             Row {
                 Text("¿Aún no tienes cuenta? ", color = Color.LightGray, fontSize = 14.sp)
                 Text(
-                    "Crear Cuenta",
+                    "Crear cuenta",
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,

@@ -29,7 +29,7 @@
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
-        <!-- 🧍 Registro de usuario -->
+        <!-- 👤 Registro de usuario -->
         <activity
             android:name=".RegisterActivity"
             android:exported="true" />
@@ -59,6 +59,12 @@
         <!-- 👤 Mi perfil -->
         <activity
             android:name=".miperfil.MiPerfilActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <!-- 📦 Direcciones de Envío -->
+        <activity
+            android:name=".miperfil.DireccionesEnvioActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
