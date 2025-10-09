@@ -51,7 +51,7 @@ class Carrito : ComponentActivity() {
 @Composable
 fun ShoppingCartScreen(activity: ComponentActivity? = null) {
     val context = LocalContext.current
-    val cartItems by remember { mutableStateOf(CartManager.cartItems) }
+    val cartItems by remember { derivedStateOf { CartManager.cartItems } }
 
     val subtotal = remember { derivedStateOf { CartManager.getTotal() } }
     val igv = subtotal.value * 0.18

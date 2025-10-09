@@ -76,7 +76,6 @@ fun FashionHomeScreen(activity: ComponentActivity) {
     Scaffold(
         bottomBar = {
             NavigationBar(containerColor = Color.White, tonalElevation = 4.dp) {
-                // 🏠 HOME
                 NavigationBarItem(
                     selected = selectedTab == "Home",
                     onClick = { selectedTab = "Home" },
@@ -84,7 +83,6 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                     label = { Text("Home", color = Color(0xFF212121)) }
                 )
 
-                // 🛒 CARRITO ✅ FUNCIONA
                 NavigationBarItem(
                     selected = selectedTab == "Cart",
                     onClick = {
@@ -96,7 +94,6 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                     label = { Text("Carrito", color = Color(0xFF212121)) }
                 )
 
-                // ❤️ FAVORITOS
                 NavigationBarItem(
                     selected = selectedTab == "Favorites",
                     onClick = {
@@ -108,7 +105,6 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                     label = { Text("Favoritos", color = Color(0xFF212121)) }
                 )
 
-                // 👤 PERFIL
                 NavigationBarItem(
                     selected = selectedTab == "Profile",
                     onClick = {
@@ -128,7 +124,6 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                 .padding(paddingValues)
                 .background(Color.White)
         ) {
-            // 🔹 Banner principal
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,18 +147,9 @@ fun FashionHomeScreen(activity: ComponentActivity) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-
-            // 🔹 Categorías
-            Text(
-                text = "Categorías",
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Color(0xFF212121),
-                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
-            )
+            Text("Categorías", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF212121), modifier = Modifier.padding(start = 16.dp, bottom = 8.dp))
 
             val categories = listOf("ZARA", "VOGUE", "CHANEL", "RALPH")
-
             LazyRow(modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)) {
                 items(categories) { category ->
                     Box(
@@ -183,14 +169,7 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                 }
             }
 
-            // 🔹 Productos
-            Text(
-                text = "Productos",
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp,
-                color = Color(0xFF212121),
-                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
-            )
+            Text("Productos", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF212121), modifier = Modifier.padding(start = 16.dp, bottom = 8.dp))
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -266,6 +245,7 @@ fun ProductCard(product: Product) {
                             context.startActivity(intent)
                         }
 
+                        // ✅ Agregar al carrito funcionando completamente
                         MenuItem(Icons.Default.ShoppingCart, "Agregar al carrito") {
                             showMenu = false
                             val item = CartItem(
@@ -277,6 +257,7 @@ fun ProductCard(product: Product) {
                                 imageRes = product.image
                             )
                             CartManager.addItem(item)
+                            CartManager.saveCart(context) // 🔥 Guarda el carrito
                             Toast.makeText(context, "Agregado al carrito 🛍️", Toast.LENGTH_SHORT).show()
                         }
 
