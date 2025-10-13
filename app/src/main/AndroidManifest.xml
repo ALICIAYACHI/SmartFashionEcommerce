@@ -13,9 +13,9 @@
         android:theme="@style/Theme.SmartFashionEcommerce"
         tools:targetApi="31">
 
-        <!-- 🟢 Login principal -->
+        <!-- 🟢 Pantalla Principal (Inicio de la App) -->
         <activity
-            android:name=".DarkLoginActivity"
+            android:name=".PantallaPrincipalActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -23,23 +23,28 @@
             </intent-filter>
         </activity>
 
-        <!-- 🏠 Pantalla principal tras login -->
+        <!-- 🔑 Login -->
         <activity
-            android:name=".home.HomeActivity"
-            android:exported="true"
-            android:theme="@style/Theme.SmartFashionEcommerce" />
+            android:name=".DarkLoginActivity"
+            android:exported="true" />
 
         <!-- 👤 Registro de usuario -->
         <activity
             android:name=".RegisterActivity"
             android:exported="true" />
 
+        <!-- 🏠 Pantalla principal tras login -->
+        <activity
+            android:name=".home.HomeActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
         <!-- 🔑 Recuperar contraseña -->
         <activity
             android:name=".RecoverPasswordActivity"
             android:exported="true" />
 
-        <!-- 📧 Email enviado (confirmación de recuperación) -->
+        <!-- 📧 Email enviado -->
         <activity
             android:name=".EmailSentActivity"
             android:exported="true" />
@@ -50,13 +55,7 @@
             android:exported="true"
             android:theme="@style/Theme.Catalog" />
 
-        <!-- 🔍 Detalles antiguos del producto -->
-        <activity
-            android:name=".detalles.DetailsActivity"
-            android:exported="true"
-            android:theme="@style/Theme.SmartFashionEcommerce" />
-
-        <!-- 🆕 Nuevo detalle de producto -->
+        <!-- 🔍 Detalle de producto -->
         <activity
             android:name=".detalles.ProductDetailActivity"
             android:exported="true"
@@ -68,7 +67,7 @@
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
-        <!-- 📦 Direcciones de Envío -->
+        <!-- 📦 Direcciones -->
         <activity
             android:name=".miperfil.DireccionesEnvioActivity"
             android:exported="true"
@@ -94,13 +93,12 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
                 <data
                     android:scheme="https"
                     android:host="smartfashionecommerce.firebaseapp.com"
                     android:pathPrefix="/__/auth/action" />
             </intent-filter>
         </activity>
-
     </application>
+
 </manifest>
