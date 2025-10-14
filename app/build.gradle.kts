@@ -9,7 +9,7 @@ plugins {
 
 android {
     namespace = "com.ropa.smartfashionecommerce"
-    compileSdk = 36
+    compileSdk = 36 // ✅ Mantengo tu valor
 
     defaultConfig {
         applicationId = "com.ropa.smartfashionecommerce"
@@ -43,8 +43,9 @@ android {
         compose = true
     }
 
+    // ✅ Versión actualizada del compilador de Compose
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.3"
+        kotlinCompilerExtensionVersion = "1.5.15"
     }
 
     packaging {
@@ -53,17 +54,23 @@ android {
 }
 
 dependencies {
+    // ✅ Compose BOM (controla versiones compatibles entre sí)
+    implementation(platform("androidx.compose:compose-bom:2025.01.00"))
+
     // ✅ Core AndroidX y Compose
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.ui)
-    implementation(libs.androidx.ui.graphics)
-    implementation(libs.androidx.ui.tooling.preview)
 
-    // ✅ Material 3 (última versión estable para evitar warnings)
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.ui:ui-graphics")
+
+    // ✅ Material 3 (última estable compatible)
     implementation("androidx.compose.material3:material3:1.3.0")
+
+    // ✅ Material Icons Extended
+    implementation("androidx.compose.material:material-icons-extended")
 
     // ✅ MotionLayout (para animaciones y BottomSheet personalizados)
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
@@ -73,9 +80,6 @@ dependencies {
     implementation(libs.material)
     implementation(libs.androidx.activity)
     implementation(libs.androidx.recyclerview)
-
-    // ✅ Material Icons Extended
-    implementation("androidx.compose.material:material-icons-extended:1.7.3")
 
     // ✅ COIL para imágenes
     implementation("io.coil-kt:coil-compose:2.4.0")
@@ -98,8 +102,11 @@ dependencies {
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    androidTestImplementation(libs.androidx.ui.test.junit4)
-    debugImplementation(libs.androidx.ui.tooling)
-    debugImplementation(libs.androidx.ui.test.manifest)
+    androidTestImplementation(platform("androidx.compose:compose-bom:2025.01.00"))
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+
+    // ✅ Debug — corregido para que encuentre correctamente el test manifest
+    debugImplementation(platform("androidx.compose:compose-bom:2025.01.00"))
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest") // 👈 corregido nombre correcto
 }

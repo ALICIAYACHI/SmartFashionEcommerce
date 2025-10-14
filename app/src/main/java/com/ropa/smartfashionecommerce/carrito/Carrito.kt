@@ -7,6 +7,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -76,7 +78,11 @@ fun ShoppingCartScreen(activity: ComponentActivity? = null) {
                         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
                         context.startActivity(intent)
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver", tint = Color.Black)
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = Color.Black
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFFFDFDFD))
@@ -170,13 +176,24 @@ fun CartItemCard(item: CartItem, onIncrease: () -> Unit, onDecrease: () -> Unit,
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         ControlButton("-", onClick = onDecrease)
-                        Text("${item.quantity}", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color.Black, modifier = Modifier.padding(horizontal = 8.dp))
+                        Text(
+                            "${item.quantity}",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = Color.Black,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
                         ControlButton("+", onClick = onIncrease)
                     }
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("S/ ${"%.2f".format(item.quantity * item.price)}", color = Color(0xFF007ACC), fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                            Text(
+                                "S/ ${"%.2f".format(item.quantity * item.price)}",
+                                color = Color(0xFF007ACC),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
                             Text("S/ ${"%.2f".format(item.price)}/u", fontSize = 12.sp, color = Color.Gray)
                         }
                         IconButton(onClick = onDelete) {
@@ -206,6 +223,8 @@ fun ControlButton(symbol: String, onClick: () -> Unit) {
 // ----------------------- Order Summary -----------------------
 @Composable
 fun OrderSummary(productCount: Int, subtotal: Double, igv: Double, total: Double, onFinish: () -> Unit) {
+    val context = LocalContext.current
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -230,19 +249,57 @@ fun OrderSummary(productCount: Int, subtotal: Double, igv: Double, total: Double
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text("Total", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
-                Text("S/ ${"%.2f".format(total)}", fontWeight = FontWeight.ExtraBold, color = Color(0xFF007ACC), fontSize = 20.sp)
+                Text(
+                    "S/ ${"%.2f".format(total)}",
+                    fontWeight = FontWeight.ExtraBold,
+                    color = Color(0xFF007ACC),
+                    fontSize = 20.sp
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // ✅ Botón de Finalizar compra
             Button(
-                onClick = onFinish,
+                onClick = {
+                    val intent = Intent(context, FinalizarCompra::class.java)
+                    context.startActivity(intent)
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Black, contentColor = Color.White),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text("Finalizar compra", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
+
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // ✅ Nuevo botón: Continuar comprando
+            OutlinedButton(
+                onClick = {
+                    val intent = Intent(context, HomeActivity::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                border = BorderStroke(1.dp, Color.Black),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = Color.Transparent,
+                    contentColor = Color.Black
+                )
+            ) {
+                Text("Continuar comprando", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                "Compra 100% segura. Tus datos están protegidos.",
+                color = Color.Gray,
+                fontSize = 13.sp,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
         }
     }
 }

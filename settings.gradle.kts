@@ -16,7 +16,8 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    // ✅ Permite repositorios en los módulos (corrige tu error)
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
         google()        // ✅ Siempre primero
         mavenCentral()  // ✅ Repositorio central

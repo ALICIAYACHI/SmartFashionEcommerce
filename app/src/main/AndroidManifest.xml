@@ -85,6 +85,13 @@
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
+        <!-- 💳 Finalizar compra -->
+        <activity
+            android:name=".carrito.FinalizarCompra"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+
         <!-- ✅ App Links para Firebase Auth -->
         <activity
             android:name=".LinkHandlerActivity"
@@ -99,6 +106,7 @@
                     android:pathPrefix="/__/auth/action" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>
