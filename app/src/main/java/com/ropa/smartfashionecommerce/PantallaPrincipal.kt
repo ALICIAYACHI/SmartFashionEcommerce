@@ -123,7 +123,6 @@ fun PantallaPrincipal(
 
                         Spacer(modifier = Modifier.height(18.dp))
 
-                        // ✅ Llama a las funciones recibidas desde la Activity
                         Button(
                             onClick = onLoginClick,
                             colors = ButtonDefaults.buttonColors(

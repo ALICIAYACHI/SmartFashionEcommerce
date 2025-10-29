@@ -9,6 +9,7 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -33,10 +35,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
-import androidx.compose.ui.tooling.preview.Preview
 import com.ropa.smartfashionecommerce.R
 import com.ropa.smartfashionecommerce.carrito.Carrito
-import com.ropa.smartfashionecommerce.carrito.CartItem
 import com.ropa.smartfashionecommerce.carrito.CartManager
 import com.ropa.smartfashionecommerce.catalog.CatalogActivity
 import com.ropa.smartfashionecommerce.detalles.ProductDetailActivity
@@ -59,7 +59,9 @@ val productList = listOf(
 class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        CartManager.initialize(this) // ✅ Inicializamos el carrito aquí
+        CartManager.initialize(this)
+        FavoritesManager.initialize(this)
+
         setContent {
             SmartFashionEcommerceTheme {
                 FashionHomeScreen(activity = this)
@@ -82,35 +84,29 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                     icon = { Icon(Icons.Default.Home, contentDescription = "Home", tint = Color(0xFF212121)) },
                     label = { Text("Home", color = Color(0xFF212121)) }
                 )
-
                 NavigationBarItem(
                     selected = selectedTab == "Cart",
                     onClick = {
                         selectedTab = "Cart"
-                        val intent = Intent(activity, Carrito::class.java)
-                        activity.startActivity(intent)
+                        activity.startActivity(Intent(activity, Carrito::class.java))
                     },
                     icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = Color(0xFF212121)) },
                     label = { Text("Carrito", color = Color(0xFF212121)) }
                 )
-
                 NavigationBarItem(
                     selected = selectedTab == "Favorites",
                     onClick = {
                         selectedTab = "Favorites"
-                        val intent = Intent(activity, FavActivity::class.java)
-                        activity.startActivity(intent)
+                        activity.startActivity(Intent(activity, FavActivity::class.java))
                     },
                     icon = { Icon(Icons.Default.Favorite, contentDescription = "Favoritos", tint = Color(0xFF212121)) },
                     label = { Text("Favoritos", color = Color(0xFF212121)) }
                 )
-
                 NavigationBarItem(
                     selected = selectedTab == "Profile",
                     onClick = {
                         selectedTab = "Profile"
-                        val intent = Intent(activity, MiPerfilActivity::class.java)
-                        activity.startActivity(intent)
+                        activity.startActivity(Intent(activity, MiPerfilActivity::class.java))
                     },
                     icon = { Icon(Icons.Default.Person, contentDescription = "Perfil", tint = Color(0xFF212121)) },
                     label = { Text("Perfil", color = Color(0xFF212121)) }
@@ -124,6 +120,7 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                 .padding(paddingValues)
                 .background(Color.White)
         ) {
+            // Header principal
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -147,7 +144,15 @@ fun FashionHomeScreen(activity: ComponentActivity) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Categorías", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF212121), modifier = Modifier.padding(start = 16.dp, bottom = 8.dp))
+
+            // Categorías
+            Text(
+                "Categorías",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Color(0xFF212121),
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+            )
 
             val categories = listOf("ZARA", "VOGUE", "CHANEL", "RALPH")
             LazyRow(modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)) {
@@ -169,7 +174,14 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                 }
             }
 
-            Text("Productos", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF212121), modifier = Modifier.padding(start = 16.dp, bottom = 8.dp))
+            // Productos
+            Text(
+                "Productos",
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp,
+                color = Color(0xFF212121),
+                modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
+            )
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(2),
@@ -206,11 +218,50 @@ fun ProductCard(product: Product) {
                     .height(180.dp)
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable { showMenu = true }
+                    .pointerInput(Unit) {
+                        detectTapGestures(
+                            onLongPress = { showMenu = true },
+                            onTap = {
+                                val intent = Intent(context, ProductDetailActivity::class.java).apply {
+                                    putExtra("productName", product.name)
+                                    putExtra("productPrice", product.price.replace("S/", "").trim().toDouble())
+                                    putExtra("productImage", product.image)
+                                }
+                                context.startActivity(intent)
+                            }
+                        )
+                    }
             )
+
             Spacer(modifier = Modifier.height(8.dp))
+
             Text(product.name, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF212121))
-            Text(product.price, color = Color(0xFF424242), fontSize = 13.sp)
+
+            // 💰 Precio + carrito
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(product.price, color = Color(0xFF424242), fontSize = 13.sp)
+                IconButton(
+                    onClick = {
+                        val intent = Intent(context, ProductDetailActivity::class.java).apply {
+                            putExtra("productName", product.name)
+                            putExtra("productPrice", product.price.replace("S/", "").trim().toDouble())
+                            putExtra("productImage", product.image)
+                        }
+                        context.startActivity(intent)
+                    },
+                    modifier = Modifier.size(22.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.ShoppingCart,
+                        contentDescription = "Ir a detalles",
+                        tint = Color(0xFF505050)
+                    )
+                }
+            }
         }
 
         if (showMenu) {
@@ -226,39 +277,12 @@ fun ProductCard(product: Product) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         MenuItem(Icons.Default.Visibility, "Ver detalles") {
                             showMenu = false
-                            val description = when (product.name) {
-                                "Blusa Elegante Negra" -> "Blusa elegante de corte moderno, perfecta para ocasiones especiales."
-                                "Vestido Dorado Noche" -> "Vestido de gala color dorado, ideal para eventos de noche con brillo y glamour."
-                                "Casaca Moderna" -> "Casaca moderna de estilo urbano, perfecta para outfits casuales."
-                                "Pantalón Beige" -> "Pantalón beige elegante y cómodo, ideal para un look casual o formal."
-                                "Camisa Blanca" -> "Camisa blanca clásica, básica y versátil para cualquier ocasión."
-                                "Vestido Floral" -> "Vestido floral fresco y colorido, ideal para días soleados."
-                                else -> "Producto de moda de alta calidad disponible en nuestra tienda."
-                            }
-
                             val intent = Intent(context, ProductDetailActivity::class.java).apply {
                                 putExtra("productName", product.name)
                                 putExtra("productPrice", product.price.replace("S/", "").trim().toDouble())
-                                putExtra("productDescription", description)
                                 putExtra("productImage", product.image)
                             }
                             context.startActivity(intent)
-                        }
-
-                        // ✅ Agregar al carrito funcionando completamente
-                        MenuItem(Icons.Default.ShoppingCart, "Agregar al carrito") {
-                            showMenu = false
-                            val item = CartItem(
-                                name = product.name,
-                                size = "M",
-                                color = "Negro",
-                                quantity = 1,
-                                price = product.price.replace("S/", "").trim().toDoubleOrNull() ?: 0.0,
-                                imageRes = product.image
-                            )
-                            CartManager.addItem(item)
-                            CartManager.saveCart(context) // 🔥 Guarda el carrito
-                            Toast.makeText(context, "Agregado al carrito 🛍️", Toast.LENGTH_SHORT).show()
                         }
 
                         MenuItem(Icons.Default.Favorite, "Agregar a favoritos") {
@@ -270,18 +294,8 @@ fun ProductCard(product: Product) {
                                 sizes = listOf("S", "M", "L"),
                                 imageRes = product.image
                             )
-                            FavoritesManager.addFavorite(favoriteItem)
+                            FavoritesManager.addFavorite(context, favoriteItem)
                             Toast.makeText(context, "Agregado a favoritos ❤️", Toast.LENGTH_SHORT).show()
-                        }
-
-                        MenuItem(Icons.Default.Share, "Compartir producto") {
-                            showMenu = false
-                            val shareIntent = Intent().apply {
-                                action = Intent.ACTION_SEND
-                                putExtra(Intent.EXTRA_TEXT, "${product.name} - ${product.price}")
-                                type = "text/plain"
-                            }
-                            context.startActivity(Intent.createChooser(shareIntent, "Compartir con"))
                         }
 
                         MenuItem(Icons.AutoMirrored.Filled.Chat, "Consultar por WhatsApp") {
@@ -314,13 +328,5 @@ fun MenuItem(icon: ImageVector, text: String, onClick: () -> Unit) {
         Icon(icon, contentDescription = text, tint = Color(0xFF212121), modifier = Modifier.size(20.dp))
         Spacer(modifier = Modifier.width(8.dp))
         Text(text, color = Color(0xFF212121), fontSize = 15.sp)
-    }
-}
-
-@Preview(showSystemUi = true)
-@Composable
-fun HomePreview() {
-    SmartFashionEcommerceTheme {
-        FashionHomeScreen(activity = ComponentActivity())
     }
 }

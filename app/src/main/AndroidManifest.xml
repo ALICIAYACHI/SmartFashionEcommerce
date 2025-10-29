@@ -2,6 +2,18 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- 🟢 Permisos necesarios para cámara y lectura de imágenes -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="false" />
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission
+        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="29" />
+
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -13,7 +25,7 @@
         android:theme="@style/Theme.SmartFashionEcommerce"
         tools:targetApi="31">
 
-        <!-- 🟢 Pantalla Principal (Inicio de la App) -->
+        <!-- 🟢 Pantalla Principal -->
         <activity
             android:name=".PantallaPrincipalActivity"
             android:exported="true">
@@ -24,30 +36,22 @@
         </activity>
 
         <!-- 🔑 Login -->
-        <activity
-            android:name=".DarkLoginActivity"
-            android:exported="true" />
+        <activity android:name=".DarkLoginActivity" android:exported="true" />
 
-        <!-- 👤 Registro de usuario -->
-        <activity
-            android:name=".RegisterActivity"
-            android:exported="true" />
+        <!-- 👤 Registro -->
+        <activity android:name=".RegisterActivity" android:exported="true" />
 
-        <!-- 🏠 Pantalla principal tras login -->
+        <!-- 🏠 Home -->
         <activity
             android:name=".home.HomeActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
         <!-- 🔑 Recuperar contraseña -->
-        <activity
-            android:name=".RecoverPasswordActivity"
-            android:exported="true" />
+        <activity android:name=".RecoverPasswordActivity" android:exported="true" />
 
         <!-- 📧 Email enviado -->
-        <activity
-            android:name=".EmailSentActivity"
-            android:exported="true" />
+        <activity android:name=".EmailSentActivity" android:exported="true" />
 
         <!-- 🛍️ Catálogo -->
         <activity
@@ -65,6 +69,12 @@
         <activity
             android:name=".miperfil.MiPerfilActivity"
             android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <!-- ✏️ Editar perfil -->
+        <activity
+            android:name=".miperfil.EditarPerfilActivity"
+            android:exported="false"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
         <!-- 📦 Direcciones -->
@@ -91,8 +101,7 @@
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
-
-        <!-- ✅ App Links para Firebase Auth -->
+        <!-- ✅ Firebase Auth App Links -->
         <activity
             android:name=".LinkHandlerActivity"
             android:exported="true">
@@ -106,6 +115,17 @@
                     android:pathPrefix="/__/auth/action" />
             </intent-filter>
         </activity>
+
+        <!-- 📸 FileProvider para cámara (solo si guardas fotos) -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.provider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 

@@ -1,6 +1,8 @@
 package com.ropa.smartfashionecommerce.detalles
 
+import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -22,6 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.rememberAsyncImagePainter
 import com.ropa.smartfashionecommerce.R
 import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartItem
@@ -52,6 +55,17 @@ fun ProductDetailScreen() {
     var expanded by remember { mutableStateOf(false) }
     val categorias = listOf("ZARA", "VOGUE", "CHANEL", "RALPH")
 
+    // ✅ Cargar imagen de perfil guardada (reactiva)
+    val sharedPref = context.getSharedPreferences("MiPerfil", Context.MODE_PRIVATE)
+    var profileImageUri by remember {
+        mutableStateOf(sharedPref.getString("profile_image_uri", null))
+    }
+
+    // 🔄 Si se vuelve del perfil, recarga la imagen
+    LaunchedEffect(Unit) {
+        profileImageUri = sharedPref.getString("profile_image_uri", null)
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -61,7 +75,7 @@ fun ProductDetailScreen() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 🖋️ SMARTFASHION → Ir al Home
+                        // 🖋️ Logo SMARTFASHION
                         Text(
                             text = "SMARTFASHION",
                             fontWeight = FontWeight.Bold,
@@ -73,13 +87,12 @@ fun ProductDetailScreen() {
                             }
                         )
 
-                        // 🧭 Menú Categorías
+                        // 🔽 Menú Categorías
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             TextButton(onClick = { expanded = true }) {
                                 Text("Categorías ▼", color = Color.Black)
                             }
 
-                            // 🔹 Aquí se agregó el Intent hacia CatalogActivity
                             DropdownMenu(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false },
@@ -90,7 +103,6 @@ fun ProductDetailScreen() {
                                         text = { Text(categoria) },
                                         onClick = {
                                             expanded = false
-                                            // ✅ Abre el catálogo con la categoría seleccionada
                                             val intent = Intent(
                                                 context,
                                                 com.ropa.smartfashionecommerce.catalog.CatalogActivity::class.java
@@ -103,7 +115,7 @@ fun ProductDetailScreen() {
                             }
                         }
 
-                        // ❤️ 🛒 👤 Botones de acción
+                        // ❤️ 🛒 👤 Acciones
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             IconButton(onClick = {
                                 context.startActivity(Intent(context, FavActivity::class.java))
@@ -125,10 +137,27 @@ fun ProductDetailScreen() {
                                 )
                             }
 
+                            // 👤 Foto de perfil (o ícono por defecto)
                             IconButton(onClick = {
                                 context.startActivity(Intent(context, MiPerfilActivity::class.java))
                             }) {
-                                Icon(Icons.Default.Person, contentDescription = "Perfil", tint = Color.Black)
+                                if (profileImageUri != null) {
+                                    Image(
+                                        painter = rememberAsyncImagePainter(Uri.parse(profileImageUri)),
+                                        contentDescription = "Foto de perfil",
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .clip(CircleShape)
+                                            .border(1.dp, Color.Gray, CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    Icon(
+                                        Icons.Default.Person,
+                                        contentDescription = "Perfil",
+                                        tint = Color.Black
+                                    )
+                                }
                             }
                         }
                     }
@@ -153,21 +182,17 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
     var quantity by remember { mutableIntStateOf(1) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-
     val context = LocalContext.current
     val activity = context as? ProductDetailActivity
     val intent = activity?.intent
 
-    // ✅ Obtener datos del Intent (si no hay, usar valores por defecto)
     val productName = intent?.getStringExtra("productName") ?: "Blusa Elegante Negra"
     val productPrice = intent?.getDoubleExtra("productPrice", 89.90) ?: 89.90
     val productDescription = intent?.getStringExtra("productDescription")
         ?: "Blusa elegante de corte moderno, perfecta para ocasiones especiales. Confeccionada en tela de alta calidad con acabados refinados."
     val productImage = intent?.getIntExtra("productImage", R.drawable.modelo_ropa) ?: R.drawable.modelo_ropa
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) }
-    ) { paddingValues ->
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { paddingValues ->
         Column(
             modifier = modifier
                 .verticalScroll(scrollState)
@@ -197,7 +222,12 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                         modifier = Modifier.size(20.dp)
                     )
                 }
-                Text("(24 reseñas)", fontSize = 14.sp, color = Color.Gray, modifier = Modifier.padding(start = 8.dp))
+                Text(
+                    "(24 reseñas)",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -227,7 +257,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                             contentColor = if (selectedSize == size) Color.White else Color.Black
                         ),
                         shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.width(70.dp) // 🔹 Botones un poco más anchos
+                        modifier = Modifier.width(70.dp)
                     ) { Text(size) }
                 }
             }
@@ -341,7 +371,6 @@ fun RelatedProduct(name: String, price: Double, description: String, imageRes: I
             .clip(RoundedCornerShape(12.dp))
             .background(Color(0xFFF9F9F9))
             .clickable {
-                // 🔹 Al hacer clic, se abre esta misma actividad con nuevos datos
                 val intent = Intent(context, ProductDetailActivity::class.java).apply {
                     putExtra("productName", name)
                     putExtra("productPrice", price)

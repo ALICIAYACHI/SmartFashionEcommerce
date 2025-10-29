@@ -173,7 +173,13 @@ fun CartItemCard(item: CartItem, onIncrease: () -> Unit, onDecrease: () -> Unit,
                 Text("Talla: ${item.size} | Color: ${item.color}", fontSize = 14.sp, color = Color.DarkGray)
                 Spacer(modifier = Modifier.height(10.dp))
 
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                // 🧩 Aquí mejoramos la alineación y separación
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    // Controles de cantidad
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         ControlButton("-", onClick = onDecrease)
                         Text(
@@ -181,18 +187,23 @@ fun CartItemCard(item: CartItem, onIncrease: () -> Unit, onDecrease: () -> Unit,
                             fontWeight = FontWeight.Bold,
                             fontSize = 18.sp,
                             color = Color.Black,
-                            modifier = Modifier.padding(horizontal = 8.dp)
+                            modifier = Modifier.padding(horizontal = 10.dp)
                         )
                         ControlButton("+", onClick = onIncrease)
                     }
 
+                    // Espacio extra para separar del precio
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Precio
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Column(horizontalAlignment = Alignment.End) {
                             Text(
                                 "S/ ${"%.2f".format(item.quantity * item.price)}",
                                 color = Color(0xFF007ACC),
                                 fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
+                                fontSize = 17.sp,
+                                modifier = Modifier.padding(start = 8.dp) // 👈 separación del "+"
                             )
                             Text("S/ ${"%.2f".format(item.price)}/u", fontSize = 12.sp, color = Color.Gray)
                         }
@@ -206,6 +217,7 @@ fun CartItemCard(item: CartItem, onIncrease: () -> Unit, onDecrease: () -> Unit,
     }
 }
 
+// ----------------------- Botón de control +/- -----------------------
 @Composable
 fun ControlButton(symbol: String, onClick: () -> Unit) {
     Box(
@@ -220,7 +232,7 @@ fun ControlButton(symbol: String, onClick: () -> Unit) {
     }
 }
 
-// ----------------------- Order Summary -----------------------
+// ----------------------- Resumen del pedido -----------------------
 @Composable
 fun OrderSummary(productCount: Int, subtotal: Double, igv: Double, total: Double, onFinish: () -> Unit) {
     val context = LocalContext.current
@@ -259,7 +271,6 @@ fun OrderSummary(productCount: Int, subtotal: Double, igv: Double, total: Double
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // ✅ Botón de Finalizar compra
             Button(
                 onClick = {
                     val intent = Intent(context, FinalizarCompra::class.java)
@@ -272,10 +283,8 @@ fun OrderSummary(productCount: Int, subtotal: Double, igv: Double, total: Double
                 Text("Finalizar compra", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
 
-
             Spacer(modifier = Modifier.height(10.dp))
 
-            // ✅ Nuevo botón: Continuar comprando
             OutlinedButton(
                 onClick = {
                     val intent = Intent(context, HomeActivity::class.java)

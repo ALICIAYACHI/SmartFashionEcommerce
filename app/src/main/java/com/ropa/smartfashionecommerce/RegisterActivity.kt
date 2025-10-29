@@ -31,20 +31,31 @@ import com.ropa.smartfashionecommerce.home.HomeActivity
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 class RegisterActivity : ComponentActivity() {
+
+    private lateinit var auth: FirebaseAuth
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        auth = FirebaseAuth.getInstance()
+
+        // 🔹 Si el usuario ya está autenticado, lo mandamos directo al Home
+        if (auth.currentUser != null) {
+            startActivity(Intent(this, HomeActivity::class.java))
+            finish()
+            return
+        }
+
         setContent {
             SmartFashionEcommerceTheme {
-                RegisterScreen()
+                RegisterScreen(auth)
             }
         }
     }
 }
 
 @Composable
-fun RegisterScreen() {
+fun RegisterScreen(auth: FirebaseAuth) {
     val context = LocalContext.current
-    val auth = FirebaseAuth.getInstance()
 
     var fullName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -82,7 +93,7 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Nombre completo
+            // 🔹 Nombre completo
             OutlinedTextField(
                 value = fullName,
                 onValueChange = { fullName = it },
@@ -101,7 +112,7 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Email
+            // 🔹 Correo
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -120,7 +131,7 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Teléfono
+            // 🔹 Teléfono
             OutlinedTextField(
                 value = phone,
                 onValueChange = { phone = it },
@@ -139,7 +150,7 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Contraseña
+            // 🔹 Contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -168,7 +179,7 @@ fun RegisterScreen() {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Confirmar contraseña
+            // 🔹 Confirmar contraseña
             OutlinedTextField(
                 value = confirmPassword,
                 onValueChange = { confirmPassword = it },
@@ -200,7 +211,9 @@ fun RegisterScreen() {
             // 🔹 Botón de registro
             Button(
                 onClick = {
-                    if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
+                    if (fullName.isEmpty() || email.isEmpty() || phone.isEmpty() ||
+                        password.isEmpty() || confirmPassword.isEmpty()
+                    ) {
                         Toast.makeText(context, "Completa todos los campos", Toast.LENGTH_SHORT).show()
                     } else if (password != confirmPassword) {
                         Toast.makeText(context, "Las contraseñas no coinciden", Toast.LENGTH_SHORT).show()
@@ -216,7 +229,7 @@ fun RegisterScreen() {
 
                                     Toast.makeText(context, "Cuenta creada con éxito", Toast.LENGTH_SHORT).show()
 
-                                    // 🔹 Ir al HomeActivity
+                                    // 🔹 Ir directo al HomeActivity
                                     val intent = Intent(context, HomeActivity::class.java)
                                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                                     context.startActivity(intent)

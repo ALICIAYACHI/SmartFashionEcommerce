@@ -7,15 +7,19 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
 object CartManager {
+
     private val gson = Gson()
     private val _cartItems: SnapshotStateList<CartItem> = mutableStateListOf()
-    val cartItems: List<CartItem> get() = _cartItems
+    val cartItems: List<CartItem>
+        get() = _cartItems
 
     private const val PREFS_NAME = "cart_prefs"
     private const val CART_KEY = "cart_items"
+    private var appContext: Context? = null
 
     // Inicializa el carrito cargando los datos guardados
     fun initialize(context: Context) {
+        appContext = context.applicationContext
         loadCart(context)
     }
 
@@ -30,11 +34,14 @@ object CartManager {
         } else {
             _cartItems.add(item)
         }
+
+        saveCart(appContext)
     }
 
     // Quitar producto
     fun removeItem(item: CartItem) {
         _cartItems.remove(item)
+        saveCart(appContext)
     }
 
     // Actualizar cantidad
@@ -42,12 +49,14 @@ object CartManager {
         val index = _cartItems.indexOf(item)
         if (index != -1) {
             _cartItems[index] = _cartItems[index].copy(quantity = newQuantity)
+            saveCart(appContext)
         }
     }
 
     // Vaciar carrito
     fun clear() {
         _cartItems.clear()
+        saveCart(appContext)
     }
 
     // Total del carrito
@@ -55,8 +64,9 @@ object CartManager {
         return _cartItems.sumOf { it.price * it.quantity }
     }
 
-    // Guardar carrito
-    fun saveCart(context: Context) {
+    // Guardar carrito (público)
+    fun saveCart(context: Context?) {
+        if (context == null) return
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val json = gson.toJson(_cartItems)
         prefs.edit().putString(CART_KEY, json).apply()
