@@ -2,7 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- 🟢 Permisos necesarios para cámara y lectura de imágenes -->
+    <!-- 🌐 Permiso para acceder a Internet (NECESARIO para consumir tu API Django) -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 🟢 Permisos para cámara y almacenamiento -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature
         android:name="android.hardware.camera"
@@ -13,7 +16,6 @@
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
 
-
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -23,9 +25,10 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.SmartFashionEcommerce"
+        android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
 
-        <!-- 🟢 Pantalla Principal -->
+        <!-- 🟢 Pantalla Principal (Launcher) -->
         <activity
             android:name=".PantallaPrincipalActivity"
             android:exported="true">
@@ -116,7 +119,7 @@
             </intent-filter>
         </activity>
 
-        <!-- 📸 FileProvider para cámara (solo si guardas fotos) -->
+        <!-- 📸 FileProvider para cámara -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

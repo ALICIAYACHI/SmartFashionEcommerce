@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.ropa.smartfashionecommerce.utils.UserSessionManager
 
 object CartManager {
 
@@ -13,11 +14,10 @@ object CartManager {
     val cartItems: List<CartItem>
         get() = _cartItems
 
-    private const val PREFS_NAME = "cart_prefs"
     private const val CART_KEY = "cart_items"
     private var appContext: Context? = null
 
-    // Inicializa el carrito cargando los datos guardados
+    // ✅ Inicializa el carrito cargando los datos del usuario actual
     fun initialize(context: Context) {
         appContext = context.applicationContext
         loadCart(context)
@@ -64,23 +64,32 @@ object CartManager {
         return _cartItems.sumOf { it.price * it.quantity }
     }
 
-    // Guardar carrito (público)
+    // ✅ Guardar carrito con UID del usuario
     fun saveCart(context: Context?) {
         if (context == null) return
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val uid = UserSessionManager.getCurrentUserUID()
+        val prefs = context.getSharedPreferences("cart_$uid", Context.MODE_PRIVATE)
         val json = gson.toJson(_cartItems)
         prefs.edit().putString(CART_KEY, json).apply()
     }
 
-    // Cargar carrito
-    private fun loadCart(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    // ✅ Cargar carrito del usuario actual
+    fun loadCart(context: Context) {
+        val uid = UserSessionManager.getCurrentUserUID()
+        val prefs = context.getSharedPreferences("cart_$uid", Context.MODE_PRIVATE)
         val json = prefs.getString(CART_KEY, null)
+
+        _cartItems.clear()
+
         if (!json.isNullOrEmpty()) {
             val type = object : TypeToken<List<CartItem>>() {}.type
             val items: List<CartItem> = gson.fromJson(json, type)
-            _cartItems.clear()
             _cartItems.addAll(items)
         }
+    }
+
+    // ✅ Limpiar carrito en memoria (al cambiar de usuario)
+    fun clearCart() {
+        _cartItems.clear()
     }
 }

@@ -3,13 +3,13 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 
-    // 🔹 Plugin de Firebase
+    // 🔹 Firebase
     id("com.google.gms.google-services")
 }
 
 android {
     namespace = "com.ropa.smartfashionecommerce"
-    compileSdk = 36 // ✅ Mantengo tu valor
+    compileSdk = 36 // ✅ Último SDK soportado actualmente
 
     defaultConfig {
         applicationId = "com.ropa.smartfashionecommerce"
@@ -28,6 +28,10 @@ android {
                 "proguard-rules.pro"
             )
         }
+        debug {
+            // Permite logging y desactivación de cache para Retrofit
+            isDebuggable = true
+        }
     }
 
     compileOptions {
@@ -41,11 +45,11 @@ android {
 
     buildFeatures {
         compose = true
+        viewBinding = true // ✅ Activa ViewBinding por si tienes layouts XML
     }
 
-    // ✅ Versión actualizada del compilador de Compose
     composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
+        kotlinCompilerExtensionVersion = "1.5.15" // ✅ Compatible con Compose BOM 2025.01.00
     }
 
     packaging {
@@ -89,14 +93,24 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
 
-    // ✅ Google Sign-In (para login con Google)
+    // ✅ Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // ✅ Navegación Compose
     implementation("androidx.navigation:navigation-compose:2.8.0")
 
-    // ✅ Gson para guardar y cargar el carrito
+    // ✅ Gson para manejar JSON (carrito, respuestas API, etc.)
     implementation("com.google.code.gson:gson:2.10.1")
+
+    // ✅ Retrofit y OkHttp (para conexión con Django REST)
+    implementation("com.squareup.retrofit2:retrofit:2.11.0") // versión más reciente
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
+    implementation("com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.14")
+
+    // ✅ Corrutinas (para llamadas asíncronas en Retrofit)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
     // ✅ Tests
     testImplementation(libs.junit)
@@ -105,8 +119,8 @@ dependencies {
     androidTestImplementation(platform("androidx.compose:compose-bom:2025.01.00"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 
-    // ✅ Debug — corregido para que encuentre correctamente el test manifest
+    // ✅ Debug
     debugImplementation(platform("androidx.compose:compose-bom:2025.01.00"))
     debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest") // 👈 corregido nombre correcto
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

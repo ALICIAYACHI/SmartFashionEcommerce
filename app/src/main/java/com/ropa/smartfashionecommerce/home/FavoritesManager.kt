@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import com.ropa.smartfashionecommerce.utils.UserSessionManager
 
 data class FavoriteItem(
     val id: Int,
@@ -17,18 +18,15 @@ data class FavoriteItem(
 
 object FavoritesManager {
 
-    private const val PREFS_NAME = "favorites_prefs"
     private const val KEY_FAVORITES = "favorite_items"
 
     private val _favoriteItems = mutableStateListOf<FavoriteItem>()
     val favoriteItems: SnapshotStateList<FavoriteItem>
         get() = _favoriteItems
 
-    // ✅ Inicializa y carga favoritos guardados
+    // ✅ Inicializa y carga favoritos del usuario actual
     fun initialize(context: Context) {
-        if (_favoriteItems.isEmpty()) {
-            loadFavorites(context)
-        }
+        loadFavorites(context)
     }
 
     // ✅ Agregar favorito y guardar
@@ -45,22 +43,31 @@ object FavoritesManager {
         saveFavorites(context)
     }
 
-    // ✅ Guardar lista en SharedPreferences (persistencia)
+    // ✅ Guardar favoritos con UID del usuario
     private fun saveFavorites(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val uid = UserSessionManager.getCurrentUserUID()
+        val prefs = context.getSharedPreferences("favorites_$uid", Context.MODE_PRIVATE)
         val json = Gson().toJson(_favoriteItems)
         prefs.edit().putString(KEY_FAVORITES, json).apply()
     }
 
-    // ✅ Cargar favoritos guardados
+    // ✅ Cargar favoritos del usuario actual
     private fun loadFavorites(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val uid = UserSessionManager.getCurrentUserUID()
+        val prefs = context.getSharedPreferences("favorites_$uid", Context.MODE_PRIVATE)
         val json = prefs.getString(KEY_FAVORITES, null)
+
+        _favoriteItems.clear()
+
         if (!json.isNullOrEmpty()) {
             val type = object : TypeToken<List<FavoriteItem>>() {}.type
             val list: List<FavoriteItem> = Gson().fromJson(json, type)
-            _favoriteItems.clear()
             _favoriteItems.addAll(list)
         }
+    }
+
+    // ✅ Limpiar favoritos en memoria (al cambiar de usuario)
+    fun clearFavorites() {
+        _favoriteItems.clear()
     }
 }

@@ -190,7 +190,17 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
     val productPrice = intent?.getDoubleExtra("productPrice", 89.90) ?: 89.90
     val productDescription = intent?.getStringExtra("productDescription")
         ?: "Blusa elegante de corte moderno, perfecta para ocasiones especiales. Confeccionada en tela de alta calidad con acabados refinados."
-    val productImage = intent?.getIntExtra("productImage", R.drawable.modelo_ropa) ?: R.drawable.modelo_ropa
+
+    // ✅ Manejo de imágenes locales y por URL
+    val imageType = intent?.getStringExtra("imageType")
+    val productImageRes = intent?.getIntExtra("productImageRes", R.drawable.modelo_ropa)
+    val productImageUrl = intent?.getStringExtra("productImageUrl")
+
+    val painter = if (imageType == "url" && !productImageUrl.isNullOrEmpty()) {
+        rememberAsyncImagePainter(productImageUrl)
+    } else {
+        painterResource(id = productImageRes ?: R.drawable.modelo_ropa)
+    }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { paddingValues ->
         Column(
@@ -200,8 +210,9 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                 .padding(top = 16.dp)
                 .padding(paddingValues)
         ) {
+            // 🔹 Imagen principal
             Image(
-                painter = painterResource(id = productImage),
+                painter = painter,
                 contentDescription = productName,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -303,7 +314,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                         quantity = quantity,
                         size = selectedSize,
                         color = selectedColor,
-                        imageRes = productImage
+                        imageRes = productImageRes ?: R.drawable.modelo_ropa
                     )
                     CartManager.addItem(item)
                     CartManager.saveCart(context)
@@ -316,7 +327,9 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                     context.startActivity(intent)
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                modifier = Modifier.fillMaxWidth().height(55.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(55.dp),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = Color.White)
@@ -375,7 +388,8 @@ fun RelatedProduct(name: String, price: Double, description: String, imageRes: I
                     putExtra("productName", name)
                     putExtra("productPrice", price)
                     putExtra("productDescription", description)
-                    putExtra("productImage", imageRes)
+                    putExtra("imageType", "local")
+                    putExtra("productImageRes", imageRes)
                 }
                 context.startActivity(intent)
             }

@@ -1,7 +1,5 @@
 package com.ropa.smartfashionecommerce.miperfil
 
-import android.app.Activity
-import android.content.Context
 import android.net.Uri
 import android.provider.MediaStore
 import android.widget.Toast
@@ -18,12 +16,12 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -34,255 +32,440 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.rememberAsyncImagePainter
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.ropa.smartfashionecommerce.R
-import java.io.File
-import java.io.FileOutputStream
+import com.ropa.smartfashionecommerce.utils.UserSessionManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditarPerfilScreen(onBack: () -> Unit) {
     val context = LocalContext.current
-    val sharedPrefs = context.getSharedPreferences("SmartFashionPrefs", Context.MODE_PRIVATE)
+    val user = Firebase.auth.currentUser
+    val sharedPrefs = UserSessionManager.getUserPreferences(context)
 
-    // 🟣 Cargar datos guardados
-    var nombre by remember { mutableStateOf(sharedPrefs.getString("nombre", "") ?: "") }
-    var telefono by remember { mutableStateOf(sharedPrefs.getString("telefono", "") ?: "") }
-    var fechaNacimiento by remember { mutableStateOf(sharedPrefs.getString("fechaNacimiento", "") ?: "") }
+    // 🟢 Cargar datos guardados
+    var nombre by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var telefono by remember { mutableStateOf("") }
+    var direccion by remember { mutableStateOf("") }
+    var fotoUri by remember { mutableStateOf<Uri?>(null) }
 
-    // 🟢 Cargar imagen desde ProfileImageManager
+    // 🔄 Cargar datos al iniciar
     LaunchedEffect(Unit) {
-        ProfileImageManager.loadProfileImage(context)
-    }
-    var fotoUri by remember { mutableStateOf(ProfileImageManager.profileImageUri.value) }
+        nombre = sharedPrefs.getString("nombre", user?.displayName ?: "") ?: user?.displayName ?: ""
+        email = sharedPrefs.getString("email", user?.email ?: "") ?: user?.email ?: ""
+        telefono = sharedPrefs.getString("telefono", "") ?: ""
+        direccion = sharedPrefs.getString("direccion", "") ?: ""
 
+        // Cargar foto guardada
+        ProfileImageManager.loadProfileImage(context)
+        fotoUri = ProfileImageManager.profileImageUri.value
+    }
+
+    // 🟢 Estados de edición
+    var editandoNombre by remember { mutableStateOf(false) }
+    var editandoTelefono by remember { mutableStateOf(false) }
+    var editandoDireccion by remember { mutableStateOf(false) }
     var showDialog by remember { mutableStateOf(false) }
 
-    // 📸 Lanzadores de selección de imagen
-    val pickImageLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
-            uri?.let {
-                fotoUri = it
-                ProfileImageManager.saveProfileImage(context, it)
-            }
+    // 📸 Launcher para seleccionar imagen
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            fotoUri = it
+            ProfileImageManager.saveProfileImage(context, it)
+            Toast.makeText(context, "Foto actualizada ✅", Toast.LENGTH_SHORT).show()
         }
+    }
 
-    val takePhotoLauncher =
-        rememberLauncherForActivityResult(ActivityResultContracts.TakePicturePreview()) { bitmap ->
-            bitmap?.let {
+    // 📸 Launcher para tomar foto
+    val takePhotoLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicturePreview()
+    ) { bitmap ->
+        bitmap?.let {
+            try {
                 val path = MediaStore.Images.Media.insertImage(
-                    context.contentResolver, it, "profile_pic", null
+                    context.contentResolver, it, "profile_pic_${System.currentTimeMillis()}", null
                 )
                 val uri = Uri.parse(path)
                 fotoUri = uri
                 ProfileImageManager.saveProfileImage(context, uri)
+                Toast.makeText(context, "Foto actualizada ✅", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                Toast.makeText(context, "Error al guardar la foto", Toast.LENGTH_SHORT).show()
             }
-        }
-
-    // Guardar imagen localmente (opcional refuerzo)
-    fun saveProfileImage(context: Context, uri: Uri?): String? {
-        if (uri == null) return null
-        return try {
-            val inputStream = context.contentResolver.openInputStream(uri)
-            val file = File(context.filesDir, "profile_image.jpg")
-            val outputStream = FileOutputStream(file)
-            inputStream?.copyTo(outputStream)
-            inputStream?.close()
-            outputStream.close()
-            file.absolutePath
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
         }
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Editar Perfil", color = Color.White, fontSize = 20.sp) },
+                title = { Text("Perfil", color = Color.Black, fontSize = 20.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Atrás",
-                            tint = Color.White
+                            tint = Color.Black
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF212121))
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
         },
-        containerColor = Color(0xFFF9F9F9)
+        containerColor = Color(0xFFF5F5F5)
     ) { padding ->
         Column(
             modifier = Modifier
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 🟣 Imagen de perfil
-            Box(
+            // 🟣 Sección de foto de perfil
+            Row(
                 modifier = Modifier
-                    .size(130.dp)
-                    .clip(CircleShape)
-                    .shadow(6.dp, CircleShape)
+                    .fillMaxWidth()
                     .background(Color.White)
-                    .clickable { showDialog = true },
-                contentAlignment = Alignment.Center
+                    .clickable { showDialog = true }
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                if (fotoUri != null) {
-                    val bitmap = ProfileImageManager.getBitmapFromUri(context, fotoUri!!)
-                    if (bitmap != null) {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Foto de perfil",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(130.dp)
-                                .clip(CircleShape)
-                        )
-                    }
-                } else {
-                    Image(
-                        painter = rememberAsyncImagePainter(R.drawable.ic_person),
-                        contentDescription = "Foto de perfil",
-                        contentScale = ContentScale.Crop,
+                Text(
+                    "Foto",
+                    fontSize = 16.sp,
+                    color = Color.Black,
+                    fontWeight = FontWeight.Medium
+                )
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
                         modifier = Modifier
-                            .size(130.dp)
+                            .size(50.dp)
                             .clip(CircleShape)
+                            .background(Color.LightGray),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (fotoUri != null) {
+                            val bitmap = ProfileImageManager.getBitmapFromUri(context, fotoUri!!)
+                            if (bitmap != null) {
+                                Image(
+                                    bitmap = bitmap.asImageBitmap(),
+                                    contentDescription = "Foto de perfil",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.size(50.dp).clip(CircleShape)
+                                )
+                            } else {
+                                Image(
+                                    painter = rememberAsyncImagePainter(R.drawable.ic_person),
+                                    contentDescription = "Foto de perfil",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.size(30.dp)
+                                )
+                            }
+                        } else {
+                            Image(
+                                painter = rememberAsyncImagePainter(user?.photoUrl ?: R.drawable.ic_person),
+                                contentDescription = "Foto de perfil",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.size(50.dp).clip(CircleShape)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = "Editar",
+                        tint = Color.Gray
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(1.dp).background(Color(0xFFE0E0E0)))
 
-            // Campos
-            OutlinedTextField(
-                value = nombre,
-                onValueChange = { nombre = it },
-                label = { Text("Nombre completo") },
-                textStyle = TextStyle(fontSize = 16.sp, color = Color.Black),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Black,
-                    unfocusedBorderColor = Color.Gray
-                )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = telefono,
-                onValueChange = { telefono = it },
-                label = { Text("Número de teléfono") },
-                textStyle = TextStyle(fontSize = 16.sp, color = Color.Black),
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Black,
-                    unfocusedBorderColor = Color.Gray
-                )
-            )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            OutlinedTextField(
-                value = fechaNacimiento,
-                onValueChange = { fechaNacimiento = it },
-                label = { Text("Fecha de nacimiento") },
-                textStyle = TextStyle(fontSize = 16.sp, color = Color.Black),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color.Black,
-                    unfocusedBorderColor = Color.Gray
-                )
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Button(
-                onClick = {
-                    val savedPath = saveProfileImage(context, fotoUri)
-                    sharedPrefs.edit().apply {
-                        putString("nombre", nombre)
-                        putString("telefono", telefono)
-                        putString("fechaNacimiento", fechaNacimiento)
-                        if (savedPath != null) putString("fotoPerfilUri", savedPath)
-                        apply()
-                    }
-                    Toast.makeText(context, "Cambios guardados correctamente ✅", Toast.LENGTH_SHORT).show()
-                    (context as? Activity)?.finish()
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF212121)),
+            // 🟣 Campo Nombre
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(12.dp)
+                    .background(Color.White)
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
             ) {
-                Text("Guardar cambios", color = Color.White, fontWeight = FontWeight.Bold)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Nombre", fontSize = 16.sp, color = Color.Black, fontWeight = FontWeight.Medium)
+
+                    if (!editandoNombre) {
+                        Button(
+                            onClick = { editandoNombre = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8C00)),
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+                        ) {
+                            Text(if (nombre.isEmpty()) "Añade" else "Editar", color = Color.White, fontSize = 14.sp)
+                        }
+                    }
+                }
+
+                if (editandoNombre) {
+                    OutlinedTextField(
+                        value = nombre,
+                        onValueChange = { nombre = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        textStyle = TextStyle(fontSize = 16.sp),
+                        placeholder = { Text("Ingresa tu nombre completo") },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFFF8C00),
+                            unfocusedBorderColor = Color.Gray
+                        )
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = {
+                            editandoNombre = false
+                            nombre = sharedPrefs.getString("nombre", user?.displayName ?: "") ?: ""
+                        }) {
+                            Text("Cancelar", color = Color.Gray)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                sharedPrefs.edit().putString("nombre", nombre).apply()
+                                editandoNombre = false
+                                Toast.makeText(context, "Nombre actualizado ✅", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8C00))
+                        ) {
+                            Text("Guardar", color = Color.White)
+                        }
+                    }
+                } else {
+                    Text(
+                        nombre.ifEmpty { "Agregar nombre" },
+                        fontSize = 16.sp,
+                        color = if (nombre.isEmpty()) Color.Gray else Color.Black,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 🟣 Campo Email (no editable)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Text("Email", fontSize = 16.sp, color = Color.Black, fontWeight = FontWeight.Medium)
+                Text(
+                    email.ifEmpty { "Sin email registrado" },
+                    fontSize = 16.sp,
+                    color = if (email.isEmpty()) Color.Gray else Color.Black,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(1.dp).background(Color(0xFFE0E0E0)))
+
+            // 🟣 Campo Teléfono
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Número de teléfono celular", fontSize = 16.sp, color = Color.Black, fontWeight = FontWeight.Medium)
+
+                    if (!editandoTelefono) {
+                        Button(
+                            onClick = { editandoTelefono = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8C00)),
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+                        ) {
+                            Text(if (telefono.isEmpty()) "Añade" else "Editar", color = Color.White, fontSize = 14.sp)
+                        }
+                    }
+                }
+
+                if (editandoTelefono) {
+                    OutlinedTextField(
+                        value = telefono,
+                        onValueChange = { telefono = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        placeholder = { Text("Ej: +51 987654321") },
+                        textStyle = TextStyle(fontSize = 16.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFFF8C00),
+                            unfocusedBorderColor = Color.Gray
+                        )
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = {
+                            editandoTelefono = false
+                            telefono = sharedPrefs.getString("telefono", "") ?: ""
+                        }) {
+                            Text("Cancelar", color = Color.Gray)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                sharedPrefs.edit().putString("telefono", telefono).apply()
+                                editandoTelefono = false
+                                Toast.makeText(context, "Teléfono actualizado ✅", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8C00))
+                        ) {
+                            Text("Guardar", color = Color.White)
+                        }
+                    }
+                } else {
+                    Text(
+                        telefono.ifEmpty { "Agregar teléfono" },
+                        fontSize = 16.sp,
+                        color = if (telefono.isEmpty()) Color.Gray else Color.Black,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // 🟣 Campo Dirección
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(Color.White)
+                    .padding(horizontal = 24.dp, vertical = 16.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text("Dirección", fontSize = 16.sp, color = Color.Black, fontWeight = FontWeight.Medium)
+
+                    if (!editandoDireccion) {
+                        Button(
+                            onClick = { editandoDireccion = true },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8C00)),
+                            shape = RoundedCornerShape(20.dp),
+                            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp)
+                        ) {
+                            Text(if (direccion.isEmpty()) "Añade" else "Editar", color = Color.White, fontSize = 14.sp)
+                        }
+                    }
+                }
+
+                if (editandoDireccion) {
+                    OutlinedTextField(
+                        value = direccion,
+                        onValueChange = { direccion = it },
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        placeholder = { Text("Ej: Av. Principal 123, Lima") },
+                        textStyle = TextStyle(fontSize = 16.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFFFF8C00),
+                            unfocusedBorderColor = Color.Gray
+                        )
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        horizontalArrangement = Arrangement.End
+                    ) {
+                        TextButton(onClick = {
+                            editandoDireccion = false
+                            direccion = sharedPrefs.getString("direccion", "") ?: ""
+                        }) {
+                            Text("Cancelar", color = Color.Gray)
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Button(
+                            onClick = {
+                                sharedPrefs.edit().putString("direccion", direccion).apply()
+                                editandoDireccion = false
+                                Toast.makeText(context, "Dirección actualizada ✅", Toast.LENGTH_SHORT).show()
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFF8C00))
+                        ) {
+                            Text("Guardar", color = Color.White)
+                        }
+                    }
+                } else {
+                    Text(
+                        direccion.ifEmpty { "Agregar dirección" },
+                        fontSize = 16.sp,
+                        color = if (direccion.isEmpty()) Color.Gray else Color.Black,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+
         }
     }
 
-    // 🟣 Diálogo elegante
+    // 🟣 Diálogo para cambiar foto
     if (showDialog) {
         AlertDialog(
             onDismissRequest = { showDialog = false },
             confirmButton = {},
             text = {
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.background(Color.White)
+                    horizontalAlignment = Alignment.Start,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        "Seleccionar foto de perfil",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp,
-                        color = Color(0xFF212121),
-                        modifier = Modifier.padding(bottom = 12.dp)
-                    )
-
-                    Divider()
-
-                    Text(
-                        "📁 Elegir de la galería",
-                        color = Color(0xFF007AFF),
+                        "Elegir de la galería",
+                        color = Color.Black,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
                                 showDialog = false
                                 pickImageLauncher.launch("image/*")
                             }
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = 16.dp),
                         fontSize = 16.sp
                     )
-
+                    Divider()
                     Text(
-                        "📸 Tomar una foto",
-                        color = Color(0xFF007AFF),
+                        "Tomar una foto",
+                        color = Color.Black,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
                                 showDialog = false
                                 takePhotoLauncher.launch(null)
                             }
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = 16.dp),
                         fontSize = 16.sp
                     )
-
                     Divider()
-
                     Text(
                         "Cancelar",
                         color = Color.Red,
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable { showDialog = false }
-                            .padding(vertical = 12.dp),
+                            .padding(vertical = 16.dp),
                         fontSize = 16.sp
                     )
                 }

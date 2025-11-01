@@ -1,7 +1,6 @@
 package com.ropa.smartfashionecommerce.miperfil
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -20,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -32,25 +32,41 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.ropa.smartfashionecommerce.DarkLoginActivity
 import com.ropa.smartfashionecommerce.R
+import com.ropa.smartfashionecommerce.utils.UserSessionManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MiPerfilScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val user = Firebase.auth.currentUser
-    val email = user?.email ?: "correo@ejemplo.com"
+    val sharedPrefs = UserSessionManager.getUserPreferences(context)
 
-    val sharedPrefs = context.getSharedPreferences("SmartFashionPrefs", Context.MODE_PRIVATE)
+    // 🟢 Estados para datos del usuario
+    var nombre by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
+    var telefono by remember { mutableStateOf("") }
+    var direccion by remember { mutableStateOf("") }
+    var fotoUri by remember { mutableStateOf<Uri?>(null) }
+    var refreshTrigger by remember { mutableStateOf(0) }
 
-    var nombre by remember { mutableStateOf(sharedPrefs.getString("nombre", user?.displayName ?: "Nombre de usuario") ?: "") }
-    var telefono by remember { mutableStateOf(sharedPrefs.getString("telefono", "No registrado") ?: "") }
-    var fechaNacimiento by remember { mutableStateOf(sharedPrefs.getString("fechaNacimiento", "No registrado") ?: "") }
+    // 🔄 Cargar/recargar datos cuando la pantalla se muestra
+    LaunchedEffect(refreshTrigger) {
+        nombre = sharedPrefs.getString("nombre", user?.displayName ?: "Usuario") ?: "Usuario"
+        email = sharedPrefs.getString("email", user?.email ?: "") ?: user?.email ?: ""
+        telefono = sharedPrefs.getString("telefono", "") ?: ""
+        direccion = sharedPrefs.getString("direccion", "") ?: ""
 
-    // Foto local o de Firebase
-    val fotoGuardada = sharedPrefs.getString("fotoPerfilUri", null)
-    val photoUri = fotoGuardada?.let { Uri.parse(it) } ?: user?.photoUrl
+        ProfileImageManager.loadProfileImage(context)
+        fotoUri = ProfileImageManager.profileImageUri.value
+    }
 
-    // Estados para mostrar diálogos
+    // Recargar datos cuando volvemos de EditarPerfilActivity
+    DisposableEffect(Unit) {
+        onDispose {
+            refreshTrigger++
+        }
+    }
+
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showNotificacionesDialog by remember { mutableStateOf(false) }
 
@@ -81,7 +97,7 @@ fun MiPerfilScreen(onBack: () -> Unit) {
                 .padding(horizontal = 20.dp, vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // FOTO DE PERFIL
+            // 🟣 FOTO DE PERFIL
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -89,29 +105,41 @@ fun MiPerfilScreen(onBack: () -> Unit) {
                     .border(2.dp, Color.Gray, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Image(
-                    painter = rememberAsyncImagePainter(photoUri ?: R.drawable.ic_person),
-                    contentDescription = "Foto de perfil",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(120.dp)
-                        .clip(CircleShape)
-                )
+                if (fotoUri != null) {
+                    val bitmap = ProfileImageManager.getBitmapFromUri(context, fotoUri!!)
+                    if (bitmap != null) {
+                        Image(
+                            bitmap = bitmap.asImageBitmap(),
+                            contentDescription = "Foto de perfil",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(120.dp).clip(CircleShape)
+                        )
+                    } else {
+                        Image(
+                            painter = rememberAsyncImagePainter(R.drawable.ic_person),
+                            contentDescription = "Foto de perfil",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(120.dp).clip(CircleShape)
+                        )
+                    }
+                } else {
+                    Image(
+                        painter = rememberAsyncImagePainter(user?.photoUrl ?: R.drawable.ic_person),
+                        contentDescription = "Foto de perfil",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(120.dp).clip(CircleShape)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Nombre + ícono editar
+            // 🟣 Nombre + ícono editar
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center
             ) {
-                Text(
-                    nombre,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 20.sp,
-                    color = Color(0xFF212121)
-                )
+                Text(nombre, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF212121))
                 IconButton(
                     onClick = {
                         val intent = Intent(context, EditarPerfilActivity::class.java)
@@ -134,16 +162,17 @@ fun MiPerfilScreen(onBack: () -> Unit) {
             Divider(color = Color(0xFFE0E0E0), thickness = 1.dp)
             Spacer(modifier = Modifier.height(12.dp))
 
-            // INFORMACIÓN PERSONAL
+            // 🟣 INFORMACIÓN PERSONAL
             Text("Información Personal", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF212121))
             Spacer(modifier = Modifier.height(10.dp))
 
-            InfoRow("Teléfono", telefono)
-            InfoRow("Fecha de nacimiento", fechaNacimiento)
+            InfoRow("Email", email)
+            InfoRow("Teléfono", telefono.ifEmpty { "No registrado" })
+            InfoRow("Dirección", direccion.ifEmpty { "No registrada" })
 
             Spacer(modifier = Modifier.height(25.dp))
 
-            // HISTORIAL DE PEDIDOS
+            // 🟣 HISTORIAL DE PEDIDOS
             Text("Historial de Pedidos", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF212121))
             Spacer(modifier = Modifier.height(10.dp))
             PedidoItem("#ORD-001", "Entregado", Color(0xFF4CAF50), "S/ 249.80")
@@ -152,9 +181,14 @@ fun MiPerfilScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(25.dp))
 
-            // CONFIGURACIÓN DE CUENTA
+            // 🟣 CONFIGURACIÓN DE CUENTA
             Text("Configuración de Cuenta", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF212121))
             Spacer(modifier = Modifier.height(10.dp))
+
+            ProfileOptionCard(Icons.Default.Edit, "Editar Perfil", "Actualiza tu información") {
+                val intent = Intent(context, EditarPerfilActivity::class.java)
+                context.startActivity(intent)
+            }
 
             ProfileOptionCard(Icons.Default.Lock, "Cambiar Contraseña", "Actualiza tu contraseña") {
                 showChangePasswordDialog = true
@@ -170,9 +204,16 @@ fun MiPerfilScreen(onBack: () -> Unit) {
             }
 
             ProfileOptionCard(Icons.AutoMirrored.Filled.ExitToApp, "Cerrar Sesión", "Salir de tu cuenta") {
+                UserSessionManager.clearUserData(context)
+                ProfileImageManager.clearProfileImage(context)
+                com.ropa.smartfashionecommerce.home.FavoritesManager.clearFavorites()
+                com.ropa.smartfashionecommerce.carrito.CartManager.clearCart()
+
                 Firebase.auth.signOut()
                 Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
+
                 val intent = Intent(context, DarkLoginActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 context.startActivity(intent)
                 (context as? Activity)?.finish()
             }
@@ -182,7 +223,6 @@ fun MiPerfilScreen(onBack: () -> Unit) {
         }
     }
 
-    // 👉 Diálogos funcionales
     if (showChangePasswordDialog) {
         CambiarContrasenaDialog(onDismiss = { showChangePasswordDialog = false })
     }
@@ -195,9 +235,7 @@ fun MiPerfilScreen(onBack: () -> Unit) {
 @Composable
 fun InfoRow(label: String, value: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, color = Color(0xFF616161))
@@ -208,17 +246,13 @@ fun InfoRow(label: String, value: String) {
 @Composable
 fun PedidoItem(codigo: String, estado: String, colorEstado: Color, precio: String) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -241,10 +275,7 @@ fun PedidoItem(codigo: String, estado: String, colorEstado: Color, precio: Strin
 @Composable
 fun ProfileOptionCard(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp)
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
