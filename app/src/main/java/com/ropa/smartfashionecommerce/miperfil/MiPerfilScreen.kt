@@ -54,7 +54,7 @@ fun MiPerfilScreen(onBack: () -> Unit) {
     var fotoUri by remember { mutableStateOf<Uri?>(null) }
     var refreshTrigger by remember { mutableIntStateOf(0) }
 
-    // ✅ Cargar pedidos
+    // ✅ Cargar pedidos reales
     val pedidos = remember { derivedStateOf { PedidosManager.pedidos } }
 
     // 🔄 Cargar/recargar datos cuando la pantalla se muestra
@@ -68,15 +68,13 @@ fun MiPerfilScreen(onBack: () -> Unit) {
         val savedImageUri = sharedPrefs.getString("foto_perfil_uri", null)
         fotoUri = savedImageUri?.toUri()
 
-        // ✅ Cargar historial de pedidos
+        // ✅ Cargar historial de pedidos reales
         PedidosManager.cargarPedidos(context)
     }
 
     // 🔄 Recargar datos al volver de editar perfil
     DisposableEffect(Unit) {
-        onDispose {
-            refreshTrigger++
-        }
+        onDispose { refreshTrigger++ }
     }
 
     var showChangePasswordDialog by remember { mutableStateOf(false) }
@@ -124,18 +122,14 @@ fun MiPerfilScreen(onBack: () -> Unit) {
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = "Foto de perfil",
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(120.dp)
-                                .clip(CircleShape)
+                            modifier = Modifier.size(120.dp).clip(CircleShape)
                         )
                     } else {
                         Image(
                             painter = rememberAsyncImagePainter(R.drawable.ic_person),
                             contentDescription = "Foto de perfil",
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(120.dp)
-                                .clip(CircleShape)
+                            modifier = Modifier.size(120.dp).clip(CircleShape)
                         )
                     }
                 } else {
@@ -143,9 +137,7 @@ fun MiPerfilScreen(onBack: () -> Unit) {
                         painter = rememberAsyncImagePainter(user?.photoUrl ?: R.drawable.ic_person),
                         contentDescription = "Foto de perfil",
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clip(CircleShape)
+                        modifier = Modifier.size(120.dp).clip(CircleShape)
                     )
                 }
             }
@@ -153,24 +145,13 @@ fun MiPerfilScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             // 🟣 Nombre + ícono editar
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(nombre, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF212121))
-                IconButton(
-                    onClick = {
-                        val intent = Intent(context, EditarPerfilActivity::class.java)
-                        context.startActivity(intent)
-                    },
-                    modifier = Modifier.size(24.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Editar perfil",
-                        tint = Color.Gray,
-                        modifier = Modifier.size(18.dp)
-                    )
+                IconButton(onClick = {
+                    val intent = Intent(context, EditarPerfilActivity::class.java)
+                    context.startActivity(intent)
+                }) {
+                    Icon(Icons.Default.Edit, contentDescription = "Editar perfil", tint = Color.Gray, modifier = Modifier.size(18.dp))
                 }
             }
 
@@ -196,23 +177,15 @@ fun MiPerfilScreen(onBack: () -> Unit) {
 
             if (pedidos.value.isEmpty()) {
                 Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = Color.White)
                 ) {
                     Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(24.dp),
+                        modifier = Modifier.fillMaxWidth().padding(24.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            "No tienes pedidos aún",
-                            color = Color.Gray,
-                            fontSize = 14.sp
-                        )
+                        Text("No tienes pedidos aún", color = Color.Gray, fontSize = 14.sp)
                     }
                 }
             } else {
@@ -220,7 +193,7 @@ fun MiPerfilScreen(onBack: () -> Unit) {
                     val colorEstado = when (pedido.estado) {
                         "Entregado" -> Color(0xFF4CAF50)
                         "En tránsito" -> Color(0xFF3F51B5)
-                        else -> Color(0xFFFFC107) // Procesando
+                        else -> Color(0xFFFFC107)
                     }
 
                     PedidoItem(
@@ -258,15 +231,9 @@ fun MiPerfilScreen(onBack: () -> Unit) {
 
             // 🟣 CERRAR SESIÓN
             ProfileOptionCard(Icons.AutoMirrored.Filled.ExitToApp, "Cerrar Sesión", "Salir de tu cuenta") {
-                // ⚠️ NO eliminar los datos del perfil al cerrar sesión
-                // Solo limpiar datos temporales como favoritos
                 FavoritesManager.clearFavorites()
-
                 Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
-
-                // Cerrar sesión de Firebase
                 Firebase.auth.signOut()
-
                 val intent = Intent(context, DarkLoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 context.startActivity(intent)
@@ -278,22 +245,15 @@ fun MiPerfilScreen(onBack: () -> Unit) {
         }
     }
 
-    if (showChangePasswordDialog) {
-        CambiarContrasenaDialog(onDismiss = { showChangePasswordDialog = false })
-    }
-
-    if (showNotificacionesDialog) {
-        PreferenciasNotificacionesDialog(onDismiss = { showNotificacionesDialog = false })
-    }
+    if (showChangePasswordDialog) CambiarContrasenaDialog(onDismiss = { showChangePasswordDialog = false })
+    if (showNotificacionesDialog) PreferenciasNotificacionesDialog(onDismiss = { showNotificacionesDialog = false })
 }
 
 // ✅ COMPONENTES REUTILIZABLES
 @Composable
 fun InfoRow(label: String, value: String) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, color = Color(0xFF616161))
@@ -301,35 +261,50 @@ fun InfoRow(label: String, value: String) {
     }
 }
 
+// ✅ SE AGREGA BOTÓN "VER SEGUIMIENTO" AL PEDIDO
 @Composable
 fun PedidoItem(codigo: String, estado: String, colorEstado: Color, precio: String) {
+    val context = LocalContext.current
+
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text("Pedido $codigo", fontWeight = FontWeight.Bold, color = Color(0xFF212121))
-                Box(
-                    modifier = Modifier
-                        .padding(top = 4.dp)
-                        .background(colorEstado, shape = RoundedCornerShape(8.dp))
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                ) {
-                    Text(estado, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text("Pedido $codigo", fontWeight = FontWeight.Bold, color = Color(0xFF212121))
+                    Box(
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .background(colorEstado, shape = RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                    ) {
+                        Text(estado, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                    }
                 }
+                Text(precio, fontWeight = FontWeight.Bold, color = Color(0xFF212121))
             }
-            Text(precio, fontWeight = FontWeight.Bold, color = Color(0xFF212121))
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Button(
+                onClick = {
+                    val intent = Intent(context, SeguimientoPedidoActivity::class.java)
+                    intent.putExtra("codigo_pedido", codigo)
+                    context.startActivity(intent)
+                },
+                modifier = Modifier.align(Alignment.End),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
+            ) {
+                Text("Ver seguimiento", color = Color.Black, fontSize = 13.sp)
+            }
         }
     }
 }
@@ -337,18 +312,12 @@ fun PedidoItem(codigo: String, estado: String, colorEstado: Color, precio: Strin
 @Composable
 fun ProfileOptionCard(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 6.dp)
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Icon(icon, contentDescription = title, tint = Color.Black, modifier = Modifier.size(24.dp))
             Spacer(modifier = Modifier.width(16.dp))
             Column(modifier = Modifier.weight(1f)) {

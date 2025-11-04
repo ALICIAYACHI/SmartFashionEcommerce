@@ -42,10 +42,14 @@
         </activity>
 
         <!-- 🔑 Login -->
-        <activity android:name=".DarkLoginActivity" android:exported="true" />
+        <activity
+            android:name=".DarkLoginActivity"
+            android:exported="true" />
 
         <!-- 👤 Registro -->
-        <activity android:name=".RegisterActivity" android:exported="true" />
+        <activity
+            android:name=".RegisterActivity"
+            android:exported="true" />
 
         <!-- 🏠 Home -->
         <activity
@@ -54,10 +58,14 @@
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
         <!-- 🔑 Recuperar contraseña -->
-        <activity android:name=".RecoverPasswordActivity" android:exported="true" />
+        <activity
+            android:name=".RecoverPasswordActivity"
+            android:exported="true" />
 
         <!-- 📧 Email enviado -->
-        <activity android:name=".EmailSentActivity" android:exported="true" />
+        <activity
+            android:name=".EmailSentActivity"
+            android:exported="true" />
 
         <!-- 🛍️ Catálogo -->
         <activity
@@ -110,6 +118,12 @@
         <!-- ✅ Confirmación del pedido -->
         <activity
             android:name=".pedidos.PedidoConfirmado"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <!-- 🚚 Seguimiento del pedido (NUEVA) -->
+        <activity
+            android:name=".miperfil.SeguimientoPedidoActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
