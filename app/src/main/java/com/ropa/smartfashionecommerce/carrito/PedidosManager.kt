@@ -2,6 +2,8 @@ package com.ropa.smartfashionecommerce.carrito
 
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import java.text.SimpleDateFormat
@@ -16,15 +18,22 @@ data class Pedido(
 )
 
 object PedidosManager {
-    private const val PREFS_NAME = "pedidos_prefs"
+
     private const val KEY_PEDIDOS = "pedidos_list"
 
     val pedidos = mutableStateListOf<Pedido>()
     private val gson = Gson()
 
-    // Cargar pedidos desde SharedPreferences
+    // 🔹 Devuelve el nombre de archivo único para cada usuario
+    private fun getPrefsName(): String {
+        val user = Firebase.auth.currentUser
+        val email = user?.email ?: "invitado"
+        return "pedidos_prefs_$email"
+    }
+
+    // Cargar pedidos desde SharedPreferences (por usuario)
     fun cargarPedidos(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(getPrefsName(), Context.MODE_PRIVATE)
         val json = prefs.getString(KEY_PEDIDOS, null)
 
         if (json != null) {
@@ -32,12 +41,14 @@ object PedidosManager {
             val listaPedidos: List<Pedido> = gson.fromJson(json, type)
             pedidos.clear()
             pedidos.addAll(listaPedidos)
+        } else {
+            pedidos.clear() // Evita que queden pedidos del usuario anterior
         }
     }
 
-    // Guardar pedidos en SharedPreferences
+    // Guardar pedidos en SharedPreferences (por usuario)
     private fun guardarPedidos(context: Context) {
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = context.getSharedPreferences(getPrefsName(), Context.MODE_PRIVATE)
         val json = gson.toJson(pedidos)
         prefs.edit().putString(KEY_PEDIDOS, json).apply()
     }
@@ -58,17 +69,18 @@ object PedidosManager {
             productos = productos
         )
 
-        pedidos.add(0, nuevoPedido) // Agregar al inicio de la lista
+        pedidos.add(0, nuevoPedido) // Agregar al inicio
         guardarPedidos(context)
     }
 
-    // Limpiar todos los pedidos (opcional, para pruebas)
+    // Limpiar pedidos del usuario actual (por ejemplo, al cerrar sesión)
     fun limpiarPedidos(context: Context) {
         pedidos.clear()
-        guardarPedidos(context)
+        val prefs = context.getSharedPreferences(getPrefsName(), Context.MODE_PRIVATE)
+        prefs.edit().clear().apply()
     }
 
-    // Actualizar estado de un pedido (opcional, para simular cambios)
+    // Actualizar estado de un pedido (opcional)
     fun actualizarEstado(context: Context, codigo: String, nuevoEstado: String) {
         val index = pedidos.indexOfFirst { it.codigo == codigo }
         if (index != -1) {
