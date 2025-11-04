@@ -2,10 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- 🌐 Permiso para acceder a Internet (NECESARIO para consumir tu API Django) -->
+    <!-- 🌐 Permiso para acceder a Internet (requerido por Firebase y APIs) -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- 🟢 Permisos para cámara y almacenamiento -->
+    <!-- 📸 Cámara y almacenamiento -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-feature
         android:name="android.hardware.camera"
@@ -15,6 +15,9 @@
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="29" />
+
+    <!-- 🔗 Permiso opcional si deseas compartir enlaces o abrir apps externas -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
         android:allowBackup="true"
@@ -28,7 +31,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
 
-        <!-- 🟢 Pantalla Principal (Launcher) -->
+        <!-- 🟢 Pantalla Principal -->
         <activity
             android:name=".PantallaPrincipalActivity"
             android:exported="true">
@@ -104,7 +107,13 @@
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
-        <!-- ✅ Firebase Auth App Links -->
+        <!-- ✅ Confirmación del pedido -->
+        <activity
+            android:name=".pedidos.PedidoConfirmado"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <!-- 🔗 Firebase Auth App Links -->
         <activity
             android:name=".LinkHandlerActivity"
             android:exported="true">
@@ -119,7 +128,7 @@
             </intent-filter>
         </activity>
 
-        <!-- 📸 FileProvider para cámara -->
+        <!-- 📸 FileProvider para la cámara -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"

@@ -1,6 +1,6 @@
 package com.ropa.smartfashionecommerce.carrito
 
-import android.app.AlertDialog
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
+import com.ropa.smartfashionecommerce.pedidos.PedidoConfirmado
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 class FinalizarCompra : ComponentActivity() {
@@ -52,32 +53,21 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
     val userEmail = user?.email ?: ""
     val sharedPrefs = context.getSharedPreferences("user_profile_$userEmail", android.content.Context.MODE_PRIVATE)
 
-    // ✅ Productos actuales del carrito
     val cartItems by remember { derivedStateOf { CartManager.cartItems } }
-
-    // ✅ Cálculos del total
     val subtotal = remember { derivedStateOf { CartManager.getTotal() } }
     val igv = subtotal.value * 0.18
     val total = subtotal.value + igv
 
-    // ✅ Datos del formulario (se cargan del perfil guardado)
-    var nombresCompletos by remember {
-        mutableStateOf(sharedPrefs.getString("nombre", user?.displayName ?: "") ?: "")
-    }
-    var correo by remember {
-        mutableStateOf(sharedPrefs.getString("email", user?.email ?: "") ?: user?.email ?: "")
-    }
-    var telefono by remember {
-        mutableStateOf(sharedPrefs.getString("telefono", "") ?: "")
-    }
-    var direccion by remember {
-        mutableStateOf(sharedPrefs.getString("direccion", "") ?: "")
-    }
+    // Datos personales
+    var nombresCompletos by remember { mutableStateOf(sharedPrefs.getString("nombre", user?.displayName ?: "") ?: "") }
+    var correo by remember { mutableStateOf(sharedPrefs.getString("email", user?.email ?: "") ?: "") }
+    var telefono by remember { mutableStateOf(sharedPrefs.getString("telefono", "") ?: "") }
+    var direccion by remember { mutableStateOf(sharedPrefs.getString("direccion", "") ?: "") }
     var ciudad by remember { mutableStateOf("") }
     var departamento by remember { mutableStateOf("") }
     var codigoPostal by remember { mutableStateOf("") }
 
-    // ✅ Método de pago
+    // Método de pago
     var metodoPago by remember { mutableStateOf("Tarjeta") }
     var numeroTarjeta by remember { mutableStateOf("") }
     var fechaVencimiento by remember { mutableStateOf("") }
@@ -107,7 +97,6 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                             }
                             Text("Volver", color = Color.Black, fontSize = 16.sp)
                         }
-
                         Text(
                             "SMARTFASHION",
                             color = Color.Black,
@@ -138,7 +127,7 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 🧍 Datos personales
+            // Sección: Datos personales
             SectionCard(title = "Datos personales") {
                 CustomTextField("Nombres Completos", nombresCompletos) { nombresCompletos = it }
                 CustomTextField("Correo electrónico", correo, KeyboardType.Email) { correo = it }
@@ -147,118 +136,55 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 📦 Dirección de envío
+            // Sección: Dirección de envío
             SectionCard(title = "Dirección de envío") {
                 CustomTextField("Dirección completa", direccion) { direccion = it }
                 CustomTextField("Ciudad", ciudad) { ciudad = it }
                 CustomTextField("Departamento", departamento) { departamento = it }
-                CustomTextField(
-                    label = "Código postal",
-                    value = codigoPostal,
-                    keyboardType = KeyboardType.Number,
-                    placeholder = "Ejemplo: 13001"
-                ) { codigoPostal = it }
+                CustomTextField("Código postal", codigoPostal, KeyboardType.Number) { codigoPostal = it }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 💳 Método de pago
+            // Sección: Método de pago
             SectionCard(title = "Método de pago") {
                 Text("Selecciona un método:", fontWeight = FontWeight.Medium, color = Color.Black)
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    PaymentOptionButton(
-                        modifier = Modifier.weight(1f),
-                        text = "Tarjeta",
-                        selected = metodoPago == "Tarjeta"
-                    ) { metodoPago = "Tarjeta" }
-
-                    PaymentOptionButton(
-                        modifier = Modifier.weight(1f),
-                        text = "Yape",
-                        selected = metodoPago == "Yape"
-                    ) { metodoPago = "Yape" }
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    PaymentOptionButton(Modifier.weight(1f), "Tarjeta", metodoPago == "Tarjeta") { metodoPago = "Tarjeta" }
+                    PaymentOptionButton(Modifier.weight(1f), "Yape", metodoPago == "Yape") { metodoPago = "Yape" }
                 }
 
                 Spacer(modifier = Modifier.height(12.dp))
 
                 if (metodoPago == "Tarjeta") {
-                    CustomTextField(
-                        label = "Número de tarjeta",
-                        value = numeroTarjeta,
-                        keyboardType = KeyboardType.Number,
-                        placeholder = "**** **** **** 1234"
-                    ) { numeroTarjeta = it }
-
+                    CustomTextField("Número de tarjeta", numeroTarjeta, KeyboardType.Number) { numeroTarjeta = it }
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                        CustomTextField(
-                            label = "Fecha de vencimiento",
-                            value = fechaVencimiento,
-                            modifier = Modifier.weight(1f),
-                            placeholder = "MM/AA"
-                        ) { fechaVencimiento = it }
-
-                        CustomTextField(
-                            label = "CVV",
-                            value = cvv,
-                            keyboardType = KeyboardType.Number,
-                            modifier = Modifier.weight(1f),
-                            placeholder = "123"
-                        ) { cvv = it }
+                        CustomTextField("Vencimiento", fechaVencimiento, modifier = Modifier.weight(1f)) { fechaVencimiento = it }
+                        CustomTextField("CVV", cvv, KeyboardType.Number, modifier = Modifier.weight(1f)) { cvv = it }
                     }
-
-                    CustomTextField(
-                        label = "Nombre en la tarjeta",
-                        value = nombreTarjeta
-                    ) { nombreTarjeta = it }
+                    CustomTextField("Nombre en la tarjeta", nombreTarjeta) { nombreTarjeta = it }
                 } else {
-                    CustomTextField(
-                        label = "Número de celular Yape",
-                        value = numeroYape,
-                        keyboardType = KeyboardType.Phone,
-                        placeholder = "Ejemplo: 987654321"
-                    ) { numeroYape = it }
-
-                    Text(
-                        "Se enviará una solicitud de pago a tu Yape.",
-                        color = Color.Gray,
-                        fontSize = 13.sp
-                    )
+                    CustomTextField("Número de celular Yape", numeroYape, KeyboardType.Phone) { numeroYape = it }
+                    Text("Se enviará una solicitud de pago a tu Yape.", color = Color.Gray, fontSize = 13.sp)
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 🧾 Resumen del pedido
+            // Sección: Resumen del pedido
             SectionCard(title = "Resumen del pedido") {
                 if (cartItems.isEmpty()) {
                     Text("No hay productos en el carrito", color = Color.Gray)
                 } else {
                     cartItems.forEach {
-                        Row(
-                            Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             Text("${it.name} x${it.quantity}", color = Color.Black)
                             Text("S/ ${"%.2f".format(it.price * it.quantity)}", color = Color.Black)
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
                     }
-
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.Gray)
-
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("Subtotal", color = Color.Black)
-                        Text("S/ ${"%.2f".format(subtotal.value)}", color = Color.Black)
-                    }
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text("IGV (18%)", color = Color.Black)
-                        Text("S/ ${"%.2f".format(igv)}", color = Color.Black)
-                    }
+                    HorizontalDivider(Modifier.padding(vertical = 8.dp), color = Color.Gray)
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Total a pagar", fontWeight = FontWeight.Bold, color = Color(0xFF007ACC))
                         Text("S/ ${"%.2f".format(total)}", fontWeight = FontWeight.Bold, color = Color(0xFF007ACC))
@@ -268,7 +194,7 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // ✅ Botón Confirmar pedido
+            // Botón confirmar pedido
             Button(
                 onClick = {
                     val faltantes = mutableListOf<String>()
@@ -288,28 +214,22 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                     } else if (numeroYape.isBlank()) faltantes.add("Número de Yape")
 
                     if (faltantes.isNotEmpty()) {
-                        AlertDialog.Builder(context)
+                        androidx.appcompat.app.AlertDialog.Builder(context)
                             .setTitle("Campos incompletos ⚠️")
                             .setMessage("Faltan: \n\n${faltantes.joinToString(", ")}")
                             .setPositiveButton("Aceptar", null)
                             .show()
                     } else {
-                        // ✅ Guardar pedido en historial
                         PedidosManager.agregarPedido(
                             context = context,
                             total = total,
                             productos = cartItems.map { "${it.name} x${it.quantity}" }
                         )
+                        CartManager.clear()
 
-                        AlertDialog.Builder(context)
-                            .setTitle("✅ Pedido confirmado")
-                            .setMessage("Tu compra se ha realizado exitosamente 🎉")
-                            .setPositiveButton("Aceptar") { dialog, _ ->
-                                dialog.dismiss()
-                                CartManager.clear()
-                                onBack()
-                            }
-                            .show()
+                        val intent = Intent(context, PedidoConfirmado::class.java)
+                        intent.putExtra("total", total)
+                        context.startActivity(intent)
                     }
                 },
                 modifier = Modifier
@@ -332,7 +252,44 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
     }
 }
 
-// 🔹 Botón de método de pago
+@Composable
+fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+            Spacer(modifier = Modifier.height(10.dp))
+            content()
+        }
+    }
+}
+
+@Composable
+fun CustomTextField(
+    label: String,
+    value: String,
+    keyboardType: KeyboardType = KeyboardType.Text,
+    modifier: Modifier = Modifier.fillMaxWidth(),
+    onValueChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label, color = Color.Black) },
+        modifier = modifier,
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedBorderColor = Color.Black,
+            unfocusedBorderColor = Color.Gray,
+            cursorColor = Color.Black
+        )
+    )
+}
+
 @Composable
 fun PaymentOptionButton(
     modifier: Modifier = Modifier,
@@ -349,47 +306,5 @@ fun PaymentOptionButton(
         shape = RoundedCornerShape(10.dp)
     ) {
         Text(text, color = Color.White)
-    }
-}
-
-// 🔹 Campo personalizado
-@Composable
-fun CustomTextField(
-    label: String,
-    value: String,
-    keyboardType: KeyboardType = KeyboardType.Text,
-    modifier: Modifier = Modifier.fillMaxWidth(),
-    placeholder: String = "",
-    onValueChange: (String) -> Unit
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label, color = Color.Black) },
-        placeholder = { if (placeholder.isNotEmpty()) Text(placeholder, color = Color.Gray) },
-        modifier = modifier,
-        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-        colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = Color.Black,
-            unfocusedBorderColor = Color.Gray,
-            cursorColor = Color.Black
-        )
-    )
-}
-
-// 🔹 Card para secciones
-@Composable
-fun SectionCard(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(4.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
-            Spacer(modifier = Modifier.height(10.dp))
-            content()
-        }
     }
 }
