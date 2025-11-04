@@ -27,19 +27,24 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.ropa.smartfashionecommerce.DarkLoginActivity
 import com.ropa.smartfashionecommerce.R
-import com.ropa.smartfashionecommerce.utils.UserSessionManager
+import com.ropa.smartfashionecommerce.carrito.PedidosManager
+import com.ropa.smartfashionecommerce.home.FavoritesManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MiPerfilScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val user = Firebase.auth.currentUser
-    val sharedPrefs = UserSessionManager.getUserPreferences(context)
+
+    // 🔑 Usar el email del usuario como clave única para SharedPreferences
+    val userEmail = user?.email ?: ""
+    val sharedPrefs = context.getSharedPreferences("user_profile_$userEmail", android.content.Context.MODE_PRIVATE)
 
     // 🟢 Estados para datos del usuario
     var nombre by remember { mutableStateOf("") }
@@ -47,20 +52,27 @@ fun MiPerfilScreen(onBack: () -> Unit) {
     var telefono by remember { mutableStateOf("") }
     var direccion by remember { mutableStateOf("") }
     var fotoUri by remember { mutableStateOf<Uri?>(null) }
-    var refreshTrigger by remember { mutableStateOf(0) }
+    var refreshTrigger by remember { mutableIntStateOf(0) }
+
+    // ✅ Cargar pedidos
+    val pedidos = remember { derivedStateOf { PedidosManager.pedidos } }
 
     // 🔄 Cargar/recargar datos cuando la pantalla se muestra
-    LaunchedEffect(refreshTrigger) {
-        nombre = sharedPrefs.getString("nombre", user?.displayName ?: "Usuario") ?: "Usuario"
-        email = sharedPrefs.getString("email", user?.email ?: "") ?: user?.email ?: ""
+    LaunchedEffect(refreshTrigger, userEmail) {
+        nombre = sharedPrefs.getString("nombre", user?.displayName ?: "Usuario") ?: user?.displayName ?: "Usuario"
+        email = userEmail.ifEmpty { "Sin email" }
         telefono = sharedPrefs.getString("telefono", "") ?: ""
         direccion = sharedPrefs.getString("direccion", "") ?: ""
 
-        ProfileImageManager.loadProfileImage(context)
-        fotoUri = ProfileImageManager.profileImageUri.value
+        // Cargar foto de perfil específica del usuario
+        val savedImageUri = sharedPrefs.getString("foto_perfil_uri", null)
+        fotoUri = savedImageUri?.toUri()
+
+        // ✅ Cargar historial de pedidos
+        PedidosManager.cargarPedidos(context)
     }
 
-    // Recargar datos cuando volvemos de EditarPerfilActivity
+    // 🔄 Recargar datos al volver de editar perfil
     DisposableEffect(Unit) {
         onDispose {
             refreshTrigger++
@@ -112,14 +124,18 @@ fun MiPerfilScreen(onBack: () -> Unit) {
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = "Foto de perfil",
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(120.dp).clip(CircleShape)
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape)
                         )
                     } else {
                         Image(
                             painter = rememberAsyncImagePainter(R.drawable.ic_person),
                             contentDescription = "Foto de perfil",
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(120.dp).clip(CircleShape)
+                            modifier = Modifier
+                                .size(120.dp)
+                                .clip(CircleShape)
                         )
                     }
                 } else {
@@ -127,7 +143,9 @@ fun MiPerfilScreen(onBack: () -> Unit) {
                         painter = rememberAsyncImagePainter(user?.photoUrl ?: R.drawable.ic_person),
                         contentDescription = "Foto de perfil",
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(120.dp).clip(CircleShape)
+                        modifier = Modifier
+                            .size(120.dp)
+                            .clip(CircleShape)
                     )
                 }
             }
@@ -159,7 +177,7 @@ fun MiPerfilScreen(onBack: () -> Unit) {
             Text(email, fontSize = 14.sp, color = Color(0xFF616161))
 
             Spacer(modifier = Modifier.height(20.dp))
-            Divider(color = Color(0xFFE0E0E0), thickness = 1.dp)
+            HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)
             Spacer(modifier = Modifier.height(12.dp))
 
             // 🟣 INFORMACIÓN PERSONAL
@@ -172,12 +190,47 @@ fun MiPerfilScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(25.dp))
 
-            // 🟣 HISTORIAL DE PEDIDOS
+            // 🟣 HISTORIAL DE PEDIDOS (REAL)
             Text("Historial de Pedidos", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF212121))
             Spacer(modifier = Modifier.height(10.dp))
-            PedidoItem("#ORD-001", "Entregado", Color(0xFF4CAF50), "S/ 249.80")
-            PedidoItem("#ORD-002", "En tránsito", Color(0xFF3F51B5), "S/ 159.90")
-            PedidoItem("#ORD-003", "Procesando", Color(0xFFFFC107), "S/ 89.90")
+
+            if (pedidos.value.isEmpty()) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "No tienes pedidos aún",
+                            color = Color.Gray,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            } else {
+                pedidos.value.forEach { pedido ->
+                    val colorEstado = when (pedido.estado) {
+                        "Entregado" -> Color(0xFF4CAF50)
+                        "En tránsito" -> Color(0xFF3F51B5)
+                        else -> Color(0xFFFFC107) // Procesando
+                    }
+
+                    PedidoItem(
+                        codigo = pedido.codigo,
+                        estado = pedido.estado,
+                        colorEstado = colorEstado,
+                        precio = "S/ ${"%.2f".format(pedido.total)}"
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(25.dp))
 
@@ -203,14 +256,16 @@ fun MiPerfilScreen(onBack: () -> Unit) {
                 context.startActivity(intent)
             }
 
+            // 🟣 CERRAR SESIÓN
             ProfileOptionCard(Icons.AutoMirrored.Filled.ExitToApp, "Cerrar Sesión", "Salir de tu cuenta") {
-                UserSessionManager.clearUserData(context)
-                ProfileImageManager.clearProfileImage(context)
-                com.ropa.smartfashionecommerce.home.FavoritesManager.clearFavorites()
-                com.ropa.smartfashionecommerce.carrito.CartManager.clearCart()
+                // ⚠️ NO eliminar los datos del perfil al cerrar sesión
+                // Solo limpiar datos temporales como favoritos
+                FavoritesManager.clearFavorites()
 
-                Firebase.auth.signOut()
                 Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
+
+                // Cerrar sesión de Firebase
+                Firebase.auth.signOut()
 
                 val intent = Intent(context, DarkLoginActivity::class.java)
                 intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -232,10 +287,13 @@ fun MiPerfilScreen(onBack: () -> Unit) {
     }
 }
 
+// ✅ COMPONENTES REUTILIZABLES
 @Composable
 fun InfoRow(label: String, value: String) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(label, color = Color(0xFF616161))
@@ -246,13 +304,17 @@ fun InfoRow(label: String, value: String) {
 @Composable
 fun PedidoItem(codigo: String, estado: String, colorEstado: Color, precio: String) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         shape = RoundedCornerShape(12.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -275,7 +337,10 @@ fun PedidoItem(codigo: String, estado: String, colorEstado: Color, precio: Strin
 @Composable
 fun ProfileOptionCard(icon: ImageVector, title: String, subtitle: String, onClick: () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp).clickable(onClick = onClick),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 6.dp)
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)

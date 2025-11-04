@@ -22,6 +22,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 class FinalizarCompra : ComponentActivity() {
@@ -46,6 +48,9 @@ class FinalizarCompra : ComponentActivity() {
 @Composable
 fun FinalizarCompraScreen(onBack: () -> Unit) {
     val context = LocalContext.current
+    val user = Firebase.auth.currentUser
+    val userEmail = user?.email ?: ""
+    val sharedPrefs = context.getSharedPreferences("user_profile_$userEmail", android.content.Context.MODE_PRIVATE)
 
     // ✅ Productos actuales del carrito
     val cartItems by remember { derivedStateOf { CartManager.cartItems } }
@@ -55,12 +60,19 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
     val igv = subtotal.value * 0.18
     val total = subtotal.value + igv
 
-    // ✅ Datos del formulario
-    var nombres by remember { mutableStateOf("") }
-    var apellidos by remember { mutableStateOf("") }
-    var correo by remember { mutableStateOf("") }
-    var telefono by remember { mutableStateOf("") }
-    var direccion by remember { mutableStateOf("") }
+    // ✅ Datos del formulario (se cargan del perfil guardado)
+    var nombresCompletos by remember {
+        mutableStateOf(sharedPrefs.getString("nombre", user?.displayName ?: "") ?: "")
+    }
+    var correo by remember {
+        mutableStateOf(sharedPrefs.getString("email", user?.email ?: "") ?: user?.email ?: "")
+    }
+    var telefono by remember {
+        mutableStateOf(sharedPrefs.getString("telefono", "") ?: "")
+    }
+    var direccion by remember {
+        mutableStateOf(sharedPrefs.getString("direccion", "") ?: "")
+    }
     var ciudad by remember { mutableStateOf("") }
     var departamento by remember { mutableStateOf("") }
     var codigoPostal by remember { mutableStateOf("") }
@@ -128,8 +140,7 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
 
             // 🧍 Datos personales
             SectionCard(title = "Datos personales") {
-                CustomTextField("Nombres", nombres) { nombres = it }
-                CustomTextField("Apellidos", apellidos) { apellidos = it }
+                CustomTextField("Nombres Completos", nombresCompletos) { nombresCompletos = it }
                 CustomTextField("Correo electrónico", correo, KeyboardType.Email) { correo = it }
                 CustomTextField("Teléfono", telefono, KeyboardType.Phone) { telefono = it }
             }
@@ -238,7 +249,7 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                         Spacer(modifier = Modifier.height(4.dp))
                     }
 
-                    Divider(modifier = Modifier.padding(vertical = 8.dp), color = Color.Gray)
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = Color.Gray)
 
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                         Text("Subtotal", color = Color.Black)
@@ -261,8 +272,7 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
             Button(
                 onClick = {
                     val faltantes = mutableListOf<String>()
-                    if (nombres.isBlank()) faltantes.add("Nombres")
-                    if (apellidos.isBlank()) faltantes.add("Apellidos")
+                    if (nombresCompletos.isBlank()) faltantes.add("Nombres Completos")
                     if (correo.isBlank()) faltantes.add("Correo electrónico")
                     if (telefono.isBlank()) faltantes.add("Teléfono")
                     if (direccion.isBlank()) faltantes.add("Dirección")
@@ -284,13 +294,20 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                             .setPositiveButton("Aceptar", null)
                             .show()
                     } else {
+                        // ✅ Guardar pedido en historial
+                        PedidosManager.agregarPedido(
+                            context = context,
+                            total = total,
+                            productos = cartItems.map { "${it.name} x${it.quantity}" }
+                        )
+
                         AlertDialog.Builder(context)
                             .setTitle("✅ Pedido confirmado")
                             .setMessage("Tu compra se ha realizado exitosamente 🎉")
                             .setPositiveButton("Aceptar") { dialog, _ ->
                                 dialog.dismiss()
-                                // ✅ Limpiar carrito después del pago
                                 CartManager.clear()
+                                onBack()
                             }
                             .show()
                     }
@@ -315,7 +332,7 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
     }
 }
 
-// 🔹 Botón para método de pago
+// 🔹 Botón de método de pago
 @Composable
 fun PaymentOptionButton(
     modifier: Modifier = Modifier,

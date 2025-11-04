@@ -7,38 +7,92 @@ import com.google.firebase.ktx.Firebase
 
 object UserSessionManager {
 
-    /**
-     * Obtiene el UID del usuario actual de Firebase
-     * Retorna un UID por defecto si no hay usuario logueado
-     */
+    private const val PREF_BACKUP_CART = "backup_cart"
+    private const val KEY_LAST_USER_UID = "last_user_uid"
+
+    /** 🔹 Obtiene el UID del usuario actual o "guest_user" si no hay sesión activa */
     fun getCurrentUserUID(): String {
         return Firebase.auth.currentUser?.uid ?: "guest_user"
     }
 
-    /**
-     * Obtiene SharedPreferences específicas para el usuario actual
-     */
+    /** 🔹 SharedPreferences del usuario actual */
     fun getUserPreferences(context: Context): SharedPreferences {
         val uid = getCurrentUserUID()
         return context.getSharedPreferences("user_${uid}_prefs", Context.MODE_PRIVATE)
     }
 
-    /**
-     * Limpia todos los datos del usuario al cerrar sesión
-     */
+    /** 🔹 SharedPreferences del carrito del usuario actual */
+    fun getCartPreferences(context: Context): SharedPreferences {
+        val uid = getCurrentUserUID()
+        return context.getSharedPreferences("cart_$uid", Context.MODE_PRIVATE)
+    }
+
+    /** 🔹 Respaldar carrito antes de cerrar sesión */
+    fun backupCartBeforeLogout(context: Context) {
+        val uid = getCurrentUserUID()
+        if (uid == "guest_user") return
+
+        val cartPrefs = context.getSharedPreferences("cart_$uid", Context.MODE_PRIVATE)
+        val backupPrefs = context.getSharedPreferences(PREF_BACKUP_CART, Context.MODE_PRIVATE)
+        val cartData = cartPrefs.all
+
+        val backupEditor = backupPrefs.edit().clear()
+        for ((key, value) in cartData) {
+            when (value) {
+                is String -> backupEditor.putString(key, value)
+                is Boolean -> backupEditor.putBoolean(key, value)
+                is Int -> backupEditor.putInt(key, value)
+                is Float -> backupEditor.putFloat(key, value)
+                is Long -> backupEditor.putLong(key, value)
+            }
+        }
+
+        backupEditor.putString(KEY_LAST_USER_UID, uid)
+        backupEditor.apply()
+    }
+
+    /** 🔹 Restaura carrito si el mismo usuario vuelve a iniciar */
+    fun restoreCartAfterLogin(context: Context) {
+        val uid = getCurrentUserUID()
+        val backupPrefs = context.getSharedPreferences(PREF_BACKUP_CART, Context.MODE_PRIVATE)
+        val lastUid = backupPrefs.getString(KEY_LAST_USER_UID, null)
+
+        if (uid == lastUid && lastUid != null) {
+            val cartPrefs = context.getSharedPreferences("cart_$uid", Context.MODE_PRIVATE)
+            val editor = cartPrefs.edit().clear()
+
+            for ((key, value) in backupPrefs.all) {
+                if (key == KEY_LAST_USER_UID) continue
+                when (value) {
+                    is String -> editor.putString(key, value)
+                    is Boolean -> editor.putBoolean(key, value)
+                    is Int -> editor.putInt(key, value)
+                    is Float -> editor.putFloat(key, value)
+                    is Long -> editor.putLong(key, value)
+                }
+            }
+            editor.apply()
+        }
+
+        backupPrefs.edit().clear().apply()
+    }
+
+    /** 🔹 Limpia datos personales (sin tocar carrito si ya se respaldó) */
     fun clearUserData(context: Context) {
         val uid = getCurrentUserUID()
-
-        // Limpiar preferencias del usuario
         val userPrefs = context.getSharedPreferences("user_${uid}_prefs", Context.MODE_PRIVATE)
         userPrefs.edit().clear().apply()
+    }
 
-        // Limpiar favoritos del usuario
-        val favPrefs = context.getSharedPreferences("favorites_$uid", Context.MODE_PRIVATE)
-        favPrefs.edit().clear().apply()
+    /** 🔹 Cerrar sesión de forma segura */
+    fun logout(context: Context) {
+        // 1️⃣ Respaldar carrito antes de cerrar sesión
+        backupCartBeforeLogout(context)
 
-        // Limpiar carrito del usuario
-        val cartPrefs = context.getSharedPreferences("cart_$uid", Context.MODE_PRIVATE)
-        cartPrefs.edit().clear().apply()
+        // 2️⃣ Limpiar datos del usuario
+        clearUserData(context)
+
+        // 3️⃣ Cerrar sesión de Firebase
+        Firebase.auth.signOut()
     }
 }

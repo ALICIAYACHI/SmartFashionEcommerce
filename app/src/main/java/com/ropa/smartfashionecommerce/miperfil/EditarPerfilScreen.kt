@@ -31,18 +31,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.net.toUri
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.ropa.smartfashionecommerce.R
-import com.ropa.smartfashionecommerce.utils.UserSessionManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditarPerfilScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val user = Firebase.auth.currentUser
-    val sharedPrefs = UserSessionManager.getUserPreferences(context)
+
+    // 🔑 Usar el email del usuario como clave única para SharedPreferences
+    val userEmail = user?.email ?: ""
+    val sharedPrefs = context.getSharedPreferences("user_profile_$userEmail", android.content.Context.MODE_PRIVATE)
 
     // 🟢 Cargar datos guardados
     var nombre by remember { mutableStateOf("") }
@@ -52,15 +55,15 @@ fun EditarPerfilScreen(onBack: () -> Unit) {
     var fotoUri by remember { mutableStateOf<Uri?>(null) }
 
     // 🔄 Cargar datos al iniciar
-    LaunchedEffect(Unit) {
+    LaunchedEffect(userEmail) {
         nombre = sharedPrefs.getString("nombre", user?.displayName ?: "") ?: user?.displayName ?: ""
-        email = sharedPrefs.getString("email", user?.email ?: "") ?: user?.email ?: ""
+        email = userEmail
         telefono = sharedPrefs.getString("telefono", "") ?: ""
         direccion = sharedPrefs.getString("direccion", "") ?: ""
 
-        // Cargar foto guardada
-        ProfileImageManager.loadProfileImage(context)
-        fotoUri = ProfileImageManager.profileImageUri.value
+        // Cargar foto guardada específica del usuario
+        val savedImageUri = sharedPrefs.getString("foto_perfil_uri", null)
+        fotoUri = savedImageUri?.toUri()
     }
 
     // 🟢 Estados de edición
@@ -75,7 +78,8 @@ fun EditarPerfilScreen(onBack: () -> Unit) {
     ) { uri: Uri? ->
         uri?.let {
             fotoUri = it
-            ProfileImageManager.saveProfileImage(context, it)
+            // Guardar URI de la foto en SharedPreferences del usuario
+            sharedPrefs.edit().putString("foto_perfil_uri", it.toString()).apply()
             Toast.makeText(context, "Foto actualizada ✅", Toast.LENGTH_SHORT).show()
         }
     }
@@ -91,7 +95,8 @@ fun EditarPerfilScreen(onBack: () -> Unit) {
                 )
                 val uri = Uri.parse(path)
                 fotoUri = uri
-                ProfileImageManager.saveProfileImage(context, uri)
+                // Guardar URI de la foto en SharedPreferences del usuario
+                sharedPrefs.edit().putString("foto_perfil_uri", uri.toString()).apply()
                 Toast.makeText(context, "Foto actualizada ✅", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 e.printStackTrace()

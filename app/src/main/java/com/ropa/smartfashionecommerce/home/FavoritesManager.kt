@@ -7,6 +7,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.ropa.smartfashionecommerce.utils.UserSessionManager
 
+/** 💖 Data class para representar un artículo favorito */
 data class FavoriteItem(
     val id: Int,
     val name: String,
@@ -16,10 +17,12 @@ data class FavoriteItem(
     var isFavorite: Boolean = true
 )
 
+/** ⭐️ Gestor de Favoritos: Almacena y recupera datos usando SharedPreferences por usuario. */
 object FavoritesManager {
 
     private const val KEY_FAVORITES = "favorite_items"
 
+    // Lista mutable para la reactividad en Jetpack Compose
     private val _favoriteItems = mutableStateListOf<FavoriteItem>()
     val favoriteItems: SnapshotStateList<FavoriteItem>
         get() = _favoriteItems
@@ -29,7 +32,7 @@ object FavoritesManager {
         loadFavorites(context)
     }
 
-    // ✅ Agregar favorito y guardar
+    // ✅ Agregar favorito y guardar (evita duplicados por ID)
     fun addFavorite(context: Context, item: FavoriteItem) {
         if (_favoriteItems.none { it.id == item.id }) {
             _favoriteItems.add(item)
@@ -46,13 +49,14 @@ object FavoritesManager {
     // ✅ Guardar favoritos con UID del usuario
     private fun saveFavorites(context: Context) {
         val uid = UserSessionManager.getCurrentUserUID()
+        // SharedPreferences específicas para este usuario
         val prefs = context.getSharedPreferences("favorites_$uid", Context.MODE_PRIVATE)
         val json = Gson().toJson(_favoriteItems)
         prefs.edit().putString(KEY_FAVORITES, json).apply()
     }
 
     // ✅ Cargar favoritos del usuario actual
-    private fun loadFavorites(context: Context) {
+    fun loadFavorites(context: Context) {
         val uid = UserSessionManager.getCurrentUserUID()
         val prefs = context.getSharedPreferences("favorites_$uid", Context.MODE_PRIVATE)
         val json = prefs.getString(KEY_FAVORITES, null)
@@ -66,7 +70,7 @@ object FavoritesManager {
         }
     }
 
-    // ✅ Limpiar favoritos en memoria (al cambiar de usuario)
+    // ✅ Limpiar favoritos en memoria (útil al cerrar sesión o cambiar de usuario)
     fun clearFavorites() {
         _favoriteItems.clear()
     }
