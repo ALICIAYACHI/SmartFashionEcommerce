@@ -7,14 +7,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.ropa.smartfashionecommerce.R
 import android.content.Intent
-import com.ropa.smartfashionecommerce.home.HomeActivity
-import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
-
-
-
+// Importaciones de navegación no necesarias para esta clase
+// import com.google.android.material.bottomnavigation.BottomNavigationView
+// import com.ropa.smartfashionecommerce.home.HomeActivity
+// import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
 
 
 class DetailsActivity : AppCompatActivity() {
@@ -29,8 +27,10 @@ class DetailsActivity : AppCompatActivity() {
         val toolbar = findViewById<Toolbar>(R.id.toolbar)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        // El botón de retroceso utiliza el ícono ic_back y simplemente cierra la actividad.
         toolbar.setNavigationIcon(R.drawable.ic_back)
         toolbar.setNavigationOnClickListener { finish() }
+
         toolbar.inflateMenu(R.menu.menu_details_toolbar)
         toolbar.setOnMenuItemClickListener { menuItem ->
             when (menuItem.itemId) {
@@ -38,14 +38,21 @@ class DetailsActivity : AppCompatActivity() {
                     Toast.makeText(this, "Favorito", Toast.LENGTH_SHORT).show()
                     true
                 }
-
                 else -> false
             }
         }
 
-        // Imagen (puedes recibir url en intent y cargar con Glide/Picasso)
+        // Obtener datos pasados desde el catálogo
+        val productName = intent.getStringExtra("name") ?: "Producto Desconocido"
+        val productPrice = intent.getStringExtra("price") ?: "S/ 0.00"
+        val imageResId = intent.getIntExtra("imageRes", R.drawable.modelo_ropa) // Usar un default
+
+        // Mostrar datos en la vista
+        findViewById<TextView>(R.id.product_name).text = productName
+        findViewById<TextView>(R.id.product_price).text = productPrice
+
         val productImage = findViewById<ImageView>(R.id.product_image)
-        productImage.setImageResource(R.drawable.modelo_ropa)
+        productImage.setImageResource(imageResId) // Usar el recurso de imagen real
 
         // Sizes
         val rgSizes = findViewById<RadioGroup>(R.id.rg_sizes)
@@ -63,13 +70,16 @@ class DetailsActivity : AppCompatActivity() {
         // Buttons
         val btnBuy = findViewById<Button>(R.id.btn_buy)
         val btnAdd = findViewById<Button>(R.id.btn_add_cart)
+
         btnBuy.setOnClickListener {
-            Toast.makeText(this, "Comprar ahora", Toast.LENGTH_SHORT).show()
-            // navegar / checkout
+            Toast.makeText(this, "Comprar $productName ahora", Toast.LENGTH_SHORT).show()
+            // Implementar lógica de checkout
         }
+
         btnAdd.setOnClickListener {
-            Toast.makeText(this, "Añadido al carrito", Toast.LENGTH_SHORT).show()
-            // añadir al carrito
+            // Lógica de añadir al carrito
+            Toast.makeText(this, "$productName añadido al carrito", Toast.LENGTH_SHORT).show()
+            // Aquí puedes llamar a una clase Singleton o Manager para añadir el ítem
         }
 
         // RecyclerView "More from" (opcional)
@@ -82,29 +92,8 @@ class DetailsActivity : AppCompatActivity() {
         )
         rvMore.adapter = MoreAdapter(dummy)
 
-        // Bottom navigation
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottom_nav)
-        bottomNav.setOnItemSelectedListener { item ->
-            when (item.itemId) {
-                R.id.nav_home -> {
-                    // Abrir HomeActivity
-                    val intent = Intent(this, HomeActivity::class.java)
-                    startActivity(intent)
-                    true
-                }
-                R.id.nav_cart -> {
-                    Toast.makeText(this, "Carrito", Toast.LENGTH_SHORT).show()
-                    true
-                }
-                R.id.nav_profile -> {
-                    val intent = Intent(this, MiPerfilActivity::class.java)
-                    startActivity(intent)
-                    true
-                }
-                else -> false
-            }
-        }
-
+        // ** SECCIÓN DE NAVEGACIÓN INFERIOR ELIMINADA **
+        // Se recomienda eliminar la BottomNavigationView de activity_details.xml
     }
 
     // Adapter simple para la lista horizontal "More from..."

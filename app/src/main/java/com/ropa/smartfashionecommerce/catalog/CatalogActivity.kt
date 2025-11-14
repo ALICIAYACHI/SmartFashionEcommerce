@@ -2,11 +2,12 @@ package com.ropa.smartfashionecommerce.catalog
 
 import android.content.Intent
 import android.os.Bundle
+import android.widget.TextView
+import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.ropa.smartfashionecommerce.R
@@ -21,6 +22,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
+import androidx.cardview.widget.CardView
 
 class CatalogActivity : AppCompatActivity() {
 
@@ -30,6 +32,27 @@ class CatalogActivity : AppCompatActivity() {
         setContentView(R.layout.activity_catalog)
 
         val category = intent.getStringExtra("CATEGORY") ?: "Hombres"
+
+        // === MODIFICACIONES DE DISEÑO SIN AFECTAR FUNCIONALIDAD ===
+
+        // 1. Título dinámico: Muestra la categoría actual en el TextView del toolbar
+        val titleTextView = findViewById<TextView>(R.id.tv_title)
+        titleTextView.text = "Catálogo de $category"
+
+        // 2. Funcionalidad para el nuevo botón "Atrás" (ahora un CardView en el XML)
+        val backCard = findViewById<CardView>(R.id.btn_back_card)
+        backCard.setOnClickListener {
+            // Mantiene la funcionalidad de retroceso
+            finish()
+        }
+
+        // 3. CORRECCIÓN DEL BOTÓN PERFIL
+        val btnPerfilImage = findViewById<ImageView>(R.id.btn_perfil_image)
+        btnPerfilImage.setOnClickListener {
+            startActivity(Intent(this, MiPerfilActivity::class.java))
+        }
+
+        // ==========================================================
 
         val dummyList = when (category) {
             "Hombres" -> listOf(
@@ -61,62 +84,59 @@ class CatalogActivity : AppCompatActivity() {
 
         val recyclerView = findViewById<RecyclerView>(R.id.products_recycler_view)
         recyclerView.layoutManager = GridLayoutManager(this, 2)
+        // Usamos el adaptador corregido que apunta a DetailsActivity
         recyclerView.adapter = ViewHolderAdapter(this, dummyList)
 
         val filterButton = findViewById<androidx.cardview.widget.CardView>(R.id.filter_card)
         filterButton.setOnClickListener { showFilterBottomSheet() }
 
-        val btnPerfil = findViewById<FloatingActionButton>(R.id.btn_perfil)
-        btnPerfil.setOnClickListener {
-            startActivity(Intent(this, MiPerfilActivity::class.java))
-        }
-
+        // Navegación inferior con Compose (SECCIÓN ESTABILIZADA)
         val composeView = findViewById<ComposeView>(R.id.bottom_navigation_compose)
         composeView.setContent {
+            // Usamos "Catalog" como el valor inicial para que la lógica de selección no cierre la app.
             var selectedTab by remember { mutableStateOf("Catalog") }
+
+            // Definimos la lista de ítems de navegación
+            val navItems = listOf(
+                // Triple(etiqueta, ícono) { acción al clic }
+                Triple("Home", Icons.Default.Home) {
+                    selectedTab = "Home"
+                    finish() // ✅ Al cerrar, vuelve a la HomeActivity (CORRECCIÓN)
+                },
+                Triple("Cart", Icons.Default.ShoppingCart) {
+                    selectedTab = "Cart"
+                    val intent = Intent(this@CatalogActivity, Carrito::class.java)
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                    startActivity(intent)
+                },
+                Triple("Favorites", Icons.Default.Favorite) {
+                    selectedTab = "Favorites"
+                    startActivity(Intent(this@CatalogActivity, FavActivity::class.java))
+                },
+                Triple("Profile", Icons.Default.Person) {
+                    selectedTab = "Profile"
+                    startActivity(Intent(this@CatalogActivity, MiPerfilActivity::class.java))
+                }
+            )
 
             NavigationBar(
                 containerColor = Color.White,
                 tonalElevation = 4.dp
             ) {
-                NavigationBarItem(
-                    selected = selectedTab == "Home",
-                    onClick = {
-                        selectedTab = "Home"
-                        startActivity(Intent(this@CatalogActivity, HomeActivity::class.java))
-                    },
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
-                    label = { Text("Home") }
-                )
-                NavigationBarItem(
-                    selected = selectedTab == "Cart",
-                    onClick = {
-                        selectedTab = "Cart"
-                        val intent = Intent(this@CatalogActivity, Carrito::class.java)
-                        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                        startActivity(intent)
-                    },
-                    icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Cart") },
-                    label = { Text("Cart") }
-                )
-                NavigationBarItem(
-                    selected = selectedTab == "Favorites",
-                    onClick = {
-                        selectedTab = "Favorites"
-                        startActivity(Intent(this@CatalogActivity, FavActivity::class.java))
-                    },
-                    icon = { Icon(Icons.Default.Favorite, contentDescription = "Favorites") },
-                    label = { Text("Favorites") }
-                )
-                NavigationBarItem(
-                    selected = selectedTab == "Profile",
-                    onClick = {
-                        selectedTab = "Profile"
-                        startActivity(Intent(this@CatalogActivity, MiPerfilActivity::class.java))
-                    },
-                    icon = { Icon(Icons.Default.Person, contentDescription = "Profile") },
-                    label = { Text("Profile") }
-                )
+                // Iteramos sobre los ítems de navegación
+                navItems.forEach { (label, icon, action) ->
+
+                    // Lógica de selección estable: Si no es Home, se basa en el label. Si es Home,
+                    // solo se marca si nos hemos movido de la pestaña Catálogo original.
+                    val isSelected = if (label == "Home") selectedTab != "Catalog" else selectedTab == label
+
+                    NavigationBarItem(
+                        selected = isSelected,
+                        onClick = action,
+                        icon = { Icon(icon, contentDescription = label) },
+                        label = { Text(label) }
+                    )
+                }
             }
         }
     }
@@ -126,32 +146,40 @@ class CatalogActivity : AppCompatActivity() {
         val view = layoutInflater.inflate(R.layout.bottomsheet_filter, null)
         dialog.setContentView(view)
 
-        val btnHombres = view.findViewById<MaterialButton>(R.id.btnHombres)
-        val btnMujeres = view.findViewById<MaterialButton>(R.id.btnMujeres)
-        val btnNinos = view.findViewById<MaterialButton>(R.id.btnNinos)
+        val chipHombres = view.findViewById<com.google.android.material.chip.Chip>(R.id.chipHombres)
+        val chipMujeres = view.findViewById<com.google.android.material.chip.Chip>(R.id.chipMujeres)
+        val chipNinos = view.findViewById<com.google.android.material.chip.Chip>(R.id.chipNinos)
+        val btnApplyFilter = view.findViewById<MaterialButton>(R.id.btnApplyFilter)
 
-        btnHombres.setOnClickListener {
-            dialog.dismiss()
-            val intent = Intent(this, CatalogActivity::class.java)
-            intent.putExtra("CATEGORY", "Hombres")
-            startActivity(intent)
-            finish()
+        // Marcar el chip actual al abrir
+        val currentCategory = intent.getStringExtra("CATEGORY")
+        when (currentCategory) {
+            "Hombres" -> chipHombres.isChecked = true
+            "Mujeres" -> chipMujeres.isChecked = true
+            "Niños" -> chipNinos.isChecked = true
         }
-        btnMujeres.setOnClickListener {
+
+        btnApplyFilter.setOnClickListener {
             dialog.dismiss()
+            val category: String = when {
+                chipHombres.isChecked -> "Hombres"
+                chipMujeres.isChecked -> "Mujeres"
+                chipNinos.isChecked -> "Niños"
+                else -> intent.getStringExtra("CATEGORY") ?: "Hombres"
+            }
+
+            // Inicia la nueva CatalogActivity con la categoría seleccionada
             val intent = Intent(this, CatalogActivity::class.java)
-            intent.putExtra("CATEGORY", "Mujeres")
+            intent.putExtra("CATEGORY", category)
+
+            // 💡 CORRECCIÓN APLICADA AQUÍ: Limpia las instancias viejas de CatalogActivity
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
+
             startActivity(intent)
-            finish()
-        }
-        btnNinos.setOnClickListener {
-            dialog.dismiss()
-            val intent = Intent(this, CatalogActivity::class.java)
-            intent.putExtra("CATEGORY", "Niños")
-            startActivity(intent)
-            finish()
+            finish() // Cierra la instancia actual
         }
 
         dialog.show()
     }
+
 }

@@ -234,7 +234,7 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                 modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
             )
 
-            val categories = listOf("ZARA", "VOGUE", "CHANEL", "RALPH")
+            val categories = listOf("VERANO", "INVIERNO", "PRIMAVERA", "OTOÑO", "DEPORTIVO")
             LazyRow(modifier = Modifier.padding(start = 16.dp, bottom = 16.dp)) {
                 items(categories) { category ->
                     Box(
@@ -244,7 +244,7 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                             .background(Color(0xFFE0E0E0))
                             .padding(horizontal = 16.dp, vertical = 8.dp)
                             .clickable {
-                                if (category == "ZARA") {
+                                if (category == "VERANO") {
                                     activity.startActivity(Intent(activity, CatalogActivity::class.java))
                                 }
                             }

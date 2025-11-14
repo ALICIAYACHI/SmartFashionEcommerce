@@ -4,64 +4,111 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="24dp"
+    android:paddingBottom="32dp"
     android:background="@drawable/rounded_top_sheet_bg">
 
-    <TextView
-        android:id="@+id/txtFiltro"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Filtrar por:"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:textColor="@android:color/black"
+    <View
+        android:id="@+id/handle_bar"
+        android:layout_width="48dp"
+        android:layout_height="4dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/rounded_handle_bg"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="16dp"/>
+        android:backgroundTint="#D5D5D5"/>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnHombres"
-        style="@style/Widget.Material3.Button.OutlinedButton"
-        android:text="Hombres"
-        android:textSize="15sp"
-        android:textColor="@color/black"
-        android:backgroundTint="@color/white"
+    <TextView
+        android:id="@+id/txtTitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/txtFiltro"
+        android:text="Opciones de Filtrado"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:textColor="@color/black"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:paddingTop="24dp"
+        app:layout_constraintTop_toBottomOf="@id/handle_bar"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="8dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnMujeres"
-        style="@style/Widget.Material3.Button.OutlinedButton"
-        android:text="Mujeres"
-        android:textSize="15sp"
-        android:textColor="@color/black"
-        android:backgroundTint="@color/white"
+    <TextView
+        android:id="@+id/txtSubtitle"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/btnHombres"
+        android:text="Selecciona la categoría de persona:"
+        android:textSize="14sp"
+        android:textColor="#555555"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:layout_marginTop="4dp"
+        app:layout_constraintTop_toBottomOf="@id/txtTitle"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="8dp"/>
+        app:layout_constraintEnd_toEndOf="parent"/>
 
-
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnNinos"
-        style="@style/Widget.Material3.Button.OutlinedButton"
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/chipGroupGender"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Niños"
-        android:textSize="15sp"
-        android:textColor="@color/black"
-        android:backgroundTint="@color/white"
-        app:layout_constraintTop_toBottomOf="@id/btnMujeres"
+        android:paddingStart="24dp"
+        android:paddingEnd="24dp"
+        android:layout_marginTop="20dp"
+        app:singleSelection="true"
+        app:chipSpacingHorizontal="8dp"
+        app:layout_constraintTop_toBottomOf="@id/txtSubtitle"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- CHIP HOMBRES (Añadidos Width y Height) -->
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipHombres"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:text="Hombres"
+            android:textColor="@color/black"
+            app:chipBackgroundColor="#F0F0F0"
+            app:checkedIconVisible="false" />
+
+        <!-- CHIP MUJERES (Añadidos Width y Height) -->
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipMujeres"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:text="Mujeres"
+            android:textColor="@color/black"
+            app:chipBackgroundColor="#F0F0F0"
+            app:checkedIconVisible="false" />
+
+        <!-- CHIP NIÑOS (Añadidos Width y Height) - ESTA ERA LA LÍNEA CRÍTICA -->
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chipNinos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            style="@style/Widget.MaterialComponents.Chip.Choice"
+            android:text="Niños"
+            android:textColor="@color/black"
+            app:chipBackgroundColor="#F0F0F0"
+            app:checkedIconVisible="false" />
+    </com.google.android.material.chip.ChipGroup>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnApplyFilter"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        android:text="Aplicar Filtros"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:layout_marginTop="32dp"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        app:cornerRadius="12dp"
+        app:elevation="4dp"
+        app:layout_constraintTop_toBottomOf="@id/chipGroupGender"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toBottomOf="parent"/>
-</androidx.constraintlayout.widget.ConstraintLayout>
 
+</androidx.constraintlayout.widget.ConstraintLayout>
