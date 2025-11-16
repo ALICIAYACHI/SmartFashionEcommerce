@@ -86,6 +86,8 @@ fun FashionHomeScreen(activity: ComponentActivity) {
     var productos by remember { mutableStateOf<List<Producto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
+    var searchText by remember { mutableStateOf("") }
+
     val profileImageUri by remember { ProfileImageManager.profileImageUri }
 
     // ✅ CORREGIDO: Obtener usuario actual de Firebase
@@ -202,6 +204,33 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                 .padding(paddingValues)
                 .background(Color.White)
         ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = searchText,
+                    onValueChange = { searchText = it },
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text("Buscar productos") },
+                    singleLine = true
+                )
+                IconButton(
+                    onClick = {
+                        // La búsqueda se aplica en tiempo real al escribir;
+                        // aquí no necesitamos hacer nada especial.
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Search,
+                        contentDescription = "Buscar",
+                        tint = Color(0xFF212121)
+                    )
+                }
+            }
+
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -267,6 +296,11 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                     CircularProgressIndicator()
                 }
             } else {
+                val filteredProducts = if (searchText.isBlank()) {
+                    productos
+                } else {
+                    productos.filter { it.nombre.contains(searchText, ignoreCase = true) }
+                }
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     contentPadding = PaddingValues(8.dp),
@@ -274,7 +308,7 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxHeight()
                 ) {
-                    items(productos) { producto ->
+                    items(filteredProducts) { producto ->
                         ProductCard(producto)
                     }
                 }

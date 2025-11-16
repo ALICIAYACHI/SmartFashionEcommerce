@@ -14,7 +14,10 @@ data class Pedido(
     val fecha: String,
     val total: Double,
     val estado: String = "Procesando", // Procesando, En tránsito, Entregado
-    val productos: List<String>
+    val productos: List<String>,
+    val direccionTexto: String,
+    val latitud: Double? = null,
+    val longitud: Double? = null
 )
 
 object PedidosManager {
@@ -54,7 +57,14 @@ object PedidosManager {
     }
 
     // Agregar un nuevo pedido
-    fun agregarPedido(context: Context, total: Double, productos: List<String>) {
+    fun agregarPedido(
+        context: Context,
+        total: Double,
+        productos: List<String>,
+        direccionTexto: String,
+        latitud: Double? = null,
+        longitud: Double? = null
+    ) {
         val contador = pedidos.size + 1
         val codigo = "#ORD-${String.format("%03d", contador)}"
 
@@ -66,7 +76,10 @@ object PedidosManager {
             fecha = fecha,
             total = total,
             estado = "Procesando",
-            productos = productos
+            productos = productos,
+            direccionTexto = direccionTexto,
+            latitud = latitud,
+            longitud = longitud
         )
 
         pedidos.add(0, nuevoPedido) // Agregar al inicio

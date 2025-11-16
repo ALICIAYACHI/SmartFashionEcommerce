@@ -61,9 +61,15 @@ fun EditarPerfilScreen(onBack: () -> Unit) {
         telefono = sharedPrefs.getString("telefono", "") ?: ""
         direccion = sharedPrefs.getString("direccion", "") ?: ""
 
-        // Cargar foto guardada específica del usuario
+        // Cargar foto de perfil específica del usuario
+        // 1) Desde ProfileImageManager (archivo interno por UID)
+        ProfileImageManager.loadProfileImage(context)
+        val managerUri = ProfileImageManager.profileImageUri.value
+
+        // 2) Fallback: desde SharedPreferences por email (compatibilidad)
         val savedImageUri = sharedPrefs.getString("foto_perfil_uri", null)
-        fotoUri = savedImageUri?.toUri()
+
+        fotoUri = managerUri ?: savedImageUri?.toUri()
     }
 
     // 🟢 Estados de edición
@@ -80,6 +86,8 @@ fun EditarPerfilScreen(onBack: () -> Unit) {
             fotoUri = it
             // Guardar URI de la foto en SharedPreferences del usuario
             sharedPrefs.edit().putString("foto_perfil_uri", it.toString()).apply()
+            // Actualizar también en ProfileImageManager para que se vea en toda la app
+            ProfileImageManager.saveProfileImage(context, it)
             Toast.makeText(context, "Foto actualizada ✅", Toast.LENGTH_SHORT).show()
         }
     }
@@ -97,6 +105,8 @@ fun EditarPerfilScreen(onBack: () -> Unit) {
                 fotoUri = uri
                 // Guardar URI de la foto en SharedPreferences del usuario
                 sharedPrefs.edit().putString("foto_perfil_uri", uri.toString()).apply()
+                // Actualizar también en ProfileImageManager para que se vea en toda la app
+                ProfileImageManager.saveProfileImage(context, uri)
                 Toast.makeText(context, "Foto actualizada ✅", Toast.LENGTH_SHORT).show()
             } catch (e: Exception) {
                 e.printStackTrace()

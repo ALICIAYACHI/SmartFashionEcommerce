@@ -24,6 +24,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.widget.Toast
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.CoroutineScope
 import coil.compose.rememberAsyncImagePainter
 import com.ropa.smartfashionecommerce.R
 import com.ropa.smartfashionecommerce.carrito.Carrito
@@ -31,6 +35,8 @@ import com.ropa.smartfashionecommerce.carrito.CartItem
 import com.ropa.smartfashionecommerce.carrito.CartManager
 import com.ropa.smartfashionecommerce.home.FavActivity
 import com.ropa.smartfashionecommerce.home.HomeActivity
+import com.ropa.smartfashionecommerce.home.FavoriteItem
+import com.ropa.smartfashionecommerce.home.FavoritesManager
 import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
 import kotlinx.coroutines.launch
 
@@ -196,10 +202,22 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
     val productImageRes = intent?.getIntExtra("productImageRes", R.drawable.modelo_ropa)
     val productImageUrl = intent?.getStringExtra("productImageUrl")
 
+    var showReviewDialog by remember { mutableStateOf(false) }
+    var reviewRating by remember { mutableIntStateOf(0) }
+    var reviewComment by remember { mutableStateOf("") }
+
     val painter = if (imageType == "url" && !productImageUrl.isNullOrEmpty()) {
         rememberAsyncImagePainter(productImageUrl)
     } else {
         painterResource(id = productImageRes ?: R.drawable.modelo_ropa)
+    }
+
+    // 💖 Estado de favorito para este producto
+    LaunchedEffect(Unit) {
+        FavoritesManager.initialize(context)
+    }
+    var isFavorite by remember {
+        mutableStateOf(FavoritesManager.favoriteItems.any { it.id == productName.hashCode() })
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { paddingValues ->
@@ -239,6 +257,20 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                     color = Color.Gray,
                     modifier = Modifier.padding(start = 8.dp)
                 )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            TextButton(onClick = {
+                val user = FirebaseAuth.getInstance().currentUser
+                if (user == null) {
+                    Toast.makeText(context, "Inicia sesión para reseñar", Toast.LENGTH_SHORT).show()
+                } else {
+                    reviewRating = 0
+                    reviewComment = ""
+                    showReviewDialog = true
+                }
+            }) {
+                Text("Escribir una reseña", color = Color(0xFF0D47A1))
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -306,35 +338,72 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
             Text("15 en stock", color = Color(0xFF0D47A1), fontSize = 14.sp)
 
             Spacer(modifier = Modifier.height(20.dp))
-            Button(
-                onClick = {
-                    val item = CartItem(
-                        name = productName,
-                        price = productPrice,
-                        quantity = quantity,
-                        size = selectedSize,
-                        color = selectedColor,
-                        imageRes = productImageRes ?: R.drawable.modelo_ropa
-                    )
-                    CartManager.addItem(item)
-                    CartManager.saveCart(context)
 
-                    coroutineScope.launch {
-                        snackbarHostState.showSnackbar("Producto agregado al carrito 🛒")
-                    }
-
-                    val intent = Intent(context, Carrito::class.java)
-                    context.startActivity(intent)
-                },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(55.dp),
-                shape = RoundedCornerShape(12.dp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = Color.White)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Agregar al carrito", color = Color.White, fontSize = 18.sp)
+                Button(
+                    onClick = {
+                        val item = CartItem(
+                            name = productName,
+                            price = productPrice,
+                            quantity = quantity,
+                            size = selectedSize,
+                            color = selectedColor,
+                            imageRes = productImageRes ?: R.drawable.modelo_ropa
+                        )
+                        CartManager.addItem(item)
+                        CartManager.saveCart(context)
+
+                        coroutineScope.launch {
+                            snackbarHostState.showSnackbar("Producto agregado al carrito 🛒")
+                        }
+
+                        val intent = Intent(context, Carrito::class.java)
+                        context.startActivity(intent)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(55.dp),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = Color.White)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Agregar al carrito", color = Color.White, fontSize = 18.sp)
+                }
+
+                IconButton(
+                    onClick = {
+                        val favItem = FavoriteItem(
+                            id = productName.hashCode(),
+                            name = productName,
+                            price = "S/ %.2f".format(productPrice),
+                            imageRes = productImageRes ?: R.drawable.modelo_ropa
+                        )
+
+                        if (isFavorite) {
+                            FavoritesManager.removeFavorite(context, favItem)
+                            isFavorite = false
+                            Toast.makeText(context, "Quitado de favoritos", Toast.LENGTH_SHORT).show()
+                        } else {
+                            FavoritesManager.addFavorite(context, favItem)
+                            isFavorite = true
+                            Toast.makeText(context, "Agregado a favoritos", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    modifier = Modifier
+                        .size(55.dp)
+                        .border(1.dp, Color.LightGray, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Favorito",
+                        tint = if (isFavorite) Color.Red else Color.Black
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -354,8 +423,106 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                     R.drawable.casaca
                 )
             }
+
+            if (showReviewDialog) {
+                AlertDialog(
+                    onDismissRequest = { showReviewDialog = false },
+                    title = { Text("Reseñar $productName") },
+                    text = {
+                        Column {
+                            Text("Selecciona tu calificación", fontWeight = FontWeight.Bold)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row {
+                                (1..5).forEach { star ->
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ic_star),
+                                        contentDescription = null,
+                                        tint = if (star <= reviewRating) Color(0xFFFFC107) else Color.LightGray,
+                                        modifier = Modifier
+                                            .size(28.dp)
+                                            .clickable { reviewRating = star }
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(12.dp))
+                            OutlinedTextField(
+                                value = reviewComment,
+                                onValueChange = { reviewComment = it },
+                                label = { Text("Comentario (opcional)") },
+                                modifier = Modifier.fillMaxWidth(),
+                                maxLines = 4
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            if (reviewRating in 1..5) {
+                                submitReviewCompose(
+                                    productId = productName,
+                                    rating = reviewRating,
+                                    comment = reviewComment,
+                                    context = context,
+                                    snackbarHostState = snackbarHostState,
+                                    coroutineScope = coroutineScope
+                                )
+                                showReviewDialog = false
+                            } else {
+                                Toast.makeText(context, "Selecciona una calificación", Toast.LENGTH_SHORT).show()
+                            }
+                        }) {
+                            Text("Enviar")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showReviewDialog = false }) {
+                            Text("Cancelar")
+                        }
+                    }
+                )
+            }
         }
     }
+}
+
+private fun submitReviewCompose(
+    productId: String,
+    rating: Int,
+    comment: String,
+    context: Context,
+    snackbarHostState: SnackbarHostState,
+    coroutineScope: CoroutineScope
+) {
+    val user = FirebaseAuth.getInstance().currentUser
+    if (user == null) {
+        Toast.makeText(context, "Inicia sesión para reseñar", Toast.LENGTH_SHORT).show()
+        return
+    }
+
+    val db = FirebaseFirestore.getInstance()
+    val reviewData = mapOf(
+        "userId" to user.uid,
+        "userName" to (user.displayName ?: "Cliente"),
+        "rating" to rating,
+        "comment" to comment,
+        "createdAt" to com.google.firebase.Timestamp.now(),
+        "isVerifiedPurchase" to false,
+        "status" to "APPROVED"
+    )
+
+    db.collection("products")
+        .document(productId)
+        .collection("reviews")
+        .add(reviewData)
+        .addOnSuccessListener {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Gracias por tu reseña")
+            }
+        }
+        .addOnFailureListener {
+            coroutineScope.launch {
+                snackbarHostState.showSnackbar("Error al guardar reseña")
+            }
+        }
 }
 
 @Composable

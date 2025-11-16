@@ -6,6 +6,7 @@ import android.widget.TextView
 import android.widget.ImageView
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
@@ -32,6 +33,7 @@ class CatalogActivity : AppCompatActivity() {
         setContentView(R.layout.activity_catalog)
 
         val category = intent.getStringExtra("CATEGORY") ?: "Hombres"
+        val initialQuery = intent.getStringExtra("SEARCH_QUERY")?.trim().orEmpty()
 
         // === MODIFICACIONES DE DISEÑO SIN AFECTAR FUNCIONALIDAD ===
 
@@ -85,7 +87,33 @@ class CatalogActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.products_recycler_view)
         recyclerView.layoutManager = GridLayoutManager(this, 2)
         // Usamos el adaptador corregido que apunta a DetailsActivity
-        recyclerView.adapter = ViewHolderAdapter(this, dummyList)
+        val adapter = ViewHolderAdapter(this, dummyList)
+        recyclerView.adapter = adapter
+
+        val searchView = findViewById<SearchView>(R.id.search_view_products)
+
+        if (initialQuery.isNotEmpty()) {
+            searchView.setQuery(initialQuery, false)
+            val filtered = dummyList.filter { it.name.contains(initialQuery, ignoreCase = true) }
+            adapter.updateList(filtered)
+        }
+
+        searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return false
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                val text = newText?.trim().orEmpty()
+                val filtered = if (text.isEmpty()) {
+                    dummyList
+                } else {
+                    dummyList.filter { it.name.contains(text, ignoreCase = true) }
+                }
+                adapter.updateList(filtered)
+                return true
+            }
+        })
 
         val filterButton = findViewById<androidx.cardview.widget.CardView>(R.id.filter_card)
         filterButton.setOnClickListener { showFilterBottomSheet() }

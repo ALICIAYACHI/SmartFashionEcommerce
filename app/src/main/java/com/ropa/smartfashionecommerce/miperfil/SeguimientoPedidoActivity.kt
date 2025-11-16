@@ -40,15 +40,53 @@ class SeguimientoPedidoActivity : ComponentActivity() {
         // Buscar el pedido seleccionado
         val pedido = PedidosManager.pedidos.find { it.codigo == codigoPedido }
 
+        // Calcular y actualizar estado dinámicamente según la fecha
+        val pedidoActualizado = pedido?.let { original ->
+            val nuevoEstado = calcularEstadoPedido(original.fecha)
+            if (nuevoEstado != original.estado) {
+                PedidosManager.actualizarEstado(this, original.codigo, nuevoEstado)
+                original.copy(estado = nuevoEstado)
+            } else {
+                original
+            }
+        }
+
         setContent {
             MaterialTheme {
-                if (pedido != null) {
-                    SeguimientoPedidoScreen(pedido = pedido, onBack = { finish() })
+                if (pedidoActualizado != null) {
+                    SeguimientoPedidoScreen(pedido = pedidoActualizado, onBack = { finish() })
                 } else {
                     PedidoNoEncontradoScreen(codigoPedido = codigoPedido, onBack = { finish() })
                 }
             }
         }
+    }
+}
+
+/**
+ * Calcula el estado del pedido según los días transcurridos desde la fecha de compra.
+ * 0-1 días: "Procesando"
+ * 2-3 días: "En tránsito"
+ * 4+ días: "Entregado"
+ */
+fun calcularEstadoPedido(fechaPedido: String): String {
+    return try {
+        val formato = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+        val fecha = formato.parse(fechaPedido) ?: return "Procesando"
+
+        val hoy = Calendar.getInstance()
+        val calPedido = Calendar.getInstance().apply { time = fecha }
+
+        val diffMillis = hoy.timeInMillis - calPedido.timeInMillis
+        val dias = (diffMillis / (1000 * 60 * 60 * 24)).toInt().coerceAtLeast(0)
+
+        when {
+            dias <= 1 -> "Procesando"
+            dias in 2..3 -> "En tránsito"
+            else -> "Entregado"
+        }
+    } catch (_: Exception) {
+        "Procesando"
     }
 }
 
@@ -117,9 +155,12 @@ fun SeguimientoPedidoScreen(pedido: Pedido, onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(8.dp))
 
             pedido.productos.forEach { nombrePedido ->
+                // Extraer solo el nombre del producto (antes de " xCantidad")
+                val nombreSolo = nombrePedido.substringBefore(" x").trim()
+
                 // 🔍 Coincidencia por nombre ignorando mayúsculas y espacios
                 val producto = localProducts.find {
-                    it.nombre.trim().lowercase(Locale.ROOT) == nombrePedido.trim().lowercase(Locale.ROOT)
+                    it.nombre.trim().equals(nombreSolo, ignoreCase = true)
                 }
 
                 ProductoItem(

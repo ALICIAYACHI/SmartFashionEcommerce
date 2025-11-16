@@ -223,7 +223,8 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                         PedidosManager.agregarPedido(
                             context = context,
                             total = total,
-                            productos = cartItems.map { "${it.name} x${it.quantity}" }
+                            productos = cartItems.map { "${it.name} x${it.quantity}" },
+                            direccionTexto = direccion
                         )
                         CartManager.clear()
 

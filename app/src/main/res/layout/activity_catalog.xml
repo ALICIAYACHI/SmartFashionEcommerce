@@ -135,20 +135,33 @@
         </androidx.cardview.widget.CardView>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
+    <androidx.appcompat.widget.SearchView
+        android:id="@+id/search_view_products"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:iconifiedByDefault="false"
+        android:queryHint="Buscar productos"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="12dp"
+        app:layout_constraintTop_toBottomOf="@id/parent_filter"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/products_recycler_view"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
-        android:layout_marginTop="20dp" android:clipToPadding="false"
+        android:layout_marginTop="12dp"
+        android:clipToPadding="false"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/parent_filter"
+        app:layout_constraintTop_toBottomOf="@id/search_view_products"
         tools:listitem="@layout/item_product"
-        android:layout_marginBottom="60dp"
-        />
+        android:layout_marginBottom="60dp" />
 
     <androidx.compose.ui.platform.ComposeView
         android:id="@+id/bottom_navigation_compose"

@@ -65,8 +65,14 @@ fun MiPerfilScreen(onBack: () -> Unit) {
         direccion = sharedPrefs.getString("direccion", "") ?: ""
 
         // Cargar foto de perfil específica del usuario
+        // 1) Desde ProfileImageManager (archivo interno por UID)
+        ProfileImageManager.loadProfileImage(context)
+        val managerUri = ProfileImageManager.profileImageUri.value
+
+        // 2) Fallback: desde SharedPreferences por email (compatibilidad)
         val savedImageUri = sharedPrefs.getString("foto_perfil_uri", null)
-        fotoUri = savedImageUri?.toUri()
+
+        fotoUri = managerUri ?: savedImageUri?.toUri()
 
         // ✅ Cargar historial de pedidos reales
         PedidosManager.cargarPedidos(context)

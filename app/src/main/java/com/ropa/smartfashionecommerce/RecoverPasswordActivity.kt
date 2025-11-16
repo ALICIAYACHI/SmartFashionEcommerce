@@ -12,10 +12,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -30,7 +32,7 @@ class RecoverPasswordActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val oobCode = intent.getStringExtra("oobCode") // viene del LinkHandlerActivity
+        val oobCode = intent.getStringExtra("oobCode")
 
         setContent {
             SmartFashionEcommerceTheme {
@@ -55,68 +57,97 @@ fun RecoverPasswordScreen(
     var newPassword by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
 
-    val isResetMode = oobCode != null // Si viene con código desde el correo
+    val isResetMode = oobCode != null
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF1a1a2e),
+                        Color(0xFF16213e),
+                        Color(0xFF0f3460)
+                    )
+                )
+            )
     ) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp)
+                .padding(horizontal = 28.dp)
                 .align(Alignment.Center),
-            shape = RoundedCornerShape(12.dp)
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             Column(
-                modifier = Modifier.padding(24.dp),
+                modifier = Modifier
+                    .padding(horizontal = 28.dp, vertical = 36.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Logo/Título
                 Text(
-                    text = "SmartFashion",
-                    fontSize = 28.sp,
+                    text = "👔 SmartFashion",
+                    fontSize = 32.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = Color(0xFF0f3460)
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
+                // Subtítulo
                 Text(
                     text = if (isResetMode) "Restablecer Contraseña" else "Recuperar Contraseña",
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color(0xFF1a1a2e)
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
+                // Descripción
                 Text(
                     text = if (isResetMode)
                         "Ingresa tu nueva contraseña para completar el proceso."
                     else
                         "Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.",
-                    fontSize = 14.sp,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center
+                    fontSize = 15.sp,
+                    color = Color(0xFF5a5a5a),
+                    textAlign = TextAlign.Center,
+                    lineHeight = 22.sp
                 )
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(32.dp))
 
                 if (!isResetMode) {
+                    // Campo de correo
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
                         modifier = Modifier.fillMaxWidth(),
                         leadingIcon = {
-                            Icon(imageVector = Icons.Filled.Email, contentDescription = null)
+                            Icon(
+                                imageVector = Icons.Filled.Email,
+                                contentDescription = "Email",
+                                tint = Color(0xFF0f3460)
+                            )
                         },
-                        placeholder = { Text("Correo electrónico") },
-                        singleLine = true
+                        label = { Text("Correo electrónico", color = Color(0xFF5a5a5a)) },
+                        placeholder = { Text("ejemplo@correo.com", color = Color(0xFFa0a0a0)) },
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF0f3460),
+                            unfocusedBorderColor = Color(0xFFd0d0d0),
+                            focusedLabelColor = Color(0xFF0f3460),
+                            cursorColor = Color(0xFF0f3460)
+                        )
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
+                    // Botón enviar
                     Button(
                         onClick = {
                             if (email.isEmpty()) {
@@ -155,39 +186,60 @@ fun RecoverPasswordScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp),
-                        shape = RoundedCornerShape(6.dp),
+                            .height(56.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Black,
-                            contentColor = Color.White
+                            containerColor = Color(0xFF0f3460),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color(0xFFd0d0d0)
                         ),
-                        enabled = email.isNotEmpty() && !isLoading
+                        enabled = email.isNotEmpty() && !isLoading,
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 4.dp,
+                            pressedElevation = 8.dp
+                        )
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
                                 color = Color.White,
-                                strokeWidth = 2.dp,
-                                modifier = Modifier.size(20.dp)
+                                strokeWidth = 3.dp,
+                                modifier = Modifier.size(24.dp)
                             )
                         } else {
-                            Text("Enviar Enlace de Recuperación")
+                            Text(
+                                "Enviar Enlace de Recuperación",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                 } else {
-                    // ✅ Modo RESTABLECER contraseña (viene del enlace)
+                    // Modo restablecer contraseña
                     OutlinedTextField(
                         value = newPassword,
                         onValueChange = { newPassword = it },
                         modifier = Modifier.fillMaxWidth(),
                         leadingIcon = {
-                            Icon(imageVector = Icons.Filled.Lock, contentDescription = null)
+                            Icon(
+                                imageVector = Icons.Filled.Lock,
+                                contentDescription = "Password",
+                                tint = Color(0xFF0f3460)
+                            )
                         },
-                        placeholder = { Text("Nueva contraseña") },
+                        label = { Text("Nueva contraseña", color = Color(0xFF5a5a5a)) },
+                        placeholder = { Text("Mínimo 6 caracteres", color = Color(0xFFa0a0a0)) },
                         singleLine = true,
-                        visualTransformation = PasswordVisualTransformation()
+                        visualTransformation = PasswordVisualTransformation(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF0f3460),
+                            unfocusedBorderColor = Color(0xFFd0d0d0),
+                            focusedLabelColor = Color(0xFF0f3460),
+                            cursorColor = Color(0xFF0f3460)
+                        )
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
                     Button(
                         onClick = {
@@ -222,34 +274,60 @@ fun RecoverPasswordScreen(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp),
-                        shape = RoundedCornerShape(6.dp),
+                            .height(56.dp),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = Color.Black,
-                            contentColor = Color.White
+                            containerColor = Color(0xFF0f3460),
+                            contentColor = Color.White,
+                            disabledContainerColor = Color(0xFFd0d0d0)
                         ),
-                        enabled = newPassword.isNotEmpty() && !isLoading
+                        enabled = newPassword.isNotEmpty() && !isLoading,
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 4.dp,
+                            pressedElevation = 8.dp
+                        )
                     ) {
                         if (isLoading) {
                             CircularProgressIndicator(
                                 color = Color.White,
-                                strokeWidth = 2.dp,
-                                modifier = Modifier.size(20.dp)
+                                strokeWidth = 3.dp,
+                                modifier = Modifier.size(24.dp)
                             )
                         } else {
-                            Text("Cambiar Contraseña")
+                            Text(
+                                "Cambiar Contraseña",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
+                // Botón volver
                 if (!isResetMode) {
-                    Text(
-                        text = "← Volver al inicio de sesión",
-                        color = Color.Gray,
-                        modifier = Modifier.clickable { onBackToLogin() }
-                    )
+                    Row(
+                        modifier = Modifier
+                            .clickable { onBackToLogin() }
+                            .padding(8.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.ArrowBack,
+                            contentDescription = "Volver",
+                            tint = Color(0xFF0f3460),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Volver al inicio de sesión",
+                            color = Color(0xFF0f3460),
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
             }
         }

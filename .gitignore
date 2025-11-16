@@ -26,3 +26,7 @@ app/google-services.json
 /captures
 .externalNativeBuild
 .cxx
+
+# Ignorar carpetas de errores de Kotlin
+.kotlin/
+*.log

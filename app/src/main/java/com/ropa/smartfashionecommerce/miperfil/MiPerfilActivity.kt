@@ -19,4 +19,16 @@ class MiPerfilActivity : ComponentActivity() {
             }
         }
     }
+
+    override fun onResume() {
+        super.onResume()
+        // 🔄 Re-componer la pantalla para recargar foto y datos desde SharedPreferences
+        setContent {
+            SmartFashionEcommerceTheme {
+                Surface(color = MaterialTheme.colorScheme.background) {
+                    MiPerfilScreen(onBack = { finish() })
+                }
+            }
+        }
+    }
 }
