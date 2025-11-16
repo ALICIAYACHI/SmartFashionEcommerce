@@ -30,10 +30,13 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import coil.compose.rememberAsyncImagePainter
 import com.ropa.smartfashionecommerce.R
+import android.widget.Toast
 import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartItem
 import com.ropa.smartfashionecommerce.carrito.CartManager
 import com.ropa.smartfashionecommerce.home.FavActivity
+import com.ropa.smartfashionecommerce.home.FavoriteItem
+import com.ropa.smartfashionecommerce.home.FavoritesManager
 import com.ropa.smartfashionecommerce.home.HomeActivity
 import com.ropa.smartfashionecommerce.home.FavoriteItem
 import com.ropa.smartfashionecommerce.home.FavoritesManager
@@ -44,6 +47,7 @@ import kotlinx.coroutines.launch
 class ProductDetailActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FavoritesManager.initialize(this)
         setContent {
             MaterialTheme {
                 Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
@@ -122,50 +126,10 @@ fun ProductDetailScreen() {
                         }
 
                         // ❤️ 🛒 👤 Acciones
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = {
-                                context.startActivity(Intent(context, FavActivity::class.java))
-                            }) {
-                                Icon(
-                                    Icons.Default.FavoriteBorder,
-                                    contentDescription = "Favoritos",
-                                    tint = Color.Black
-                                )
-                            }
-
-                            IconButton(onClick = {
-                                context.startActivity(Intent(context, Carrito::class.java))
-                            }) {
-                                Icon(
-                                    Icons.Default.ShoppingCart,
-                                    contentDescription = "Carrito",
-                                    tint = Color.Black
-                                )
-                            }
-
-                            // 👤 Foto de perfil (o ícono por defecto)
-                            IconButton(onClick = {
-                                context.startActivity(Intent(context, MiPerfilActivity::class.java))
-                            }) {
-                                if (profileImageUri != null) {
-                                    Image(
-                                        painter = rememberAsyncImagePainter(Uri.parse(profileImageUri)),
-                                        contentDescription = "Foto de perfil",
-                                        modifier = Modifier
-                                            .size(28.dp)
-                                            .clip(CircleShape)
-                                            .border(1.dp, Color.Gray, CircleShape),
-                                        contentScale = ContentScale.Crop
-                                    )
-                                } else {
-                                    Icon(
-                                        Icons.Default.Person,
-                                        contentDescription = "Perfil",
-                                        tint = Color.Black
-                                    )
-                                }
-                            }
-                        }
+                        ProductDetailActions(
+                            context = context,
+                            profileImageUri = profileImageUri
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
@@ -177,6 +141,104 @@ fun ProductDetailScreen() {
                 .padding(padding)
                 .padding(horizontal = 16.dp)
         )
+    }
+}
+
+@Composable
+fun ProductDetailActions(
+    context: Context,
+    profileImageUri: String?
+) {
+    val activity = context as? ProductDetailActivity
+    val intent = activity?.intent
+    
+    val productId = intent?.getIntExtra("productId", 0) ?: 0
+    val productName = intent?.getStringExtra("productName") ?: "Producto"
+    val productPrice = intent?.getDoubleExtra("productPrice", 0.0) ?: 0.0
+    val productImageRes = intent?.getIntExtra("productImageRes", R.drawable.modelo_ropa) ?: R.drawable.modelo_ropa
+    
+    // ✅ Verificar si el producto está en favoritos - Solo si tiene ID válido
+    val favoriteItems = FavoritesManager.favoriteItems
+    var isFavorite by remember(productId) {
+        mutableStateOf(favoriteItems.any { it.id == productId && productId != 0 })
+    }
+    
+    // Actualizar estado cuando cambia la lista de favoritos
+    LaunchedEffect(favoriteItems.size, productId) {
+        isFavorite = favoriteItems.any { it.id == productId && productId != 0 }
+    }
+    
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        // ❤️ Botón Favoritos
+        IconButton(onClick = {
+            if (productId == 0) {
+                Toast.makeText(context, "Error: Producto sin ID válido", Toast.LENGTH_SHORT).show()
+                return@IconButton
+            }
+            
+            if (isFavorite) {
+                // Eliminar de favoritos
+                val itemToRemove = favoriteItems.find { it.id == productId }
+                itemToRemove?.let {
+                    FavoritesManager.removeFavorite(context, it)
+                    isFavorite = false
+                    Toast.makeText(context, "Eliminado de favoritos 💔", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                // Agregar a favoritos
+                val favoriteItem = FavoriteItem(
+                    id = productId,
+                    name = productName,
+                    price = "S/ %.2f".format(productPrice),
+                    sizes = listOf("S", "M", "L", "XL"),
+                    imageRes = productImageRes,
+                    isFavorite = true
+                )
+                FavoritesManager.addFavorite(context, favoriteItem)
+                isFavorite = true
+                Toast.makeText(context, "Agregado a favoritos ❤️", Toast.LENGTH_SHORT).show()
+            }
+        }) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
+                tint = if (isFavorite) Color.Red else Color.Black
+            )
+        }
+
+        // 🛒 Botón Carrito
+        IconButton(onClick = {
+            context.startActivity(Intent(context, Carrito::class.java))
+        }) {
+            Icon(
+                Icons.Default.ShoppingCart,
+                contentDescription = "Carrito",
+                tint = Color.Black
+            )
+        }
+
+        // 👤 Foto de perfil (o ícono por defecto)
+        IconButton(onClick = {
+            context.startActivity(Intent(context, MiPerfilActivity::class.java))
+        }) {
+            if (profileImageUri != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(Uri.parse(profileImageUri)),
+                    contentDescription = "Foto de perfil",
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clip(CircleShape)
+                        .border(1.dp, Color.Gray, CircleShape),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Icon(
+                    Icons.Default.Person,
+                    contentDescription = "Perfil",
+                    tint = Color.Black
+                )
+            }
+        }
     }
 }
 

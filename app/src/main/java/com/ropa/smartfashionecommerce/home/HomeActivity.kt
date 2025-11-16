@@ -344,6 +344,7 @@ fun ProductCard(producto: Producto) {
                                     onLongPress = { showMenu = true },
                                     onTap = {
                                         val intent = Intent(context, ProductDetailActivity::class.java).apply {
+                                            putExtra("productId", producto.id)
                                             putExtra("productName", producto.nombre)
                                             putExtra("productPrice", producto.precio.toDoubleOrNull() ?: 0.0)
                                             putExtra("imageType", "local")
@@ -369,6 +370,7 @@ fun ProductCard(producto: Producto) {
                                 onLongPress = { showMenu = true },
                                 onTap = {
                                     val intent = Intent(context, ProductDetailActivity::class.java).apply {
+                                        putExtra("productId", producto.id)
                                         putExtra("productName", producto.nombre)
                                         putExtra("productPrice", producto.precio.toDoubleOrNull() ?: 0.0)
                                         putExtra("imageType", "url")
@@ -393,6 +395,7 @@ fun ProductCard(producto: Producto) {
                 IconButton(
                     onClick = {
                         val intent = Intent(context, ProductDetailActivity::class.java).apply {
+                            putExtra("productId", producto.id)
                             putExtra("productName", producto.nombre)
                             putExtra("productPrice", producto.precio.toDoubleOrNull() ?: 0.0)
                             if (producto.image_preview.isNullOrEmpty()) {
@@ -426,6 +429,7 @@ fun ProductCard(producto: Producto) {
                         MenuItem(Icons.Default.Visibility, "Ver detalles") {
                             showMenu = false
                             val intent = Intent(context, ProductDetailActivity::class.java).apply {
+                                putExtra("productId", producto.id)
                                 putExtra("productName", producto.nombre)
                                 putExtra("productPrice", producto.precio.toDoubleOrNull() ?: 0.0)
                                 if (producto.image_preview.isNullOrEmpty()) {
