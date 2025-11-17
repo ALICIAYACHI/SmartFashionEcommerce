@@ -25,12 +25,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import android.widget.Toast
+import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.CoroutineScope
-import coil.compose.rememberAsyncImagePainter
 import com.ropa.smartfashionecommerce.R
-import android.widget.Toast
 import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartItem
 import com.ropa.smartfashionecommerce.carrito.CartManager
@@ -38,9 +36,8 @@ import com.ropa.smartfashionecommerce.home.FavActivity
 import com.ropa.smartfashionecommerce.home.FavoriteItem
 import com.ropa.smartfashionecommerce.home.FavoritesManager
 import com.ropa.smartfashionecommerce.home.HomeActivity
-import com.ropa.smartfashionecommerce.home.FavoriteItem
-import com.ropa.smartfashionecommerce.home.FavoritesManager
 import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
