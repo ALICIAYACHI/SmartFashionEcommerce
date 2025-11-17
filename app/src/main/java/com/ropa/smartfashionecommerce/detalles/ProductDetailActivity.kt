@@ -8,6 +8,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -28,6 +30,10 @@ import android.widget.Toast
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.ropa.smartfashionecommerce.model.Review
+import java.text.SimpleDateFormat
+import java.util.Locale
 import com.ropa.smartfashionecommerce.R
 import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartItem
@@ -265,6 +271,26 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
     var showReviewDialog by remember { mutableStateOf(false) }
     var reviewRating by remember { mutableIntStateOf(0) }
     var reviewComment by remember { mutableStateOf("") }
+    
+    // 📝 Estado para reseñas
+    var reviews by remember { mutableStateOf<List<Review>>(emptyList()) }
+    var averageRating by remember { mutableFloatStateOf(0f) }
+    var editingReview by remember { mutableStateOf<Review?>(null) }
+    
+    // 🔄 Cargar reseñas en tiempo real
+    LaunchedEffect(productName) {
+        loadReviews(
+            productId = productName,
+            onReviewsLoaded = { loadedReviews ->
+                reviews = loadedReviews
+                averageRating = if (loadedReviews.isNotEmpty()) {
+                    loadedReviews.map { it.rating }.average().toFloat()
+                } else {
+                    0f
+                }
+            }
+        )
+    }
 
     val painter = if (imageType == "url" && !productImageUrl.isNullOrEmpty()) {
         rememberAsyncImagePainter(productImageUrl)
@@ -306,16 +332,21 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
             Text(productName, fontSize = 24.sp, fontWeight = FontWeight.Bold)
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                repeat(5) {
+                repeat(5) { index ->
                     Icon(
                         painter = painterResource(id = R.drawable.ic_star),
                         contentDescription = null,
-                        tint = Color(0xFFFFC107),
+                        tint = if (index < averageRating.toInt()) Color(0xFFFFC107) else Color.LightGray,
                         modifier = Modifier.size(20.dp)
                     )
                 }
                 Text(
-                    "(24 reseñas)",
+                    text = if (reviews.isNotEmpty()) {
+                        val reviewText = if (reviews.size == 1) "reseña" else "reseñas"
+                        "%.1f (${reviews.size} $reviewText)".format(averageRating)
+                    } else {
+                        "Sin reseñas"
+                    },
                     fontSize = 14.sp,
                     color = Color.Gray,
                     modifier = Modifier.padding(start = 8.dp)
@@ -328,6 +359,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                 if (user == null) {
                     Toast.makeText(context, "Inicia sesión para reseñar", Toast.LENGTH_SHORT).show()
                 } else {
+                    editingReview = null
                     reviewRating = 0
                     reviewComment = ""
                     showReviewDialog = true
@@ -497,11 +529,73 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                     R.drawable.casaca
                 )
             }
+            
+            // 📝 Sección de reseñas
+            Spacer(modifier = Modifier.height(28.dp))
+            Text("Reseñas de clientes", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            if (reviews.isEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_star),
+                            contentDescription = null,
+                            tint = Color.LightGray,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            "Aún no hay reseñas",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Gray
+                        )
+                        Text(
+                            "Sé el primero en reseñar este producto",
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            } else {
+                reviews.forEach { review ->
+                    ReviewCard(
+                        review = review,
+                        currentUserId = FirebaseAuth.getInstance().currentUser?.uid,
+                        onEdit = {
+                            editingReview = review
+                            reviewRating = review.rating
+                            reviewComment = review.comment
+                            showReviewDialog = true
+                        },
+                        onDelete = {
+                            deleteReview(
+                                productId = productName,
+                                reviewId = review.id,
+                                context = context,
+                                onSuccess = {
+                                    Toast.makeText(context, "Reseña eliminada", Toast.LENGTH_SHORT).show()
+                                }
+                            )
+                        }
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+            }
 
             if (showReviewDialog) {
                 AlertDialog(
                     onDismissRequest = { showReviewDialog = false },
-                    title = { Text("Reseñar $productName") },
+                    title = { Text(if (editingReview != null) "Editar reseña" else "Reseñar $productName") },
                     text = {
                         Column {
                             Text("Selecciona tu calificación", fontWeight = FontWeight.Bold)
@@ -531,20 +625,33 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                     confirmButton = {
                         TextButton(onClick = {
                             if (reviewRating in 1..5) {
-                                submitReviewCompose(
-                                    productId = productName,
-                                    rating = reviewRating,
-                                    comment = reviewComment,
-                                    context = context,
-                                    snackbarHostState = snackbarHostState,
-                                    coroutineScope = coroutineScope
-                                )
+                                if (editingReview != null) {
+                                    updateReview(
+                                        productId = productName,
+                                        reviewId = editingReview!!.id,
+                                        rating = reviewRating,
+                                        comment = reviewComment,
+                                        context = context,
+                                        onSuccess = {
+                                            Toast.makeText(context, "Reseña actualizada", Toast.LENGTH_SHORT).show()
+                                        }
+                                    )
+                                } else {
+                                    submitReviewCompose(
+                                        productId = productName,
+                                        rating = reviewRating,
+                                        comment = reviewComment,
+                                        context = context,
+                                        snackbarHostState = snackbarHostState,
+                                        coroutineScope = coroutineScope
+                                    )
+                                }
                                 showReviewDialog = false
                             } else {
                                 Toast.makeText(context, "Selecciona una calificación", Toast.LENGTH_SHORT).show()
                             }
                         }) {
-                            Text("Enviar")
+                            Text(if (editingReview != null) "Actualizar" else "Enviar")
                         }
                     },
                     dismissButton = {
@@ -649,4 +756,178 @@ fun RelatedProduct(name: String, price: Double, description: String, imageRes: I
         Text(name, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
         Text("S/ %.2f".format(price), color = Color(0xFF0D47A1), fontSize = 13.sp, fontWeight = FontWeight.Bold)
     }
+}
+
+@Composable
+fun ReviewCard(
+    review: Review,
+    currentUserId: String?,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
+) {
+    val isOwner = currentUserId == review.userId
+    val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale("es", "ES"))
+    val dateString = review.createdAt?.toDate()?.let { dateFormat.format(it) } ?: ""
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = review.userName,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        repeat(5) { index ->
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_star),
+                                contentDescription = null,
+                                tint = if (index < review.rating) Color(0xFFFFC107) else Color.LightGray,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        if (review.isVerifiedPurchase) {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "✓ Compra verificada",
+                                fontSize = 12.sp,
+                                color = Color(0xFF4CAF50)
+                            )
+                        }
+                    }
+                }
+                
+                if (isOwner) {
+                    Row {
+                        IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Editar",
+                                tint = Color(0xFF0D47A1)
+                            )
+                        }
+                        IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Eliminar",
+                                tint = Color(0xFFD32F2F)
+                            )
+                        }
+                    }
+                }
+            }
+            
+            if (review.comment.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = review.comment,
+                    fontSize = 14.sp,
+                    color = Color.DarkGray
+                )
+            }
+            
+            if (dateString.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = dateString,
+                    fontSize = 12.sp,
+                    color = Color.Gray
+                )
+            }
+        }
+    }
+}
+
+private fun loadReviews(
+    productId: String,
+    onReviewsLoaded: (List<Review>) -> Unit
+) {
+    val db = FirebaseFirestore.getInstance()
+    
+    db.collection("products")
+        .document(productId)
+        .collection("reviews")
+        .orderBy("createdAt", Query.Direction.DESCENDING)
+        .addSnapshotListener { snapshot, error ->
+            if (error != null) {
+                onReviewsLoaded(emptyList())
+                return@addSnapshotListener
+            }
+            
+            val reviewsList = snapshot?.documents?.mapNotNull { doc ->
+                try {
+                    Review(
+                        id = doc.id,
+                        userId = doc.getString("userId") ?: "",
+                        userName = doc.getString("userName") ?: "Usuario",
+                        rating = doc.getLong("rating")?.toInt() ?: 0,
+                        comment = doc.getString("comment") ?: "",
+                        createdAt = doc.getTimestamp("createdAt"),
+                        isVerifiedPurchase = doc.getBoolean("isVerifiedPurchase") ?: false
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            } ?: emptyList()
+            
+            onReviewsLoaded(reviewsList)
+        }
+}
+
+private fun updateReview(
+    productId: String,
+    reviewId: String,
+    rating: Int,
+    comment: String,
+    context: Context,
+    onSuccess: () -> Unit
+) {
+    val db = FirebaseFirestore.getInstance()
+    val updates = mapOf(
+        "rating" to rating,
+        "comment" to comment,
+        "updatedAt" to com.google.firebase.Timestamp.now()
+    )
+    
+    db.collection("products")
+        .document(productId)
+        .collection("reviews")
+        .document(reviewId)
+        .update(updates)
+        .addOnSuccessListener { onSuccess() }
+        .addOnFailureListener {
+            Toast.makeText(context, "Error al actualizar", Toast.LENGTH_SHORT).show()
+        }
+}
+
+private fun deleteReview(
+    productId: String,
+    reviewId: String,
+    context: Context,
+    onSuccess: () -> Unit
+) {
+    val db = FirebaseFirestore.getInstance()
+    
+    db.collection("products")
+        .document(productId)
+        .collection("reviews")
+        .document(reviewId)
+        .delete()
+        .addOnSuccessListener { onSuccess() }
+        .addOnFailureListener {
+            Toast.makeText(context, "Error al eliminar", Toast.LENGTH_SHORT).show()
+        }
 }
