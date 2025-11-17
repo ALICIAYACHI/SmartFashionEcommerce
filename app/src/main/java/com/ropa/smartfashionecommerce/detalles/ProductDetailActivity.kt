@@ -251,6 +251,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
     val activity = context as? ProductDetailActivity
     val intent = activity?.intent
 
+    val productId = intent?.getIntExtra("productId", 0) ?: 0
     val productName = intent?.getStringExtra("productName") ?: "Blusa Elegante Negra"
     val productPrice = intent?.getDoubleExtra("productPrice", 89.90) ?: 89.90
     val productDescription = intent?.getStringExtra("productDescription")
@@ -271,12 +272,15 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
         painterResource(id = productImageRes ?: R.drawable.modelo_ropa)
     }
 
-    // 💖 Estado de favorito para este producto
-    LaunchedEffect(Unit) {
-        FavoritesManager.initialize(context)
+    // 💖 Estado de favorito para este producto - SINCRONIZADO con el header
+    val favoriteItems = FavoritesManager.favoriteItems
+    var isFavorite by remember(productId) {
+        mutableStateOf(favoriteItems.any { it.id == productId && productId != 0 })
     }
-    var isFavorite by remember {
-        mutableStateOf(FavoritesManager.favoriteItems.any { it.id == productName.hashCode() })
+    
+    // Actualizar estado cuando cambia la lista de favoritos
+    LaunchedEffect(favoriteItems.size, productId) {
+        isFavorite = favoriteItems.any { it.id == productId && productId != 0 }
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { paddingValues ->
@@ -436,21 +440,32 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
 
                 IconButton(
                     onClick = {
-                        val favItem = FavoriteItem(
-                            id = productName.hashCode(),
-                            name = productName,
-                            price = "S/ %.2f".format(productPrice),
-                            imageRes = productImageRes ?: R.drawable.modelo_ropa
-                        )
+                        if (productId == 0) {
+                            Toast.makeText(context, "Error: Producto sin ID válido", Toast.LENGTH_SHORT).show()
+                            return@IconButton
+                        }
 
                         if (isFavorite) {
-                            FavoritesManager.removeFavorite(context, favItem)
-                            isFavorite = false
-                            Toast.makeText(context, "Quitado de favoritos", Toast.LENGTH_SHORT).show()
+                            // Eliminar de favoritos
+                            val itemToRemove = favoriteItems.find { it.id == productId }
+                            itemToRemove?.let {
+                                FavoritesManager.removeFavorite(context, it)
+                                isFavorite = false
+                                Toast.makeText(context, "Eliminado de favoritos 💔", Toast.LENGTH_SHORT).show()
+                            }
                         } else {
-                            FavoritesManager.addFavorite(context, favItem)
+                            // Agregar a favoritos
+                            val favoriteItem = FavoriteItem(
+                                id = productId,
+                                name = productName,
+                                price = "S/ %.2f".format(productPrice),
+                                sizes = listOf("S", "M", "L", "XL"),
+                                imageRes = productImageRes ?: R.drawable.modelo_ropa,
+                                isFavorite = true
+                            )
+                            FavoritesManager.addFavorite(context, favoriteItem)
                             isFavorite = true
-                            Toast.makeText(context, "Agregado a favoritos", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Agregado a favoritos ❤️", Toast.LENGTH_SHORT).show()
                         }
                     },
                     modifier = Modifier
