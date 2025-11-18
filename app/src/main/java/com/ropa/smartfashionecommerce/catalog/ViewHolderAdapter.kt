@@ -10,8 +10,9 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import coil.load
 import com.ropa.smartfashionecommerce.R
-import com.ropa.smartfashionecommerce.detalles.DetailsActivity // Asegura la importación
+import com.ropa.smartfashionecommerce.detalles.ProductDetailActivity
 
 class ViewHolderAdapter(
     private val context: Context,
@@ -37,17 +38,42 @@ class ViewHolderAdapter(
     override fun onBindViewHolder(holder: ProductViewHolder, position: Int) {
         val product = currentList[position]
 
-        holder.image.setImageResource(product.imageRes)
+        if (product.imageUrl != null) {
+            holder.image.load(product.imageUrl) {
+                crossfade(true)
+                placeholder(product.imageRes)
+                error(product.imageRes)
+            }
+        } else {
+            holder.image.setImageResource(product.imageRes)
+        }
+
         holder.name.text = product.name
         holder.price.text = product.price
 
-        // Lógica de navegación a Detalles
+        // Navegar a ProductDetailActivity con los datos necesarios
         val navigateToDetails = {
-            val intent = Intent(context, DetailsActivity::class.java)
-            // Claves que DetailsActivity espera: "name", "price", "imageRes"
-            intent.putExtra("name", product.name)
-            intent.putExtra("price", product.price)
-            intent.putExtra("imageRes", product.imageRes)
+            val intent = Intent(context, ProductDetailActivity::class.java).apply {
+                // ID simple basado en posición para este catálogo
+                putExtra("productId", position + 1)
+                putExtra("productName", product.name)
+                // Precio en double: extraemos número del string "S/ xx.xx"
+                val numericPrice = product.price
+                    .replace("S/", "")
+                    .replace("s/", "")
+                    .replace(" ", "")
+                    .replace(",", ".")
+                    .toDoubleOrNull() ?: 0.0
+                putExtra("productPrice", numericPrice)
+                putExtra("productDescription", "Vestido elegante ideal para ocasiones especiales.")
+                if (product.imageUrl != null) {
+                    putExtra("imageType", "url")
+                    putExtra("productImageUrl", product.imageUrl)
+                } else {
+                    putExtra("imageType", "local")
+                    putExtra("productImageRes", product.imageRes)
+                }
+            }
             context.startActivity(intent)
         }
 

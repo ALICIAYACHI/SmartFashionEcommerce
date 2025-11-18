@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@android:color/white"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tv_sort_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ordenar por"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:textColor="#111111" />
+
+    <TextView
+        android:id="@+id/tv_sort_featured"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingVertical="12dp"
+        android:text="Destacados"
+        android:textSize="14sp"
+        android:textColor="#111111" />
+
+    <TextView
+        android:id="@+id/tv_sort_best_selling"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingVertical="12dp"
+        android:text="Más vendidos"
+        android:textSize="14sp"
+        android:textColor="#111111" />
+
+    <TextView
+        android:id="@+id/tv_sort_recent"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingVertical="12dp"
+        android:text="Más recientes"
+        android:textSize="14sp"
+        android:textColor="#111111" />
+
+    <TextView
+        android:id="@+id/tv_sort_price_low_high"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingVertical="12dp"
+        android:text="De precios bajos a altos"
+        android:textSize="14sp"
+        android:textColor="#111111" />
+
+    <TextView
+        android:id="@+id/tv_sort_price_high_low"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingVertical="12dp"
+        android:text="De precios altos a bajos"
+        android:textSize="14sp"
+        android:textColor="#111111" />
+
+</LinearLayout>

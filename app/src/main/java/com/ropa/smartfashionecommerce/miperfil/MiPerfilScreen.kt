@@ -9,9 +9,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -35,6 +39,11 @@ import com.ropa.smartfashionecommerce.DarkLoginActivity
 import com.ropa.smartfashionecommerce.R
 import com.ropa.smartfashionecommerce.carrito.PedidosManager
 import com.ropa.smartfashionecommerce.home.FavoritesManager
+import com.ropa.smartfashionecommerce.home.HomeActivity
+import com.ropa.smartfashionecommerce.home.FavActivity
+import com.ropa.smartfashionecommerce.catalog.CatalogActivity
+import com.ropa.smartfashionecommerce.carrito.Carrito
+import com.ropa.smartfashionecommerce.carrito.CartManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -86,23 +95,123 @@ fun MiPerfilScreen(onBack: () -> Unit) {
     var showChangePasswordDialog by remember { mutableStateOf(false) }
     var showNotificacionesDialog by remember { mutableStateOf(false) }
 
+    var selectedTab by remember { mutableStateOf("Perfil") }
+
+    val cartCount by remember { derivedStateOf { CartManager.cartItems.sumOf { it.quantity } } }
+
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Mi Perfil", color = Color.White, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Atrás",
-                            tint = Color.White
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color(0xFF212121))
-            )
-        },
-        containerColor = Color(0xFFF5F5F5)
+        containerColor = Color(0xFFF5F5F5),
+        bottomBar = {
+            NavigationBar(containerColor = Color.White, tonalElevation = 4.dp) {
+                val selectedColor = Color(0xFFE53935)
+                NavigationBarItem(
+                    selected = selectedTab == "Inicio",
+                    onClick = {
+                        selectedTab = "Inicio"
+                        val activity = context as? Activity
+                        activity?.finish()
+                        context.startActivity(Intent(context, HomeActivity::class.java))
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = Color.Transparent,
+                        selectedIconColor = selectedColor,
+                        selectedTextColor = selectedColor,
+                        unselectedIconColor = Color(0xFF212121),
+                        unselectedTextColor = Color(0xFF212121)
+                    ),
+                    icon = {
+                        val icon = if (selectedTab == "Inicio") Icons.Filled.Home else Icons.Outlined.Home
+                        Icon(icon, contentDescription = "Inicio")
+                    },
+                    label = { Text("Inicio") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == "Categorias",
+                    onClick = {
+                        selectedTab = "Categorias"
+                        context.startActivity(Intent(context, CatalogActivity::class.java))
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = Color.Transparent,
+                        selectedIconColor = selectedColor,
+                        selectedTextColor = selectedColor,
+                        unselectedIconColor = Color(0xFF212121),
+                        unselectedTextColor = Color(0xFF212121)
+                    ),
+                    icon = {
+                        val icon = if (selectedTab == "Categorias") Icons.Filled.Category else Icons.Outlined.Category
+                        Icon(icon, contentDescription = "Categorías")
+                    },
+                    label = { Text("Categorías") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == "Carrito",
+                    onClick = {
+                        selectedTab = "Carrito"
+                        context.startActivity(Intent(context, Carrito::class.java))
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = Color.Transparent,
+                        selectedIconColor = selectedColor,
+                        selectedTextColor = selectedColor,
+                        unselectedIconColor = Color(0xFF212121),
+                        unselectedTextColor = Color(0xFF212121)
+                    ),
+                    icon = {
+                        val icon = if (selectedTab == "Carrito") Icons.Filled.ShoppingCart else Icons.Outlined.ShoppingCart
+                        BadgedBox(
+                            badge = {
+                                if (cartCount > 0) {
+                                    Badge {
+                                        Text(cartCount.toString(), fontSize = 10.sp)
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(icon, contentDescription = "Carrito")
+                        }
+                    },
+                    label = { Text("Carrito") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == "Favoritos",
+                    onClick = {
+                        selectedTab = "Favoritos"
+                        context.startActivity(Intent(context, FavActivity::class.java))
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = Color.Transparent,
+                        selectedIconColor = selectedColor,
+                        selectedTextColor = selectedColor,
+                        unselectedIconColor = Color(0xFF212121),
+                        unselectedTextColor = Color(0xFF212121)
+                    ),
+                    icon = {
+                        val icon = if (selectedTab == "Favoritos") Icons.Filled.Favorite else Icons.Outlined.Favorite
+                        Icon(icon, contentDescription = "Favoritos")
+                    },
+                    label = { Text("Favoritos") }
+                )
+                NavigationBarItem(
+                    selected = selectedTab == "Perfil",
+                    onClick = {
+                        selectedTab = "Perfil"
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = Color.Transparent,
+                        selectedIconColor = selectedColor,
+                        selectedTextColor = selectedColor,
+                        unselectedIconColor = Color(0xFF212121),
+                        unselectedTextColor = Color(0xFF212121)
+                    ),
+                    icon = {
+                        val icon = if (selectedTab == "Perfil") Icons.Filled.Person else Icons.Outlined.Person
+                        Icon(icon, contentDescription = "Perfil")
+                    },
+                    label = { Text("Perfil") }
+                )
+            }
+        }
     ) { padding ->
         Column(
             modifier = Modifier
@@ -110,58 +219,77 @@ fun MiPerfilScreen(onBack: () -> Unit) {
                 .verticalScroll(rememberScrollState())
                 .fillMaxSize()
                 .background(Brush.verticalGradient(listOf(Color.White, Color(0xFFEAEAEA))))
-                .padding(horizontal = 20.dp, vertical = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+                .padding(horizontal = 20.dp, vertical = 24.dp)
         ) {
-            // 🟣 FOTO DE PERFIL
-            Box(
-                modifier = Modifier
-                    .size(120.dp)
-                    .clip(CircleShape)
-                    .border(2.dp, Color.Gray, CircleShape),
-                contentAlignment = Alignment.Center
+            // 🟣 FOTO + NOMBRE Y CORREO EN UNA FILA
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                if (fotoUri != null) {
-                    val bitmap = ProfileImageManager.getBitmapFromUri(context, fotoUri!!)
-                    if (bitmap != null) {
-                        Image(
-                            bitmap = bitmap.asImageBitmap(),
-                            contentDescription = "Foto de perfil",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(120.dp).clip(CircleShape)
-                        )
+                // Avatar a la izquierda
+                Box(
+                    modifier = Modifier
+                        .size(96.dp)
+                        .clip(CircleShape)
+                        .border(2.dp, Color.Gray, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (fotoUri != null) {
+                        val bitmap = ProfileImageManager.getBitmapFromUri(context, fotoUri!!)
+                        if (bitmap != null) {
+                            Image(
+                                bitmap = bitmap.asImageBitmap(),
+                                contentDescription = "Foto de perfil",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.size(96.dp).clip(CircleShape)
+                            )
+                        } else {
+                            Image(
+                                painter = rememberAsyncImagePainter(R.drawable.ic_person),
+                                contentDescription = "Foto de perfil",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier.size(96.dp).clip(CircleShape)
+                            )
+                        }
                     } else {
                         Image(
-                            painter = rememberAsyncImagePainter(R.drawable.ic_person),
+                            painter = rememberAsyncImagePainter(user?.photoUrl ?: R.drawable.ic_person),
                             contentDescription = "Foto de perfil",
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(120.dp).clip(CircleShape)
+                            modifier = Modifier.size(96.dp).clip(CircleShape)
                         )
                     }
-                } else {
-                    Image(
-                        painter = rememberAsyncImagePainter(user?.photoUrl ?: R.drawable.ic_person),
-                        contentDescription = "Foto de perfil",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(120.dp).clip(CircleShape)
-                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Nombre + editar + correo a la derecha
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            nombre,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 20.sp,
+                            color = Color(0xFF212121)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        IconButton(onClick = {
+                            val intent = Intent(context, EditarPerfilActivity::class.java)
+                            context.startActivity(intent)
+                        }) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Editar perfil",
+                                tint = Color.Gray,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                    Text(email, fontSize = 14.sp, color = Color(0xFF616161))
                 }
             }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 🟣 Nombre + ícono editar
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(nombre, fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF212121))
-                IconButton(onClick = {
-                    val intent = Intent(context, EditarPerfilActivity::class.java)
-                    context.startActivity(intent)
-                }) {
-                    Icon(Icons.Default.Edit, contentDescription = "Editar perfil", tint = Color.Gray, modifier = Modifier.size(18.dp))
-                }
-            }
-
-            Text(email, fontSize = 14.sp, color = Color(0xFF616161))
 
             Spacer(modifier = Modifier.height(20.dp))
             HorizontalDivider(color = Color(0xFFE0E0E0), thickness = 1.dp)

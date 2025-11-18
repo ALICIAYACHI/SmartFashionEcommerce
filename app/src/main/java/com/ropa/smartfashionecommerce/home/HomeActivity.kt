@@ -22,6 +22,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Category
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -44,6 +49,7 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.auth.ktx.auth
 import com.ropa.smartfashionecommerce.R
 import com.ropa.smartfashionecommerce.carrito.Carrito
+import com.ropa.smartfashionecommerce.carrito.CartManager
 import com.ropa.smartfashionecommerce.catalog.CatalogActivity
 import com.ropa.smartfashionecommerce.detalles.ProductDetailActivity
 import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
@@ -51,32 +57,29 @@ import com.ropa.smartfashionecommerce.miperfil.ProfileImageManager
 import com.ropa.smartfashionecommerce.model.Producto
 import com.ropa.smartfashionecommerce.model.Categoria
 import com.ropa.smartfashionecommerce.network.ApiClient
+import com.google.firebase.firestore.FirebaseFirestore
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 import kotlinx.coroutines.launch
 
 val localProducts = listOf(
-    Producto(1, "Blusa Elegante Negra", "89.90", categoria = Categoria(1, "Mujer"), localImageRes = R.drawable.blusaelegante),
-    Producto(2, "Vestido Dorado Noche", "159.90", categoria = Categoria(1, "Mujer"), localImageRes = R.drawable.vestidodorado),
-    Producto(3, "Casaca Moderna", "120.00", categoria = Categoria(2, "Hombre"), localImageRes = R.drawable.casaca),
-    Producto(4, "Pantalón Beige", "110.00", categoria = Categoria(2, "Hombre"), localImageRes = R.drawable.pantalonbeige),
-    Producto(5, "Camisa Blanca", "95.00", categoria = Categoria(2, "Hombre"), localImageRes = R.drawable.camisablanca),
-    Producto(6, "Vestido Floral", "150.00", categoria = Categoria(1, "Mujer"), localImageRes = R.drawable.vestidofloral),
+    Producto(1, "Blusa Elegante Negra", "43.76", categoria = Categoria(1, "Mujer"), localImageRes = R.drawable.blusaelegante),
+    Producto(2, "Vestido Dorado Noche", "43.59", categoria = Categoria(1, "Mujer"), localImageRes = R.drawable.vestidodorado),
+    Producto(3, "Casaca Moderna", "59.66", categoria = Categoria(2, "Hombre"), localImageRes = R.drawable.casaca),
+    Producto(4, "Pantalón Beige", "45.77", categoria = Categoria(2, "Hombre"), localImageRes = R.drawable.pantalonbeige),
+    Producto(5, "Camisa Blanca", "36.74", categoria = Categoria(2, "Hombre"), localImageRes = R.drawable.camisablanca),
+    Producto(6, "Vestido Floral", "38.86", categoria = Categoria(1, "Mujer"), localImageRes = R.drawable.vestidofloral),
     // Ofertas Black Friday (solo online)
-    Producto(7, "Sudadera Oversize", "120.00", descripcion = "Moda", categoria = Categoria(3, "Black Friday"), image_preview = "https://www.desire.pe/cdn/shop/files/CRI_2554_398b7b94-a0a2-4dc5-be42-30995f0c04e2.png?v=1726679347"),
-    Producto(8, "Vestido Aire Barcelona", "249.90", descripcion = "Moda", categoria = Categoria(3, "Black Friday"), image_preview = "https://d23ye9eewymoys.cloudfront.net/colecciones/web/1c45-miren-aire-barcelona-1-thumb.jpg"),
-    Producto(9, "Outfit Casual Mujer", "139.90", descripcion = "Moda", categoria = Categoria(3, "Black Friday"), image_preview = "https://i.pinimg.com/564x/6a/59/49/6a5949963b7705a7c3927c044b2f4c38.jpg"),
-    Producto(10, "Vestido Casual", "119.90", descripcion = "Moda", categoria = Categoria(3, "Black Friday"), image_preview = "https://i.pinimg.com/236x/e2/04/25/e20425efb02a5185ba8f4d1cd710183d.jpg"),
-    Producto(11, "Zapatillas de Diseñador", "199.90", descripcion = "Calzado", categoria = Categoria(3, "Black Friday"), image_preview = "https://images.pexels.com/photos/18155790/pexels-photo-18155790/free-photo-of-moda-disenador-zapatos-estudio.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"),
-    Producto(12, "Zapatillas Blancas", "189.90", descripcion = "Calzado", categoria = Categoria(3, "Black Friday"), image_preview = "https://media.falabella.com/falabellaPE/115093604_01/w=800,h=800,fit=pad"),
-    Producto(13, "Set Collar Dorado", "89.90", descripcion = "Accesorios", categoria = Categoria(3, "Black Friday"), image_preview = "https://m.media-amazon.com/images/I/51zKPZEEDlL._AC_UF1000,1000_QL80_.jpg"),
-    Producto(14, "Set Pulseras Elegantes", "79.90", descripcion = "Accesorios", categoria = Categoria(3, "Black Friday"), image_preview = "https://m.media-amazon.com/images/I/71Pl18rqbHL._AC_UF1000,1000_QL80_.jpg"),
+    Producto(7, "Sudadera Oversize", "41.74", descripcion = "Moda", categoria = Categoria(3, "Black Friday"), image_preview = "https://www.desire.pe/cdn/shop/files/CRI_2554_398b7b94-a0a2-4dc5-be42-30995f0c04e2.png?v=1726679347"),
+    Producto(8, "Vestido Aire Barcelona", "28.30", descripcion = "Moda", categoria = Categoria(3, "Black Friday"), image_preview = "https://d23ye9eewymoys.cloudfront.net/colecciones/web/1c45-miren-aire-barcelona-1-thumb.jpg"),
+    Producto(9, "Outfit Casual Mujer", "62.06", descripcion = "Moda", categoria = Categoria(3, "Black Friday"), image_preview = "https://i.pinimg.com/564x/6a/59/49/6a5949963b7705a7c3927c044b2f4c38.jpg"),
+    Producto(10, "Vestido Casual", "49.96", descripcion = "Moda", categoria = Categoria(3, "Black Friday"), image_preview = "https://i.pinimg.com/236x/e2/04/25/e20425efb02a5185ba8f4d1cd710183d.jpg"),
     // Niños
-    Producto(15, "Camisa Casual Niño", "89.90", categoria = Categoria(4, "Niños"), image_preview = "https://hushpuppiespe.vtexassets.com/arquivos/ids/348758/https---s3.amazonaws.com-ecom-imagenes.forus-digital.xyz.peru-HUSHPUPPIESKIDS-HK211021504_287_1.jpg?v=638604628092130000"),
-    Producto(16, "Casaca Abrigadora Niño", "129.90", categoria = Categoria(4, "Niños"), image_preview = "https://media.falabella.com/falabellaPE/883289216_001/w=800,h=800,fit=pad"),
-    Producto(17, "Pantalón Niño Denim", "99.90", categoria = Categoria(4, "Niños"), image_preview = "https://hushpuppiespe.vtexassets.com/arquivos/ids/336908-800-auto?v=638446729033670000&width=800&height=auto&aspect=true"),
+    Producto(11, "Camisa Casual Niño", "28.98", categoria = Categoria(4, "Niños"), image_preview = "https://hushpuppiespe.vtexassets.com/arquivos/ids/348758/https---s3.amazonaws.com-ecom-imagenes.forus-digital.xyz.peru-HUSHPUPPIESKIDS-HK211021504_287_1.jpg?v=638604628092130000"),
+    Producto(12, "Casaca Abrigadora Niño", "63.82", categoria = Categoria(4, "Niños"), image_preview = "https://media.falabella.com/falabellaPE/883289216_001/w=800,h=800,fit=pad"),
+    Producto(13, "Pantalón Niño Denim", "49.47", categoria = Categoria(4, "Niños"), image_preview = "https://hushpuppiespe.vtexassets.com/arquivos/ids/336908-800-auto?v=638446729033670000&width=800&height=auto&aspect=true"),
     // Bebé
-    Producto(18, "Conjunto Bebé Niño", "79.90", categoria = Categoria(5, "Bebé"), image_preview = "https://img.kwcdn.com/product/Fancyalgo/VirtualModelMatting/fb03dd58d895a6436b3cfee2b5d7d766.jpg?imageMogr2/auto-orient%7CimageView2/2/w/800/q/70/format/webp"),
-    Producto(19, "Conjunto Bebé Niña", "79.90", categoria = Categoria(5, "Bebé"), image_preview = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmGawIE-1oJ5wtsBQ9p9DFelbIJtmzeJd8ga0iA6SW3gaTX_-VHNCs02I33J5WvOiAe0s&usqp=CAU")
+    Producto(14, "Conjunto Bebé Niño", "48.88", categoria = Categoria(5, "Bebé"), image_preview = "https://img.kwcdn.com/product/Fancyalgo/VirtualModelMatting/fb03dd58d895a6436b3cfee2b5d7d766.jpg?imageMogr2/auto-orient%7CimageView2/2/w/800/q/70/format/webp"),
+    Producto(15, "Conjunto Bebé Niña", "40.30", categoria = Categoria(5, "Bebé"), image_preview = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmGawIE-1oJ5wtsBQ9p9DFelbIJtmzeJd8ga0iA6SW3gaTX_-VHNCs02I33J5WvOiAe0s&usqp=CAU")
 )
 
 class HomeActivity : ComponentActivity() {
@@ -96,6 +99,34 @@ class HomeActivity : ComponentActivity() {
     }
 }
 
+// Cargar promedio de rating y cantidad de reseñas desde Firestore para un producto
+private fun loadProductRating(
+    productId: String,
+    onResult: (Float, Int) -> Unit
+) {
+    val db = FirebaseFirestore.getInstance()
+
+    db.collection("products")
+        .document(productId)
+        .collection("reviews")
+        .get()
+        .addOnSuccessListener { snapshot ->
+            val ratings = snapshot.documents.mapNotNull { doc ->
+                doc.getLong("rating")?.toInt()
+            }
+
+            if (ratings.isNotEmpty()) {
+                val avg = ratings.average().toFloat()
+                onResult(avg, ratings.size)
+            } else {
+                onResult(0f, 0)
+            }
+        }
+        .addOnFailureListener {
+            onResult(0f, 0)
+        }
+}
+
 @Composable
 fun FashionHomeScreen(activity: ComponentActivity) {
     val context = LocalContext.current
@@ -112,6 +143,8 @@ fun FashionHomeScreen(activity: ComponentActivity) {
     var recentSearches by remember { mutableStateOf(listOf<String>()) }
 
     val profileImageUri by remember { ProfileImageManager.profileImageUri }
+
+    val cartCount by remember { derivedStateOf { CartManager.cartItems.sumOf { it.quantity } } }
 
     // ✅ CORREGIDO: Obtener usuario actual de Firebase
     val firebaseUser = Firebase.auth.currentUser
@@ -142,38 +175,87 @@ fun FashionHomeScreen(activity: ComponentActivity) {
     Scaffold(
         bottomBar = {
             NavigationBar(containerColor = Color.White, tonalElevation = 4.dp) {
+                val selectedColor = Color(0xFFE53935)
+
                 NavigationBarItem(
                     selected = selectedTab == "Inicio",
                     onClick = { selectedTab = "Inicio" },
-                    icon = { Icon(Icons.Default.Home, contentDescription = "Inicio", tint = Color(0xFF212121)) },
-                    label = { Text("Inicio", color = Color(0xFF212121)) }
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = Color.Transparent,
+                        selectedIconColor = selectedColor,
+                        selectedTextColor = selectedColor,
+                        unselectedIconColor = Color(0xFF212121),
+                        unselectedTextColor = Color(0xFF212121)
+                    ),
+                    icon = {
+                        val icon = if (selectedTab == "Inicio") Icons.Filled.Home else Icons.Outlined.Home
+                        Icon(icon, contentDescription = "Inicio")
+                    },
+                    label = { Text("Inicio") }
                 )
                 NavigationBarItem(
-                    selected = selectedTab == "Categorias",
+                    selected = false,
                     onClick = {
-                        selectedTab = "Categorias"
                         activity.startActivity(Intent(activity, CatalogActivity::class.java))
                     },
-                    icon = { Icon(Icons.Default.Category, contentDescription = "Categorías", tint = Color(0xFF212121)) },
-                    label = { Text("Categorías", color = Color(0xFF212121)) }
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = Color.Transparent,
+                        selectedIconColor = selectedColor,
+                        selectedTextColor = selectedColor,
+                        unselectedIconColor = Color(0xFF212121),
+                        unselectedTextColor = Color(0xFF212121)
+                    ),
+                    icon = {
+                        val icon = if (selectedTab == "Categorias") Icons.Filled.Category else Icons.Outlined.Category
+                        Icon(icon, contentDescription = "Categorías")
+                    },
+                    label = { Text("Categorías") }
                 )
                 NavigationBarItem(
-                    selected = selectedTab == "Carrito",
+                    selected = false,
                     onClick = {
-                        selectedTab = "Carrito"
                         activity.startActivity(Intent(activity, Carrito::class.java))
                     },
-                    icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Carrito", tint = Color(0xFF212121)) },
-                    label = { Text("Carrito", color = Color(0xFF212121)) }
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = Color.Transparent,
+                        selectedIconColor = selectedColor,
+                        selectedTextColor = selectedColor,
+                        unselectedIconColor = Color(0xFF212121),
+                        unselectedTextColor = Color(0xFF212121)
+                    ),
+                    icon = {
+                        val icon = if (selectedTab == "Carrito") Icons.Filled.ShoppingCart else Icons.Outlined.ShoppingCart
+                        BadgedBox(
+                            badge = {
+                                if (cartCount > 0) {
+                                    Badge {
+                                        Text(cartCount.toString(), fontSize = 10.sp)
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(icon, contentDescription = "Carrito")
+                        }
+                    },
+                    label = { Text("Carrito") }
                 )
                 NavigationBarItem(
-                    selected = selectedTab == "Favoritos",
+                    selected = false,
                     onClick = {
-                        selectedTab = "Favoritos"
                         activity.startActivity(Intent(activity, FavActivity::class.java))
                     },
-                    icon = { Icon(Icons.Default.Favorite, contentDescription = "Favoritos", tint = Color(0xFF212121)) },
-                    label = { Text("Favoritos", color = Color(0xFF212121)) }
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = Color.Transparent,
+                        selectedIconColor = selectedColor,
+                        selectedTextColor = selectedColor,
+                        unselectedIconColor = Color(0xFF212121),
+                        unselectedTextColor = Color(0xFF212121)
+                    ),
+                    icon = {
+                        val icon = if (selectedTab == "Favoritos") Icons.Filled.Favorite else Icons.Outlined.Favorite
+                        Icon(icon, contentDescription = "Favoritos")
+                    },
+                    label = { Text("Favoritos") }
                 )
                 NavigationBarItem(
                     selected = selectedTab == "Perfil",
@@ -369,7 +451,6 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                 val circleFilters = listOf(
                     CircleFilter("Todos", "https://i.pinimg.com/564x/6a/59/49/6a5949963b7705a7c3927c044b2f4c38.jpg"),
                     CircleFilter("Ofertas", "https://d23ye9eewymoys.cloudfront.net/colecciones/web/1c45-miren-aire-barcelona-1-thumb.jpg"),
-                    CircleFilter("Calzado", "https://images.pexels.com/photos/18155790/pexels-photo-18155790/free-photo-of-moda-disenador-zapatos-estudio.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"),
                     CircleFilter("Vestidos", "https://i.pinimg.com/236x/e2/04/25/e20425efb02a5185ba8f4d1cd710183d.jpg"),
                     CircleFilter("Casacas", "https://cuerosvelezpe.vtexassets.com/arquivos/ids/358118/1035983-02-01--Chaqueta-ebro.jpg?v=638482126287130000")
                 )
@@ -531,9 +612,7 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                 data class BFSubcategory(val label: String, val iconUrl: String)
                 val bfSubcategories = listOf(
                     BFSubcategory("Todos", "https://d23ye9eewymoys.cloudfront.net/colecciones/web/1c45-miren-aire-barcelona-1-thumb.jpg"),
-                    BFSubcategory("Moda", "https://i.pinimg.com/564x/6a/59/49/6a5949963b7705a7c3927c044b2f4c38.jpg"),
-                    BFSubcategory("Calzado", "https://images.pexels.com/photos/18155790/pexels-photo-18155790/free-photo-of-moda-disenador-zapatos-estudio.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"),
-                    BFSubcategory("Accesorios", "https://m.media-amazon.com/images/I/51zKPZEEDlL._AC_UF1000,1000_QL80_.jpg")
+                    BFSubcategory("Moda", "https://i.pinimg.com/564x/6a/59/49/6a5949963b7705a7c3927c044b2f4c38.jpg")
                 )
                 LazyRow(
                     modifier = Modifier
@@ -627,6 +706,20 @@ fun ProductCard(producto: Producto) {
     val context = LocalContext.current
     var showMenu by remember { mutableStateOf(false) }
 
+    var averageRating by remember { mutableStateOf(0f) }
+    var reviewCount by remember { mutableStateOf(0) }
+
+    // Cargar promedio de reseñas para este producto (mismo ID que en ProductDetail: nombre)
+    LaunchedEffect(producto.nombre) {
+        loadProductRating(
+            productId = producto.nombre,
+            onResult = { avg, count ->
+                averageRating = avg
+                reviewCount = count
+            }
+        )
+    }
+
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(12.dp))
@@ -691,6 +784,26 @@ fun ProductCard(producto: Producto) {
             Spacer(modifier = Modifier.height(8.dp))
             Text(producto.nombre, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color(0xFF212121))
 
+            if (reviewCount > 0) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    repeat(5) { index ->
+                        Icon(
+                            painter = painterResource(id = R.drawable.ic_star),
+                            contentDescription = null,
+                            tint = if (index < averageRating.toInt()) Color(0xFFFFC107) else Color.LightGray,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                    Text(
+                        text = "%.1f".format(averageRating),
+                        fontSize = 11.sp,
+                        color = Color(0xFF616161),
+                        modifier = Modifier.padding(start = 4.dp)
+                    )
+                }
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -750,16 +863,24 @@ fun ProductCard(producto: Producto) {
 
                         MenuItem(Icons.Default.Favorite, "Agregar a favoritos") {
                             showMenu = false
-                            val favoriteItem = FavoriteItem(
-                                id = producto.id,
-                                name = producto.nombre,
-                                price = "S/ ${producto.precio}",
-                                sizes = listOf("S", "M", "L"),
-                                imageRes = producto.localImageRes ?: R.drawable.modelo_ropa,
-                                isFavorite = true
-                            )
-                            FavoritesManager.addFavorite(context, favoriteItem)
-                            Toast.makeText(context, "Agregado a favoritos ❤️", Toast.LENGTH_SHORT).show()
+
+                            val currentUser = Firebase.auth.currentUser
+                            if (currentUser == null) {
+                                Toast.makeText(context, "Inicia sesión para guardar favoritos", Toast.LENGTH_SHORT).show()
+                                context.startActivity(Intent(context, com.ropa.smartfashionecommerce.DarkLoginActivity::class.java))
+                            } else {
+                                val favoriteItem = FavoriteItem(
+                                    id = producto.id,
+                                    name = producto.nombre,
+                                    price = "S/ ${producto.precio}",
+                                    sizes = listOf("S", "M", "L"),
+                                    imageRes = producto.localImageRes ?: R.drawable.modelo_ropa,
+                                    imageUrl = producto.image_preview,
+                                    isFavorite = true
+                                )
+                                FavoritesManager.addFavorite(context, favoriteItem)
+                                Toast.makeText(context, "Agregado a favoritos ❤️", Toast.LENGTH_SHORT).show()
+                            }
                         }
 
                         MenuItem(Icons.AutoMirrored.Filled.Chat, "Consultar por WhatsApp") {

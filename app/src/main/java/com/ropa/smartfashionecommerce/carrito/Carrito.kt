@@ -55,9 +55,15 @@ fun ShoppingCartScreen(activity: ComponentActivity? = null) {
     val context = LocalContext.current
     val cartItems by remember { derivedStateOf { CartManager.cartItems } }
 
+    // Subtotal de productos (precio final de los ítems)
     val subtotal = remember { derivedStateOf { CartManager.getTotal() } }
-    val igv = subtotal.value * 0.18
-    val total = subtotal.value + igv
+
+    // Envío gratis desde S/60, si no se cobra S/7.50
+    val shippingThreshold = 60.0
+    val shippingCost = 7.50
+    val shipping = if (subtotal.value >= shippingThreshold || subtotal.value == 0.0) 0.0 else shippingCost
+    val total = subtotal.value + shipping
+    val missingForFreeShipping = (shippingThreshold - subtotal.value).coerceAtLeast(0.0)
 
     Scaffold(
         topBar = {
@@ -128,8 +134,10 @@ fun ShoppingCartScreen(activity: ComponentActivity? = null) {
                     OrderSummary(
                         productCount = cartItems.size,
                         subtotal = subtotal.value,
-                        igv = igv,
+                        shipping = shipping,
                         total = total,
+                        missingForFreeShipping = missingForFreeShipping,
+                        shippingThreshold = shippingThreshold,
                         onFinish = {
                             if (activity != null) {
                                 AlertDialog.Builder(activity)
@@ -157,14 +165,25 @@ fun CartItemCard(item: CartItem, onIncrease: () -> Unit, onDecrease: () -> Unit,
         elevation = CardDefaults.cardElevation(6.dp)
     ) {
         Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(id = item.imageRes),
-                contentDescription = item.name,
-                modifier = Modifier
-                    .size(90.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
-            )
+            if (item.imageUrl != null) {
+                coil.compose.AsyncImage(
+                    model = item.imageUrl,
+                    contentDescription = item.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                )
+            } else {
+                Image(
+                    painter = painterResource(id = item.imageRes),
+                    contentDescription = item.name,
+                    modifier = Modifier
+                        .size(90.dp)
+                        .clip(RoundedCornerShape(12.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
 
             Spacer(modifier = Modifier.width(14.dp))
 
@@ -234,7 +253,15 @@ fun ControlButton(symbol: String, onClick: () -> Unit) {
 
 // ----------------------- Resumen del pedido -----------------------
 @Composable
-fun OrderSummary(productCount: Int, subtotal: Double, igv: Double, total: Double, onFinish: () -> Unit) {
+fun OrderSummary(
+    productCount: Int,
+    subtotal: Double,
+    shipping: Double,
+    total: Double,
+    missingForFreeShipping: Double,
+    shippingThreshold: Double,
+    onFinish: () -> Unit
+) {
     val context = LocalContext.current
 
     Card(
@@ -253,8 +280,14 @@ fun OrderSummary(productCount: Int, subtotal: Double, igv: Double, total: Double
             }
 
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("IGV (18%)", color = Color.Black)
-                Text("S/ ${"%.2f".format(igv)}", color = Color.Black)
+                val label = if (shipping == 0.0) "Envío (Gratis desde S/ ${"%.2f".format(shippingThreshold)})" else "Envío"
+                val value = if (shipping == 0.0) "Gratis" else "S/ ${"%.2f".format(shipping)}"
+                Text(label, color = Color.Black)
+                Text(
+                    value,
+                    color = if (shipping == 0.0) Color(0xFF2E7D32) else Color.Black,
+                    fontWeight = if (shipping == 0.0) FontWeight.SemiBold else FontWeight.Normal
+                )
             }
 
             Divider(modifier = Modifier.padding(vertical = 10.dp), color = Color.Gray)
@@ -266,6 +299,17 @@ fun OrderSummary(productCount: Int, subtotal: Double, igv: Double, total: Double
                     fontWeight = FontWeight.ExtraBold,
                     color = Color(0xFF007ACC),
                     fontSize = 20.sp
+                )
+            }
+
+            // Mensaje para motivar a alcanzar el envío gratis
+            if (shipping > 0.0 && missingForFreeShipping > 0.0) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Añade S/ ${"%.2f".format(missingForFreeShipping)} más para obtener envío gratis",
+                    color = Color(0xFF00796B),
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
 

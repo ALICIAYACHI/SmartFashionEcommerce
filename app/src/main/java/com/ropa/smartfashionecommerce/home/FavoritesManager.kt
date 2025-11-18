@@ -14,6 +14,7 @@ data class FavoriteItem(
     val price: String,
     val sizes: List<String> = listOf("S", "M", "L"),
     val imageRes: Int,
+    val imageUrl: String? = null,
     var isFavorite: Boolean = true
 )
 

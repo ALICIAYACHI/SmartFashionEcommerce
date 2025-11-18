@@ -51,6 +51,10 @@
             android:name=".RegisterActivity"
             android:exported="true" />
 
+        <activity
+            android:name=".detalles.BabySizeGuideActivity"
+            android:exported="false" />
+
         <!-- 🏠 Home -->
         <activity
             android:name=".home.HomeActivity"
@@ -71,7 +75,15 @@
         <activity
             android:name=".catalog.CatalogActivity"
             android:exported="true"
-            android:theme="@style/Theme.Catalog" />
+            android:theme="@style/Theme.Catalog"
+            android:windowSoftInputMode="adjustNothing" />
+
+        <!-- 🛍️ Subcatálogo (productos de una subcategoría) -->
+        <activity
+            android:name=".catalog.SubcategoryCatalogActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Catalog"
+            android:windowSoftInputMode="adjustNothing" />
 
         <!-- 🔍 Detalle de producto -->
         <activity

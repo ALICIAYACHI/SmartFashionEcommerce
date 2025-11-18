@@ -8,6 +8,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -60,6 +62,15 @@ class ProductDetailActivity : ComponentActivity() {
         }
     }
 }
+
+data class RelatedProductData(
+    val name: String,
+    val price: Double,
+    val description: String,
+    val imageRes: Int,
+    val tags: List<String>,
+    val category: String
+)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -195,6 +206,7 @@ fun ProductDetailActions(
                     price = "S/ %.2f".format(productPrice),
                     sizes = listOf("S", "M", "L", "XL"),
                     imageRes = productImageRes,
+                    imageUrl = null,
                     isFavorite = true
                 )
                 FavoritesManager.addFavorite(context, favoriteItem)
@@ -245,6 +257,7 @@ fun ProductDetailActions(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProductDetailContent(modifier: Modifier = Modifier) {
     val scrollState = rememberScrollState()
@@ -276,6 +289,17 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
     var reviews by remember { mutableStateOf<List<Review>>(emptyList()) }
     var averageRating by remember { mutableFloatStateOf(0f) }
     var editingReview by remember { mutableStateOf<Review?>(null) }
+
+    // Categoría aproximada del producto según su nombre (solo ropa: mujer, hombre, niño, bebé)
+    val productCategory = remember(productName) {
+        val nameLower = productName.lowercase()
+        when {
+            "bebé" in nameLower || "bebe" in nameLower -> "BEBE"
+            "niño" in nameLower || "niña" in nameLower || "nino" in nameLower -> "NINO"
+            "hombre" in nameLower -> "HOMBRE"
+            else -> "MUJER"
+        }
+    }
     
     // 🔄 Cargar reseñas en tiempo real
     LaunchedEffect(productName) {
@@ -384,19 +408,51 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                 lineHeight = 22.sp
             )
 
+            // Siempre mostramos tallas para ropa (Mujer, Hombre, Niño, Bebé)
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Talla", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                listOf("S", "M", "L", "XL").forEach { size ->
+            val sizeLabel = "Talla"
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(sizeLabel, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+
+                    if (productCategory == "BEBE") {
+                        TextButton(onClick = {
+                            val intent = Intent(context, com.ropa.smartfashionecommerce.detalles.BabySizeGuideActivity::class.java)
+                            context.startActivity(intent)
+                        }) {
+                            Text("Guía de tallas", color = Color(0xFF0D47A1), fontSize = 14.sp)
+                        }
+                    }
+                }
+
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                val sizes = when (productCategory) {
+                    "BEBE" -> {
+                        // Tallas tipo bebé
+                        listOf("0-3M", "3-6M", "6-9M", "9-12M", "12-18M", "18-24M")
+                    }
+                    else -> listOf("S", "M", "L", "XL")
+                }
+
+                sizes.forEach { size ->
                     OutlinedButton(
                         onClick = { selectedSize = size },
                         colors = ButtonDefaults.outlinedButtonColors(
                             containerColor = if (selectedSize == size) Color.Black else Color.Transparent,
                             contentColor = if (selectedSize == size) Color.White else Color.Black
                         ),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.width(70.dp)
-                    ) { Text(size) }
+                        shape = RoundedCornerShape(50),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(size, fontSize = 13.sp)
+                    }
                 }
             }
 
@@ -441,23 +497,30 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
             ) {
                 Button(
                     onClick = {
-                        val item = CartItem(
-                            name = productName,
-                            price = productPrice,
-                            quantity = quantity,
-                            size = selectedSize,
-                            color = selectedColor,
-                            imageRes = productImageRes ?: R.drawable.modelo_ropa
-                        )
-                        CartManager.addItem(item)
-                        CartManager.saveCart(context)
+                        val user = FirebaseAuth.getInstance().currentUser
+                        if (user == null) {
+                            Toast.makeText(context, "Inicia sesión para agregar al carrito", Toast.LENGTH_SHORT).show()
+                            context.startActivity(Intent(context, com.ropa.smartfashionecommerce.DarkLoginActivity::class.java))
+                        } else {
+                            val item = CartItem(
+                                name = productName,
+                                price = productPrice,
+                                quantity = quantity,
+                                size = selectedSize,
+                                color = selectedColor,
+                                imageRes = productImageRes ?: R.drawable.modelo_ropa,
+                                imageUrl = if (imageType == "url") productImageUrl else null
+                            )
+                            CartManager.addItem(item)
+                            CartManager.saveCart(context)
 
-                        coroutineScope.launch {
-                            snackbarHostState.showSnackbar("Producto agregado al carrito 🛒")
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("Producto agregado al carrito 🛒")
+                            }
+
+                            val intent = Intent(context, Carrito::class.java)
+                            context.startActivity(intent)
                         }
-
-                        val intent = Intent(context, Carrito::class.java)
-                        context.startActivity(intent)
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
                     modifier = Modifier
@@ -472,6 +535,13 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
 
                 IconButton(
                     onClick = {
+                        val user = FirebaseAuth.getInstance().currentUser
+                        if (user == null) {
+                            Toast.makeText(context, "Inicia sesión para usar favoritos", Toast.LENGTH_SHORT).show()
+                            context.startActivity(Intent(context, com.ropa.smartfashionecommerce.DarkLoginActivity::class.java))
+                            return@IconButton
+                        }
+
                         if (productId == 0) {
                             Toast.makeText(context, "Error: Producto sin ID válido", Toast.LENGTH_SHORT).show()
                             return@IconButton
@@ -493,6 +563,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                                 price = "S/ %.2f".format(productPrice),
                                 sizes = listOf("S", "M", "L", "XL"),
                                 imageRes = productImageRes ?: R.drawable.modelo_ropa,
+                                imageUrl = if (imageType == "url") productImageUrl else null,
                                 isFavorite = true
                             )
                             FavoritesManager.addFavorite(context, favoriteItem)
@@ -515,19 +586,82 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(28.dp))
             Text("Productos relacionados", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(12.dp))
+
+            // Productos relacionados dinámicos según la categoría del producto actual (solo ropa)
+            val relatedCandidates = remember {
+                listOf(
+                    // MUJER
+                    RelatedProductData(
+                        name = "Vestido Dorado Noche",
+                        price = 159.90,
+                        description = "Vestido elegante de noche con detalles dorados brillantes.",
+                        imageRes = R.drawable.vestidodorado,
+                        tags = listOf("vestido", "noche", "elegante"),
+                        category = "MUJER"
+                    ),
+                    RelatedProductData(
+                        name = "Vestido Negro Clásico",
+                        price = 139.90,
+                        description = "Vestido negro clásico ideal para eventos formales.",
+                        imageRes = R.drawable.modelo_ropa,
+                        tags = listOf("vestido", "negro"),
+                        category = "MUJER"
+                    ),
+                    RelatedProductData(
+                        name = "Blusa Casual Beige",
+                        price = 89.90,
+                        description = "Blusa casual en tono beige, perfecta para el uso diario.",
+                        imageRes = R.drawable.modelo_ropa,
+                        tags = listOf("blusa", "casual"),
+                        category = "MUJER"
+                    ),
+
+                    // HOMBRE
+                    RelatedProductData(
+                        name = "Casaca Moderna Hombre",
+                        price = 129.90,
+                        description = "Casaca moderna para hombre, ideal para el día a día.",
+                        imageRes = R.drawable.casaca,
+                        tags = listOf("casaca", "hombre"),
+                        category = "HOMBRE"
+                    ),
+
+                    // NIÑO / BEBÉ
+                    RelatedProductData(
+                        name = "Conjunto Niño Urbano",
+                        price = 79.90,
+                        description = "Conjunto cómodo y moderno para niño.",
+                        imageRes = R.drawable.modelo_ropa,
+                        tags = listOf("niño", "nino"),
+                        category = "NINO"
+                    ),
+                    RelatedProductData(
+                        name = "Conjunto Bebé Niña",
+                        price = 69.90,
+                        description = "Conjunto tierno y cómodo para bebé niña.",
+                        imageRes = R.drawable.modelo_ropa,
+                        tags = listOf("bebé", "bebe"),
+                        category = "BEBE"
+                    )
+                )
+            }
+
+            val filteredRelated = remember(productCategory, relatedCandidates, productName) {
+                val matches = relatedCandidates.filter { candidate ->
+                    candidate.category == productCategory && candidate.name != productName
+                }
+                if (matches.isNotEmpty()) matches else relatedCandidates
+            }
+
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                RelatedProduct(
-                    "Vestido Dorado Noche",
-                    159.90,
-                    "Vestido elegante de noche con detalles dorados brillantes.",
-                    R.drawable.vestidodorado
-                )
-                RelatedProduct(
-                    "Casaca Moderna",
-                    120.90,
-                    "Casaca moderna ideal para el día a día, con estilo urbano y comodidad.",
-                    R.drawable.casaca
-                )
+                filteredRelated.take(2).forEach { rp ->
+                    RelatedProduct(
+                        name = rp.name,
+                        price = rp.price,
+                        description = rp.description,
+                        imageRes = rp.imageRes
+                    )
+                }
             }
             
             // 📝 Sección de reseñas
