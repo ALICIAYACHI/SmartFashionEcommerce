@@ -74,19 +74,20 @@
                 app:tint="@color/black" />
         </androidx.cardview.widget.CardView>
 
-        <TextView
-            android:id="@+id/tv_title"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:text="Catálogo de Hombres"
-            android:gravity="start"
-            android:textSize="34sp" android:textColor="@color/black"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-medium" android:layout_marginTop="24dp" app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toBottomOf="@id/btn_back_card" />
-
     </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <androidx.appcompat.widget.SearchView
+        android:id="@+id/search_view_products"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:iconifiedByDefault="false"
+        android:queryHint="Buscar productos"
+        android:layout_marginStart="24dp"
+        android:layout_marginEnd="24dp"
+        android:layout_marginTop="12dp"
+        app:layout_constraintTop_toBottomOf="@id/modern_header_layout"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
 
     <androidx.constraintlayout.widget.ConstraintLayout
         android:id="@+id/parent_filter"
@@ -94,7 +95,7 @@
         android:layout_height="wrap_content"
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
-        android:layout_marginTop="20dp" app:layout_constraintTop_toBottomOf="@+id/modern_header_layout"
+        android:layout_marginTop="12dp" app:layout_constraintTop_toBottomOf="@id/search_view_products"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
@@ -116,37 +117,39 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintBottom_toBottomOf="parent"
             app:cardCornerRadius="16dp"
-            app:cardBackgroundColor="@color/black" app:cardElevation="6dp"> <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:paddingStart="16dp" android:paddingEnd="16dp" android:paddingTop="10dp" android:paddingBottom="10dp" android:gravity="center_vertical">
-
-            <TextView
+            app:cardBackgroundColor="@color/black" app:cardElevation="6dp"> 
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Filtrar"
-                android:textColor="@android:color/white" android:textStyle="bold"
-                android:layout_marginEnd="8dp" android:textSize="16sp"/> <ImageView
-            android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_filter"
-            app:tint="@android:color/white"/>
-        </LinearLayout>
+                android:orientation="horizontal"
+                android:paddingStart="16dp" android:paddingEnd="16dp" android:paddingTop="10dp" android:paddingBottom="10dp" android:gravity="center_vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Filtrar"
+                    android:textColor="@android:color/white" android:textStyle="bold"
+                    android:layout_marginEnd="8dp" android:textSize="16sp"/> 
+                <ImageView
+                    android:layout_width="20dp" android:layout_height="20dp" android:src="@drawable/ic_filter"
+                    app:tint="@android:color/white"/>
+            </LinearLayout>
 
         </androidx.cardview.widget.CardView>
     </androidx.constraintlayout.widget.ConstraintLayout>
 
-    <androidx.appcompat.widget.SearchView
-        android:id="@+id/search_view_products"
+    <androidx.compose.ui.platform.ComposeView
+        android:id="@+id/categories_compose"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:iconifiedByDefault="false"
-        android:queryHint="Buscar productos"
-        android:layout_marginStart="24dp"
-        android:layout_marginEnd="24dp"
-        android:layout_marginTop="12dp"
+        android:layout_height="0dp"
+        android:visibility="gone"
         app:layout_constraintTop_toBottomOf="@id/parent_filter"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="60dp" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/products_recycler_view"
@@ -159,7 +162,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/search_view_products"
+        app:layout_constraintTop_toBottomOf="@id/parent_filter"
         tools:listitem="@layout/item_product"
         android:layout_marginBottom="60dp" />
 
