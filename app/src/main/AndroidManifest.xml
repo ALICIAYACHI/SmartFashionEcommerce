@@ -91,9 +91,20 @@
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
+        <activity
+            android:name=".detalles.ReviewerProfileActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
         <!-- 👤 Mi perfil -->
         <activity
             android:name=".miperfil.MiPerfilActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <!-- ⭐ Tus reseñas -->
+        <activity
+            android:name=".miperfil.MisResenasActivity"
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
@@ -107,6 +118,16 @@
         <activity
             android:name=".miperfil.DireccionesEnvioActivity"
             android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <activity
+            android:name=".miperfil.TerminosLegalesActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <activity
+            android:name=".miperfil.DetalleTerminoActivity"
+            android:exported="false"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
         <!-- ❤️ Favoritos -->

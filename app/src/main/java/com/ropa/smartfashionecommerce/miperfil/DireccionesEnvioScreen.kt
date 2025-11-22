@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,7 +24,7 @@ import androidx.compose.ui.unit.sp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DireccionesEnvioScreen(onBack: () -> Unit) {
+fun DireccionesEnvioScreen(onBack: () -> Unit, direccionInicial: String? = null) {
     val context = LocalContext.current
     val sharedPrefs = context.getSharedPreferences("SmartFashionPrefs", Context.MODE_PRIVATE)
 
@@ -32,7 +33,18 @@ fun DireccionesEnvioScreen(onBack: () -> Unit) {
         mutableStateOf(sharedPrefs.getStringSet("direcciones_envio", emptySet())!!.toMutableSet())
     }
 
+    // ✅ Si no hay direcciones guardadas y tenemos una dirección inicial del perfil, la registramos automáticamente
+    LaunchedEffect(Unit) {
+        if (direcciones.isEmpty() && !direccionInicial.isNullOrBlank()) {
+            val updated = direcciones.toMutableSet()
+            updated.add(direccionInicial)
+            sharedPrefs.edit().putStringSet("direcciones_envio", updated).apply()
+            direcciones = updated
+        }
+    }
+
     var showDialog by remember { mutableStateOf(false) }
+    var direccionEditando by remember { mutableStateOf<String?>(null) }
 
     Scaffold(
         topBar = {
@@ -52,7 +64,10 @@ fun DireccionesEnvioScreen(onBack: () -> Unit) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { showDialog = true },
+                onClick = {
+                    direccionEditando = null
+                    showDialog = true
+                },
                 containerColor = Color(0xFF1A237E)
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Agregar dirección", tint = Color.White)
@@ -79,6 +94,10 @@ fun DireccionesEnvioScreen(onBack: () -> Unit) {
                 items(direcciones.toList()) { direccion ->
                     DireccionCard(
                         direccion = direccion,
+                        onEdit = {
+                            direccionEditando = direccion
+                            showDialog = true
+                        },
                         onDelete = {
                             // ✅ Crear una nueva copia al eliminar para forzar recomposición
                             val updated = direcciones.toMutableSet()
@@ -95,24 +114,48 @@ fun DireccionesEnvioScreen(onBack: () -> Unit) {
 
     // ✅ Diálogo para agregar nueva dirección
     if (showDialog) {
+        val initialNombre: String
+        val initialDetalle: String
+
+        if (direccionEditando != null && direccionEditando!!.contains(" - ")) {
+            initialNombre = direccionEditando!!.substringBefore(" - ").trim()
+            initialDetalle = direccionEditando!!.substringAfter(" - ").trim()
+        } else {
+            initialNombre = ""
+            initialDetalle = direccionEditando ?: ""
+        }
+
         DireccionEnvioDialog(
-            onDismissRequest = { showDialog = false },
+            onDismissRequest = {
+                showDialog = false
+                direccionEditando = null
+            },
             onSave = { nombre, detalle ->
                 val nuevaDireccion = "$nombre - $detalle"
-                // ✅ Crear nueva copia también al agregar
                 val updated = direcciones.toMutableSet()
+
+                if (direccionEditando != null) {
+                    updated.remove(direccionEditando)
+                }
+
                 updated.add(nuevaDireccion)
                 sharedPrefs.edit().putStringSet("direcciones_envio", updated).apply()
                 direcciones = updated
-                Toast.makeText(context, "Dirección guardada", Toast.LENGTH_SHORT).show()
+
+                val mensaje = if (direccionEditando != null) "Dirección actualizada" else "Dirección guardada"
+                Toast.makeText(context, mensaje, Toast.LENGTH_SHORT).show()
+
+                direccionEditando = null
                 showDialog = false
-            }
+            },
+            initialNombre = initialNombre,
+            initialDetalle = initialDetalle
         )
     }
 }
 
 @Composable
-fun DireccionCard(direccion: String, onDelete: () -> Unit) {
+fun DireccionCard(direccion: String, onEdit: () -> Unit, onDelete: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -135,6 +178,13 @@ fun DireccionCard(direccion: String, onDelete: () -> Unit) {
                 fontSize = 14.sp,
                 modifier = Modifier.weight(1f)
             )
+            IconButton(onClick = onEdit) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Editar",
+                    tint = Color(0xFF1A237E)
+                )
+            }
             IconButton(onClick = onDelete) {
                 Icon(
                     imageVector = Icons.Default.Delete,

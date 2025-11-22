@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import android.content.Context
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.ropa.smartfashionecommerce.pedidos.PedidoConfirmado
@@ -52,6 +53,7 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
     val user = Firebase.auth.currentUser
     val userEmail = user?.email ?: ""
     val sharedPrefs = context.getSharedPreferences("user_profile_$userEmail", android.content.Context.MODE_PRIVATE)
+    val direccionesPrefs = context.getSharedPreferences("SmartFashionPrefs", Context.MODE_PRIVATE)
 
     val cartItems by remember { derivedStateOf { CartManager.cartItems } }
     val subtotal = remember { derivedStateOf { CartManager.getTotal() } }
@@ -66,6 +68,12 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
     var ciudad by remember { mutableStateOf("") }
     var departamento by remember { mutableStateOf("") }
     var codigoPostal by remember { mutableStateOf("") }
+
+    // Direcciones guardadas
+    var direccionesGuardadas by remember {
+        mutableStateOf(direccionesPrefs.getStringSet("direcciones_envio", emptySet())?.toList() ?: emptyList())
+    }
+    var showDireccionesDialog by remember { mutableStateOf(false) }
 
     // Método de pago
     var metodoPago by remember { mutableStateOf("Tarjeta") }
@@ -138,6 +146,16 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
 
             // Sección: Dirección de envío
             SectionCard(title = "Dirección de envío") {
+                if (direccionesGuardadas.isNotEmpty()) {
+                    OutlinedButton(
+                        onClick = { showDireccionesDialog = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Elegir de mis direcciones", color = Color.Black)
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
                 CustomTextField("Dirección completa", direccion) { direccion = it }
                 CustomTextField("Ciudad", ciudad) { ciudad = it }
                 CustomTextField("Departamento", departamento) { departamento = it }
@@ -249,6 +267,28 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                 fontSize = 13.sp,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
+
+            // Diálogo para elegir dirección guardada
+            if (showDireccionesDialog && direccionesGuardadas.isNotEmpty()) {
+                AlertDialog(
+                    onDismissRequest = { showDireccionesDialog = false },
+                    confirmButton = {},
+                    title = { Text("Mis direcciones", fontWeight = FontWeight.Bold, color = Color.Black) },
+                    text = {
+                        Column {
+                            direccionesGuardadas.forEach { dir ->
+                                TextButton(onClick = {
+                                    direccion = dir
+                                    showDireccionesDialog = false
+                                }) {
+                                    Text(dir, color = Color.Black)
+                                }
+                            }
+                        }
+                    },
+                    containerColor = Color.White
+                )
+            }
         }
     }
 }
@@ -286,7 +326,9 @@ fun CustomTextField(
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Color.Black,
             unfocusedBorderColor = Color.Gray,
-            cursorColor = Color.Black
+            cursorColor = Color.Black,
+            focusedTextColor = Color.Black,
+            unfocusedTextColor = Color.Black
         )
     )
 }

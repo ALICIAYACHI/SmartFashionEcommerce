@@ -45,6 +45,7 @@ import com.ropa.smartfashionecommerce.home.FavoriteItem
 import com.ropa.smartfashionecommerce.home.FavoritesManager
 import com.ropa.smartfashionecommerce.home.HomeActivity
 import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
+import com.ropa.smartfashionecommerce.miperfil.ProfileImageManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -77,7 +78,8 @@ data class RelatedProductData(
 fun ProductDetailScreen() {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
-    val categorias = listOf("ZARA", "VOGUE", "CHANEL", "RALPH")
+    // Categorías reales de la app (las mismas que usa CatalogActivity)
+    val categorias = listOf("Mujeres", "Hombres", "Niños")
 
     // ✅ Cargar imagen de perfil guardada (reactiva)
     val sharedPref = context.getSharedPreferences("MiPerfil", Context.MODE_PRIVATE)
@@ -701,10 +703,25 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                     }
                 }
             } else {
+                val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
                 reviews.forEach { review ->
                     ReviewCard(
                         review = review,
-                        currentUserId = FirebaseAuth.getInstance().currentUser?.uid,
+                        currentUserId = currentUserId,
+                        onUserClick = {
+                            if (currentUserId != null && currentUserId == review.userId) {
+                                // Si es mi propia reseña, voy a "Mis reseñas" en mi perfil
+                                val intent = Intent(context, com.ropa.smartfashionecommerce.miperfil.MisResenasActivity::class.java)
+                                context.startActivity(intent)
+                            } else {
+                                // Si es otro usuario, sigo yendo al perfil del reseñador
+                                val intent = Intent(context, ReviewerProfileActivity::class.java).apply {
+                                    putExtra("userId", review.userId)
+                                    putExtra("userName", review.userName)
+                                }
+                                context.startActivity(intent)
+                            }
+                        },
                         onEdit = {
                             editingReview = review
                             reviewRating = review.rating
@@ -814,9 +831,20 @@ private fun submitReviewCompose(
     }
 
     val db = FirebaseFirestore.getInstance()
+    // Determinar qué foto de perfil guardar en la reseña
+    // 1) Si el usuario tiene foto local en Mi Perfil, usamos esa
+    // 2) Si no, usamos la foto del proveedor (por ejemplo Google)
+    val localProfileUri = ProfileImageManager.profileImageUri.value
+    val photoUrlToSave = when {
+        localProfileUri != null -> localProfileUri.toString()
+        user.photoUrl != null -> user.photoUrl.toString()
+        else -> ""
+    }
+
     val reviewData = mapOf(
         "userId" to user.uid,
         "userName" to (user.displayName ?: "Cliente"),
+        "userPhotoUrl" to photoUrlToSave,
         "rating" to rating,
         "comment" to comment,
         "createdAt" to com.google.firebase.Timestamp.now(),
@@ -896,12 +924,19 @@ fun RelatedProduct(name: String, price: Double, description: String, imageRes: I
 fun ReviewCard(
     review: Review,
     currentUserId: String?,
+    onUserClick: () -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val context = LocalContext.current
     val isOwner = currentUserId == review.userId
     val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale("es", "ES"))
     val dateString = review.createdAt?.toDate()?.let { dateFormat.format(it) } ?: ""
+
+    // Cargar la foto de perfil local (si existe) para poder usarla en las reseñas propias
+    LaunchedEffect(Unit) {
+        ProfileImageManager.loadProfileImage(context)
+    }
     
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -918,28 +953,68 @@ fun ReviewCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = review.userName,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        repeat(5) { index ->
-                            Icon(
-                                painter = painterResource(id = R.drawable.ic_star),
-                                contentDescription = null,
-                                tint = if (index < review.rating) Color(0xFFFFC107) else Color.LightGray,
-                                modifier = Modifier.size(16.dp)
-                            )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    // Avatar del usuario
+                    val localProfileUri = ProfileImageManager.profileImageUri.value
+                    val avatarPainter = when {
+                        // Si es mi reseña y tengo foto local en Mi Perfil, usar esa
+                        currentUserId != null && currentUserId == review.userId && localProfileUri != null -> {
+                            rememberAsyncImagePainter(localProfileUri)
                         }
-                        if (review.isVerifiedPurchase) {
-                            Spacer(modifier = Modifier.width(8.dp))
+                        // Si la reseña tiene URL de foto guardada en Firestore (por ejemplo Google), usarla
+                        !review.userPhotoUrl.isNullOrBlank() -> {
+                            rememberAsyncImagePainter(review.userPhotoUrl)
+                        }
+                        else -> {
+                            painterResource(id = R.drawable.ic_person)
+                        }
+                    }
+                    Image(
+                        painter = avatarPainter,
+                        contentDescription = "Foto de perfil",
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                "✓ Compra verificada",
-                                fontSize = 12.sp,
-                                color = Color(0xFF4CAF50)
+                                text = review.userName,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = Color(0xFF0D47A1),
+                                modifier = Modifier.clickable { onUserClick() }
                             )
+                            if (dateString.isNotEmpty()) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = dateString,
+                                    fontSize = 12.sp,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            repeat(5) { index ->
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_star),
+                                    contentDescription = null,
+                                    tint = if (index < review.rating) Color(0xFFFFC107) else Color.LightGray,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            if (review.isVerifiedPurchase) {
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    "✓ Compra verificada",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF4CAF50)
+                                )
+                            }
                         }
                     }
                 }
@@ -963,22 +1038,12 @@ fun ReviewCard(
                     }
                 }
             }
-            
             if (review.comment.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = review.comment,
                     fontSize = 14.sp,
                     color = Color.DarkGray
-                )
-            }
-            
-            if (dateString.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = dateString,
-                    fontSize = 12.sp,
-                    color = Color.Gray
                 )
             }
         }
@@ -1007,6 +1072,7 @@ private fun loadReviews(
                         id = doc.id,
                         userId = doc.getString("userId") ?: "",
                         userName = doc.getString("userName") ?: "Usuario",
+                        userPhotoUrl = doc.getString("userPhotoUrl"),
                         rating = doc.getLong("rating")?.toInt() ?: 0,
                         comment = doc.getString("comment") ?: "",
                         createdAt = doc.getTimestamp("createdAt"),

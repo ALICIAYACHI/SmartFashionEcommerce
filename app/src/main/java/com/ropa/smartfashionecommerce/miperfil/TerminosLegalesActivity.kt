@@ -3,19 +3,18 @@ package com.ropa.smartfashionecommerce.miperfil
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
-class DireccionesEnvioActivity : ComponentActivity() {
+class TerminosLegalesActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        val direccionPerfil = intent.getStringExtra("direccionPerfil")
         setContent {
             SmartFashionEcommerceTheme {
-                // ✅ Llamamos a DireccionesEnvioScreen con el parámetro correcto 'onBack'
-                DireccionesEnvioScreen(
-                    onBack = { finish() },
-                    direccionInicial = direccionPerfil
-                )
+                Surface(color = MaterialTheme.colorScheme.background) {
+                    TerminosLegalesScreen(onBack = { finish() })
+                }
             }
         }
     }

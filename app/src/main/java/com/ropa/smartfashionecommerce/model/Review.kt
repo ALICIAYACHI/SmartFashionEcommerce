@@ -7,6 +7,7 @@ data class Review(
     val id: String = "",
     val userId: String = "",
     val userName: String = "",
+    val userPhotoUrl: String? = null,
     val rating: Int = 0,
     val comment: String = "",
     val createdAt: Timestamp? = null,

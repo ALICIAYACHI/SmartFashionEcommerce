@@ -44,6 +44,7 @@ import com.ropa.smartfashionecommerce.home.FavActivity
 import com.ropa.smartfashionecommerce.catalog.CatalogActivity
 import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartManager
+import com.ropa.smartfashionecommerce.miperfil.MisResenasActivity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -345,6 +346,11 @@ fun MiPerfilScreen(onBack: () -> Unit) {
             Text("Configuración de Cuenta", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF212121))
             Spacer(modifier = Modifier.height(10.dp))
 
+            ProfileOptionCard(Icons.Default.RateReview, "Reseñas", "Ver tus reseñas") {
+                val intent = Intent(context, MisResenasActivity::class.java)
+                context.startActivity(intent)
+            }
+
             ProfileOptionCard(Icons.Default.Edit, "Editar Perfil", "Actualiza tu información") {
                 val intent = Intent(context, EditarPerfilActivity::class.java)
                 context.startActivity(intent)
@@ -360,6 +366,12 @@ fun MiPerfilScreen(onBack: () -> Unit) {
 
             ProfileOptionCard(Icons.Default.Home, "Dirección de Envío", "Gestiona tus direcciones") {
                 val intent = Intent(context, DireccionesEnvioActivity::class.java)
+                intent.putExtra("direccionPerfil", direccion)
+                context.startActivity(intent)
+            }
+
+            ProfileOptionCard(Icons.Default.Info, "Términos y políticas legales", "Revisa nuestras políticas") {
+                val intent = Intent(context, TerminosLegalesActivity::class.java)
                 context.startActivity(intent)
             }
 

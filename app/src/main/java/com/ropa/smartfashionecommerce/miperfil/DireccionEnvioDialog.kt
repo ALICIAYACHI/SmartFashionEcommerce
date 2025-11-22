@@ -2,7 +2,6 @@ package com.ropa.smartfashionecommerce.miperfil
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,10 +17,12 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun DireccionEnvioDialog(
     onDismissRequest: () -> Unit,
-    onSave: (String, String) -> Unit
+    onSave: (String, String) -> Unit,
+    initialNombre: String = "",
+    initialDetalle: String = ""
 ) {
-    var nombreDireccion by remember { mutableStateOf(TextFieldValue("")) }
-    var detalleDireccion by remember { mutableStateOf(TextFieldValue("")) }
+    var nombreDireccion by remember(initialNombre) { mutableStateOf(TextFieldValue(initialNombre)) }
+    var detalleDireccion by remember(initialDetalle) { mutableStateOf(TextFieldValue(initialDetalle)) }
 
     Dialog(onDismissRequest = onDismissRequest) {
         Surface(
@@ -50,8 +51,9 @@ fun DireccionEnvioDialog(
                 OutlinedTextField(
                     value = nombreDireccion,
                     onValueChange = { nombreDireccion = it },
-                    label = { Text("Nombre (ej. Casa, Trabajo)") },
+                    label = { Text("Nombre (ej. Casa, Trabajo)", color = Color(0xFF424242)) },
                     singleLine = true,
+                    textStyle = TextStyle(color = Color(0xFF212121)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
@@ -61,7 +63,8 @@ fun DireccionEnvioDialog(
                 OutlinedTextField(
                     value = detalleDireccion,
                     onValueChange = { detalleDireccion = it },
-                    label = { Text("Detalle (ej. Av. Javier Prado 123, Lima)") },
+                    label = { Text("Detalle (ej. Av. Javier Prado 123, Lima)", color = Color(0xFF424242)) },
+                    textStyle = TextStyle(color = Color(0xFF212121)),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 4.dp)
