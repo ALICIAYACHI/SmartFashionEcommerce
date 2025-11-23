@@ -10,8 +10,6 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -40,6 +38,7 @@ import com.ropa.smartfashionecommerce.R
 import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartItem
 import com.ropa.smartfashionecommerce.carrito.CartManager
+import com.ropa.smartfashionecommerce.carrito.StockManager
 import com.ropa.smartfashionecommerce.home.FavActivity
 import com.ropa.smartfashionecommerce.home.FavoriteItem
 import com.ropa.smartfashionecommerce.home.FavoritesManager
@@ -324,6 +323,12 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
         painterResource(id = productImageRes ?: R.drawable.modelo_ropa)
     }
 
+    // 🧮 Stock actual del producto (demo: partimos de 15 unidades)
+    val baseStock = 15
+    var currentStock by remember(productName) {
+        mutableIntStateOf(StockManager.getStock(context, productName, baseStock))
+    }
+
     // 💖 Estado de favorito para este producto - SINCRONIZADO con el header
     val favoriteItems = FavoritesManager.favoriteItems
     var isFavorite by remember(productId) {
@@ -413,22 +418,22 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
             // Siempre mostramos tallas para ropa (Mujer, Hombre, Niño, Bebé)
             Spacer(modifier = Modifier.height(16.dp))
             val sizeLabel = "Talla"
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(sizeLabel, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(sizeLabel, fontWeight = FontWeight.Bold, fontSize = 16.sp)
 
-                    if (productCategory == "BEBE") {
-                        TextButton(onClick = {
-                            val intent = Intent(context, com.ropa.smartfashionecommerce.detalles.BabySizeGuideActivity::class.java)
-                            context.startActivity(intent)
-                        }) {
-                            Text("Guía de tallas", color = Color(0xFF0D47A1), fontSize = 14.sp)
-                        }
+                if (productCategory == "BEBE") {
+                    TextButton(onClick = {
+                        val intent = Intent(context, com.ropa.smartfashionecommerce.detalles.BabySizeGuideActivity::class.java)
+                        context.startActivity(intent)
+                    }) {
+                        Text("Guía de tallas", color = Color(0xFF0D47A1), fontSize = 14.sp)
                     }
                 }
+            }
 
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -466,123 +471,151 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                 ColorOption(Color(0xFFD1B2FF), "Lila", selectedColor) { selectedColor = it }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-            Text("Cantidad", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                Button(
-                    onClick = { if (quantity > 1) quantity-- },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
-                    shape = CircleShape
-                ) { Text("-", fontSize = 20.sp) }
-
-                Text(text = quantity.toString(), fontSize = 18.sp, fontWeight = FontWeight.Medium)
-
-                Button(
-                    onClick = { quantity++ },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
-                    shape = CircleShape
-                ) { Text("+", fontSize = 20.sp) }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
-            Text("15 en stock", color = Color(0xFF0D47A1), fontSize = 14.sp)
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Button(
-                    onClick = {
-                        val user = FirebaseAuth.getInstance().currentUser
-                        if (user == null) {
-                            Toast.makeText(context, "Inicia sesión para agregar al carrito", Toast.LENGTH_SHORT).show()
-                            context.startActivity(Intent(context, com.ropa.smartfashionecommerce.DarkLoginActivity::class.java))
-                        } else {
-                            val item = CartItem(
-                                name = productName,
-                                price = productPrice,
-                                quantity = quantity,
-                                size = selectedSize,
-                                color = selectedColor,
-                                imageRes = productImageRes ?: R.drawable.modelo_ropa,
-                                imageUrl = if (imageType == "url") productImageUrl else null
-                            )
-                            CartManager.addItem(item)
-                            CartManager.saveCart(context)
-
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar("Producto agregado al carrito 🛒")
-                            }
-
-                            val intent = Intent(context, Carrito::class.java)
-                            context.startActivity(intent)
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(55.dp),
-                    shape = RoundedCornerShape(12.dp)
+            if (currentStock > 0) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("Cantidad", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = Color.White)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Agregar al carrito", color = Color.White, fontSize = 18.sp)
+                    Button(
+                        onClick = { if (quantity > 1) quantity-- },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
+                        shape = CircleShape
+                    ) { Text("-", fontSize = 20.sp) }
+
+                    Text(text = quantity.toString(), fontSize = 18.sp, fontWeight = FontWeight.Medium)
+
+                    Button(
+                        onClick = {
+                            // No permitir seleccionar más cantidad que el stock disponible
+                            if (quantity < currentStock) quantity++
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
+                        shape = CircleShape
+                    ) { Text("+", fontSize = 20.sp) }
                 }
 
-                IconButton(
-                    onClick = {
-                        val user = FirebaseAuth.getInstance().currentUser
-                        if (user == null) {
-                            Toast.makeText(context, "Inicia sesión para usar favoritos", Toast.LENGTH_SHORT).show()
-                            context.startActivity(Intent(context, com.ropa.smartfashionecommerce.DarkLoginActivity::class.java))
-                            return@IconButton
-                        }
+                Spacer(modifier = Modifier.height(20.dp))
+                Text("$currentStock en stock", color = Color(0xFF0D47A1), fontSize = 14.sp)
 
-                        if (productId == 0) {
-                            Toast.makeText(context, "Error: Producto sin ID válido", Toast.LENGTH_SHORT).show()
-                            return@IconButton
-                        }
+                Spacer(modifier = Modifier.height(20.dp))
 
-                        if (isFavorite) {
-                            // Eliminar de favoritos
-                            val itemToRemove = favoriteItems.find { it.id == productId }
-                            itemToRemove?.let {
-                                FavoritesManager.removeFavorite(context, it)
-                                isFavorite = false
-                                Toast.makeText(context, "Eliminado de favoritos 💔", Toast.LENGTH_SHORT).show()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Button(
+                        onClick = {
+                            val user = FirebaseAuth.getInstance().currentUser
+                            if (user == null) {
+                                Toast.makeText(context, "Inicia sesión para agregar al carrito", Toast.LENGTH_SHORT).show()
+                                context.startActivity(Intent(context, com.ropa.smartfashionecommerce.DarkLoginActivity::class.java))
+                            } else {
+                                if (currentStock <= 0) {
+                                    Toast.makeText(context, "Producto sin stock", Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
+                                val item = CartItem(
+                                    name = productName,
+                                    price = productPrice,
+                                    quantity = quantity,
+                                    size = selectedSize,
+                                    color = selectedColor,
+                                    imageRes = productImageRes ?: R.drawable.modelo_ropa,
+                                    imageUrl = if (imageType == "url") productImageUrl else null
+                                )
+                                CartManager.addItem(item)
+                                CartManager.saveCart(context)
+
+                                // Actualizar stock localmente (se descuenta al añadir al carrito)
+                                StockManager.reduceStock(context, productName, quantity)
+                                currentStock = StockManager.getStock(context, productName, baseStock)
+
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar("Producto agregado al carrito 🛒")
+                                }
+
+                                val intent = Intent(context, Carrito::class.java)
+                                context.startActivity(intent)
                             }
-                        } else {
-                            // Agregar a favoritos
-                            val favoriteItem = FavoriteItem(
-                                id = productId,
-                                name = productName,
-                                price = "S/ %.2f".format(productPrice),
-                                sizes = listOf("S", "M", "L", "XL"),
-                                imageRes = productImageRes ?: R.drawable.modelo_ropa,
-                                imageUrl = if (imageType == "url") productImageUrl else null,
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(55.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.ShoppingCart, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Agregar al carrito", color = Color.White, fontSize = 18.sp)
+                    }
+
+                    IconButton(
+                        onClick = {
+                            val user = FirebaseAuth.getInstance().currentUser
+                            if (user == null) {
+                                Toast.makeText(context, "Inicia sesión para usar favoritos", Toast.LENGTH_SHORT).show()
+                                context.startActivity(Intent(context, com.ropa.smartfashionecommerce.DarkLoginActivity::class.java))
+                                return@IconButton
+                            }
+
+                            if (productId == 0) {
+                                Toast.makeText(context, "Error: Producto sin ID válido", Toast.LENGTH_SHORT).show()
+                                return@IconButton
+                            }
+
+                            if (isFavorite) {
+                                // Eliminar de favoritos
+                                val itemToRemove = favoriteItems.find { it.id == productId }
+                                itemToRemove?.let {
+                                    FavoritesManager.removeFavorite(context, it)
+                                    isFavorite = false
+                                    Toast.makeText(context, "Eliminado de favoritos 💔", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                // Agregar a favoritos
+                                val favoriteItem = FavoriteItem(
+                                    id = productId,
+                                    name = productName,
+                                    price = "S/ %.2f".format(productPrice),
+                                    sizes = listOf("S", "M", "L", "XL"),
+                                    imageRes = productImageRes ?: R.drawable.modelo_ropa,
+                                    imageUrl = if (imageType == "url") productImageUrl else null,
+                                    isFavorite = true
+                                )
+                                FavoritesManager.addFavorite(context, favoriteItem)
                                 isFavorite = true
-                            )
-                            FavoritesManager.addFavorite(context, favoriteItem)
-                            isFavorite = true
-                            Toast.makeText(context, "Agregado a favoritos ❤️", Toast.LENGTH_SHORT).show()
-                        }
-                    },
-                    modifier = Modifier
-                        .size(55.dp)
-                        .border(1.dp, Color.LightGray, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Favorito",
-                        tint = if (isFavorite) Color.Red else Color.Black
-                    )
+                                Toast.makeText(context, "Agregado a favoritos ❤️", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        modifier = Modifier
+                            .size(55.dp)
+                            .border(1.dp, Color.LightGray, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Favorito",
+                            tint = if (isFavorite) Color.Red else Color.Black
+                        )
+                    }
                 }
+            } else {
+                Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = "Producto agotado",
+                    color = Color.Red,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "Este producto ya no tiene stock disponible",
+                    color = Color.Gray,
+                    fontSize = 14.sp
+                )
+                Spacer(modifier = Modifier.height(20.dp))
             }
 
             Spacer(modifier = Modifier.height(28.dp))
@@ -670,7 +703,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
             Spacer(modifier = Modifier.height(28.dp))
             Text("Reseñas de clientes", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(12.dp))
-            
+
             if (reviews.isEmpty()) {
                 Card(
                     modifier = Modifier.fillMaxWidth(),

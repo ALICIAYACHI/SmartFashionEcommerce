@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
@@ -28,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -37,10 +37,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ropa.smartfashionecommerce.R
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartItem
 import com.ropa.smartfashionecommerce.carrito.CartManager
 import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
+import com.ropa.smartfashionecommerce.miperfil.ProfileImageManager
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 import com.ropa.smartfashionecommerce.catalog.CatalogActivity
 
@@ -65,6 +68,14 @@ fun FavApp(activity: ComponentActivity) {
     var selectedTab by remember { mutableStateOf("Favoritos") }
 
     val cartCount by remember { derivedStateOf { CartManager.cartItems.sumOf { it.quantity } } }
+
+    val profileImageUri by remember { ProfileImageManager.profileImageUri }
+    val firebaseUser = Firebase.auth.currentUser
+    val googlePhotoUrl = firebaseUser?.photoUrl
+
+    LaunchedEffect(Unit) {
+        ProfileImageManager.loadProfileImage(context)
+    }
 
     Scaffold(
         bottomBar = {
@@ -169,8 +180,50 @@ fun FavApp(activity: ComponentActivity) {
                         unselectedTextColor = Color(0xFF212121)
                     ),
                     icon = {
-                        val icon = if (selectedTab == "Perfil") Icons.Filled.Person else Icons.Outlined.Person
-                        Icon(icon, contentDescription = "Perfil")
+                        when {
+                            profileImageUri != null -> {
+                                val bitmap = ProfileImageManager.getBitmapFromUri(context, profileImageUri!!)
+                                if (bitmap != null) {
+                                    androidx.compose.foundation.Image(
+                                        bitmap = bitmap.asImageBitmap(),
+                                        contentDescription = "Perfil",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clip(CircleShape)
+                                            .border(1.dp, Color(0xFF212121), CircleShape)
+                                    )
+                                } else if (googlePhotoUrl != null) {
+                                    coil.compose.AsyncImage(
+                                        model = googlePhotoUrl,
+                                        contentDescription = "Perfil",
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier
+                                            .size(24.dp)
+                                            .clip(CircleShape)
+                                            .border(1.dp, Color(0xFF212121), CircleShape)
+                                    )
+                                } else {
+                                    val icon = if (selectedTab == "Perfil") Icons.Filled.Person else Icons.Outlined.Person
+                                    Icon(icon, contentDescription = "Perfil")
+                                }
+                            }
+                            googlePhotoUrl != null -> {
+                                coil.compose.AsyncImage(
+                                    model = googlePhotoUrl,
+                                    contentDescription = "Perfil",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(24.dp)
+                                        .clip(CircleShape)
+                                        .border(1.dp, Color(0xFF212121), CircleShape)
+                                )
+                            }
+                            else -> {
+                                val icon = if (selectedTab == "Perfil") Icons.Filled.Person else Icons.Outlined.Person
+                                Icon(icon, contentDescription = "Perfil")
+                            }
+                        }
                     },
                     label = { Text("Perfil") }
                 )

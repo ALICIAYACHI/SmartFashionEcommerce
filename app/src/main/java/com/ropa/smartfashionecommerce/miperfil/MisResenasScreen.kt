@@ -125,7 +125,7 @@ private fun loadReviewsForCurrentUser(
             for (productDoc in productsSnapshot.documents) {
                 val productRef = productDoc.reference
 
-                // 1) Buscar reseñas por userId para este producto
+                // Buscar reseñas de este usuario (por userId) para cada producto
                 productRef.collection("reviews")
                     .whereEqualTo("userId", userId)
                     .get()
@@ -148,40 +148,12 @@ private fun loadReviewsForCurrentUser(
                                 }
                                 review?.let { allReviews.add(it) }
                             }
-                            finishIfDone()
-                        } else {
-                            // 2) Si no hay por userId, intentamos por userName
-                            productRef.collection("reviews")
-                                .whereEqualTo("userName", userName)
-                                .get()
-                                .addOnSuccessListener { byNameSnap ->
-                                    if (!byNameSnap.isEmpty) {
-                                        byNameSnap.documents.forEach { doc ->
-                                            val review = try {
-                                                Review(
-                                                    id = doc.id,
-                                                    userId = doc.getString("userId") ?: "",
-                                                    userName = doc.getString("userName") ?: "Usuario",
-                                                    userPhotoUrl = doc.getString("userPhotoUrl"),
-                                                    rating = doc.getLong("rating")?.toInt() ?: 0,
-                                                    comment = doc.getString("comment") ?: "",
-                                                    createdAt = doc.getTimestamp("createdAt"),
-                                                    isVerifiedPurchase = doc.getBoolean("isVerifiedPurchase") ?: false
-                                                )
-                                            } catch (e: Exception) {
-                                                null
-                                            }
-                                            review?.let { allReviews.add(it) }
-                                        }
-                                    }
-                                    finishIfDone()
-                                }
-                                .addOnFailureListener {
-                                    finishIfDone()
-                                }
                         }
+                        // Siempre marcamos esta consulta como completada, tenga o no reseñas
+                        finishIfDone()
                     }
                     .addOnFailureListener {
+                        // En caso de error, igual avanzamos para no bloquear el conteo
                         finishIfDone()
                     }
             }

@@ -238,6 +238,11 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                             .setPositiveButton("Aceptar", null)
                             .show()
                     } else {
+                        // 🧮 Descontar stock de cada producto comprado (demo en local)
+                        cartItems.forEach { item ->
+                            StockManager.reduceStock(context, item.name, item.quantity)
+                        }
+
                         PedidosManager.agregarPedido(
                             context = context,
                             total = total,

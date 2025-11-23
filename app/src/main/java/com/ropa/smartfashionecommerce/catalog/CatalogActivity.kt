@@ -2,8 +2,6 @@ package com.ropa.smartfashionecommerce.catalog
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.TextView
-import android.widget.ImageView
 import android.view.View
 import android.graphics.drawable.GradientDrawable
 
@@ -43,11 +41,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.cardview.widget.CardView
+import coil.compose.AsyncImage
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+import com.ropa.smartfashionecommerce.miperfil.ProfileImageManager
+
+// import androidx.cardview.widget.CardView // (no se usa)
 
 class CatalogActivity : AppCompatActivity() {
 
@@ -96,7 +100,6 @@ class CatalogActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.products_recycler_view)
         val categoriesCompose = findViewById<ComposeView>(R.id.categories_compose)
         val searchView = findViewById<SearchView>(R.id.search_view_products)
-        val btnSearchIcon = findViewById<android.widget.ImageButton>(R.id.btn_search_catalog)
 
         // Mejorar visibilidad del buscador (solo borde negro, fondo del mismo color que la pantalla y texto negro)
         searchView.setIconifiedByDefault(false)
@@ -303,6 +306,15 @@ class CatalogActivity : AppCompatActivity() {
 
             val cartCount by remember { derivedStateOf { CartManager.cartItems.sumOf { it.quantity } } }
 
+            val context = this@CatalogActivity
+            val profileImageUri by remember { ProfileImageManager.profileImageUri }
+            val firebaseUser = Firebase.auth.currentUser
+            val googlePhotoUrl = firebaseUser?.photoUrl
+
+            LaunchedEffect(Unit) {
+                ProfileImageManager.loadProfileImage(context)
+            }
+
             data class NavItem(val key: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector, val action: () -> Unit)
 
             val navItems = listOf(
@@ -369,6 +381,46 @@ class CatalogActivity : AppCompatActivity() {
                                     }
                                 ) {
                                     Icon(iconVector, contentDescription = item.label)
+                                }
+                            } else if (item.key == "Perfil") {
+                                when {
+                                    profileImageUri != null -> {
+                                        val bitmap = ProfileImageManager.getBitmapFromUri(context, profileImageUri!!)
+                                        if (bitmap != null) {
+                                            androidx.compose.foundation.Image(
+                                                bitmap = bitmap.asImageBitmap(),
+                                                contentDescription = item.label,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .clip(CircleShape)
+                                            )
+                                        } else if (googlePhotoUrl != null) {
+                                            AsyncImage(
+                                                model = googlePhotoUrl,
+                                                contentDescription = item.label,
+                                                contentScale = ContentScale.Crop,
+                                                modifier = Modifier
+                                                    .size(24.dp)
+                                                    .clip(CircleShape)
+                                            )
+                                        } else {
+                                            Icon(iconVector, contentDescription = item.label)
+                                        }
+                                    }
+                                    googlePhotoUrl != null -> {
+                                        AsyncImage(
+                                            model = googlePhotoUrl,
+                                            contentDescription = item.label,
+                                            contentScale = ContentScale.Crop,
+                                            modifier = Modifier
+                                                .size(24.dp)
+                                                .clip(CircleShape)
+                                        )
+                                    }
+                                    else -> {
+                                        Icon(iconVector, contentDescription = item.label)
+                                    }
                                 }
                             } else {
                                 Icon(iconVector, contentDescription = item.label)

@@ -86,6 +86,7 @@ class HomeActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FavoritesManager.initialize(this)
+        CartManager.initialize(this)
         setContent {
             SmartFashionEcommerceTheme {
                 FashionHomeScreen(activity = this)

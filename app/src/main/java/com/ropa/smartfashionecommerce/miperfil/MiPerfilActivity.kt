@@ -5,11 +5,13 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import com.ropa.smartfashionecommerce.carrito.CartManager
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 
 class MiPerfilActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        CartManager.initialize(this)
         setContent {
             SmartFashionEcommerceTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {
@@ -23,6 +25,7 @@ class MiPerfilActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         // 🔄 Re-componer la pantalla para recargar foto y datos desde SharedPreferences
+        CartManager.initialize(this)
         setContent {
             SmartFashionEcommerceTheme {
                 Surface(color = MaterialTheme.colorScheme.background) {

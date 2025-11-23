@@ -370,7 +370,7 @@ fun MiPerfilScreen(onBack: () -> Unit) {
                 context.startActivity(intent)
             }
 
-            ProfileOptionCard(Icons.Default.Info, "Términos y políticas legales", "Revisa nuestras políticas") {
+            ProfileOptionCard(Icons.Default.Info, "Términos y condiciones", "Revisa nuestras políticas") {
                 val intent = Intent(context, TerminosLegalesActivity::class.java)
                 context.startActivity(intent)
             }

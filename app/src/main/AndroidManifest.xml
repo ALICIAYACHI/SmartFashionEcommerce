@@ -130,6 +130,12 @@
             android:exported="false"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
+        <!-- 🌐 WebView para políticas y otras páginas web internas -->
+        <activity
+            android:name=".miperfil.WebViewActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
         <!-- ❤️ Favoritos -->
         <activity
             android:name=".home.FavActivity"

@@ -27,7 +27,7 @@ fun TerminosLegalesScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Términos y políticas legales") },
+                title = { Text("Términos y condiciones") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
@@ -56,9 +56,9 @@ fun TerminosLegalesScreen(onBack: () -> Unit) {
             )
             SeccionLegalItem("Política de privacidad") {
                 context.startActivity(
-                    Intent(context, DetalleTerminoActivity::class.java).apply {
+                    Intent(context, WebViewActivity::class.java).apply {
                         putExtra("titulo", "Política de privacidad")
-                        putExtra("contenido", TEXTO_PRIVACIDAD)
+                        putExtra("url", "https://www.google.com")
                     }
                 )
             }
