@@ -51,6 +51,9 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.ropa.smartfashionecommerce.miperfil.ProfileImageManager
 
+import com.ropa.smartfashionecommerce.maps.MapsActivity
+import androidx.compose.material.icons.outlined.LocationOn
+
 // import androidx.cardview.widget.CardView // (no se usa)
 
 class CatalogActivity : AppCompatActivity() {
@@ -335,6 +338,13 @@ class CatalogActivity : AppCompatActivity() {
                     selectedTab = "Favoritos"
                     startActivity(Intent(this@CatalogActivity, FavActivity::class.java))
                 },
+
+                // ⭐ NUEVO BOTÓN: VER TIENDA
+                NavItem("Tienda", "Ver Tienda", Icons.Outlined.LocationOn) {
+                    val intent = Intent(this@CatalogActivity, MapsActivity::class.java)
+                    startActivity(intent)
+                },
+
                 NavItem("Perfil", "Perfil", Icons.Outlined.Person) {
                     selectedTab = "Perfil"
                     startActivity(Intent(this@CatalogActivity, MiPerfilActivity::class.java))

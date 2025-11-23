@@ -60,6 +60,12 @@ import com.ropa.smartfashionecommerce.network.ApiClient
 import com.google.firebase.firestore.FirebaseFirestore
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 import kotlinx.coroutines.launch
+import com.ropa.smartfashionecommerce.maps.MapsActivity
+import androidx.compose.material.icons.outlined.LocationOn
+
+
+
+
 
 val localProducts = listOf(
     Producto(1, "Blusa Elegante Negra", "43.76", categoria = Categoria(1, "Mujer"), localImageRes = R.drawable.blusaelegante),
@@ -258,6 +264,28 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                     },
                     label = { Text("Favoritos") }
                 )
+
+                NavigationBarItem(
+                    selected = false,
+                    onClick = {
+                        activity.startActivity(Intent(activity, MapsActivity::class.java))
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = Color.Transparent,
+                        selectedIconColor = Color(0xFFE53935),
+                        selectedTextColor = Color(0xFFE53935),
+                        unselectedIconColor = Color(0xFF212121),
+                        unselectedTextColor = Color(0xFF212121)
+                    ),
+                    icon = {
+                        Icon(Icons.Outlined.LocationOn, contentDescription = "Ver Tienda")
+
+                    },
+                    label = { Text("Ver Tienda") }
+                )
+
+
+
                 NavigationBarItem(
                     selected = selectedTab == "Perfil",
                     onClick = {
@@ -701,6 +729,8 @@ fun FashionHomeScreen(activity: ComponentActivity) {
         }
     }
 }
+
+
 
 @Composable
 fun ProductCard(producto: Producto) {

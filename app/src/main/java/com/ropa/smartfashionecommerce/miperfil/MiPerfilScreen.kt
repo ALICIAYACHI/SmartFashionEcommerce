@@ -46,6 +46,9 @@ import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartManager
 import com.ropa.smartfashionecommerce.miperfil.MisResenasActivity
 
+import com.ropa.smartfashionecommerce.maps.MapsActivity
+import androidx.compose.material.icons.outlined.LocationOn
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MiPerfilScreen(onBack: () -> Unit) {
@@ -193,6 +196,27 @@ fun MiPerfilScreen(onBack: () -> Unit) {
                     },
                     label = { Text("Favoritos") }
                 )
+                NavigationBarItem(
+                    selected = selectedTab == "VerTienda",
+                    onClick = {
+                        val activity = context as? Activity
+                        selectedTab = "VerTienda"
+                        activity?.startActivity(Intent(context, MapsActivity::class.java))
+                    },
+                    colors = NavigationBarItemDefaults.colors(
+                        indicatorColor = Color.Transparent,
+                        selectedIconColor = Color(0xFFE53935),
+                        selectedTextColor = Color(0xFFE53935),
+                        unselectedIconColor = Color(0xFF212121),
+                        unselectedTextColor = Color(0xFF212121)
+                    ),
+                    icon = {
+                        Icon(Icons.Outlined.LocationOn, contentDescription = "Ver Tienda")
+                    },
+                    label = { Text("Ver Tienda") }
+                )
+
+
                 NavigationBarItem(
                     selected = selectedTab == "Perfil",
                     onClick = {
