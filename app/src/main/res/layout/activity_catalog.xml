@@ -25,14 +25,14 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <ImageButton
-        android:id="@+id/btn_search_catalog"
+        android:id="@+id/btn_ver_tienda"
         android:layout_width="32dp"
         android:layout_height="32dp"
         android:layout_marginEnd="24dp"
         android:layout_marginTop="20dp"
         android:background="@android:color/transparent"
-        android:contentDescription="Buscar"
-        android:src="@drawable/ic_search_black_24dp"
+        android:contentDescription="Ver tienda"
+        android:src="@drawable/ic_location_on_24"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
 

@@ -35,11 +35,12 @@
         <!-- 👇 AGREGA ESTO -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyAoLOUqrFTK-fqOzUWBX9c8Arie5tBH9z8" />
+            android:value="AIzaSyBLNc9K0pbbSsNCpRy3dpd9iQ96Yy-EcNM" />
 
         <activity
             android:name=".maps.MapsActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:theme="@style/Theme.SmartFashionEcommerce.Maps" />
 
         <!-- 🟢 Pantalla Principal -->
         <activity
@@ -162,6 +163,18 @@
         <activity
             android:name=".carrito.FinalizarCompra"
             android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <!-- 💜 Pago con Yape -->
+        <activity
+            android:name=".carrito.YapePaymentActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
+        <!-- 💳 Pago con tarjeta -->
+        <activity
+            android:name=".carrito.CardPaymentActivity"
+            android:exported="false"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
         <!-- ✅ Confirmación del pedido -->

@@ -4,8 +4,10 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.graphics.drawable.GradientDrawable
+import android.widget.ImageButton
 
 import androidx.activity.enableEdgeToEdge
+
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
 import androidx.recyclerview.widget.GridLayoutManager
@@ -103,6 +105,7 @@ class CatalogActivity : AppCompatActivity() {
         val recyclerView = findViewById<RecyclerView>(R.id.products_recycler_view)
         val categoriesCompose = findViewById<ComposeView>(R.id.categories_compose)
         val searchView = findViewById<SearchView>(R.id.search_view_products)
+        val btnVerTienda = findViewById<ImageButton>(R.id.btn_ver_tienda)
 
         // Mejorar visibilidad del buscador (solo borde negro, fondo del mismo color que la pantalla y texto negro)
         searchView.setIconifiedByDefault(false)
@@ -127,6 +130,11 @@ class CatalogActivity : AppCompatActivity() {
             // Borde negro un poco más grueso para que sea visible
             setStroke(3, android.graphics.Color.BLACK)
             cornerRadius = 24f
+        }
+
+        btnVerTienda.setOnClickListener {
+            val intent = Intent(this, MapsActivity::class.java)
+            startActivity(intent)
         }
 
         if (mode == "GRID") {
@@ -338,13 +346,6 @@ class CatalogActivity : AppCompatActivity() {
                     selectedTab = "Favoritos"
                     startActivity(Intent(this@CatalogActivity, FavActivity::class.java))
                 },
-
-                // ⭐ NUEVO BOTÓN: VER TIENDA
-                NavItem("Tienda", "Ver Tienda", Icons.Outlined.LocationOn) {
-                    val intent = Intent(this@CatalogActivity, MapsActivity::class.java)
-                    startActivity(intent)
-                },
-
                 NavItem("Perfil", "Perfil", Icons.Outlined.Person) {
                     selectedTab = "Perfil"
                     startActivity(Intent(this@CatalogActivity, MiPerfilActivity::class.java))

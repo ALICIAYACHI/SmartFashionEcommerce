@@ -134,6 +134,7 @@ private fun loadReviewsForCurrentUser(
                             byUserIdSnap.documents.forEach { doc ->
                                 val review = try {
                                     Review(
+                                        productId = productDoc.id,
                                         id = doc.id,
                                         userId = doc.getString("userId") ?: "",
                                         userName = doc.getString("userName") ?: "Usuario",

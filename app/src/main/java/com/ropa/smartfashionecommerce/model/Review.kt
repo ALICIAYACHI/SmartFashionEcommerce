@@ -4,6 +4,7 @@ package com.ropa.smartfashionecommerce.model
 import com.google.firebase.Timestamp
 
 data class Review(
+    val productId: String = "",
     val id: String = "",
     val userId: String = "",
     val userName: String = "",
@@ -11,5 +12,6 @@ data class Review(
     val rating: Int = 0,
     val comment: String = "",
     val createdAt: Timestamp? = null,
-    val isVerifiedPurchase: Boolean = false
+    val isVerifiedPurchase: Boolean = false,
+    val likedUserIds: List<String> = emptyList()
 )

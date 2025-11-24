@@ -65,6 +65,10 @@ object PedidosManager {
         latitud: Double? = null,
         longitud: Double? = null
     ) {
+        // Asegurar que la lista en memoria esté sincronizada con lo que hay guardado
+        // para no perder pedidos anteriores al agregar uno nuevo.
+        cargarPedidos(context)
+
         val contador = pedidos.size + 1
         val codigo = "#ORD-${String.format("%03d", contador)}"
 

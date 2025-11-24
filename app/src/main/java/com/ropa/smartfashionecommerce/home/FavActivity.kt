@@ -170,24 +170,6 @@ fun FavApp(activity: ComponentActivity) {
                 )
 
                 NavigationBarItem(
-                    selected = false,
-                    onClick = {
-                        activity.startActivity(Intent(activity, MapsActivity::class.java))
-                    },
-                    colors = NavigationBarItemDefaults.colors(
-                        indicatorColor = Color.Transparent,
-                        selectedIconColor = Color(0xFFE53935),
-                        selectedTextColor = Color(0xFFE53935),
-                        unselectedIconColor = Color(0xFF212121),
-                        unselectedTextColor = Color(0xFF212121)
-                    ),
-                    icon = {
-                        Icon(Icons.Outlined.LocationOn, contentDescription = "Ver Tienda")
-
-                    },
-                    label = { Text("Ver Tienda") }
-                )
-                NavigationBarItem(
                     selected = selectedTab == "Perfil",
                     onClick = {
                         selectedTab = "Perfil"

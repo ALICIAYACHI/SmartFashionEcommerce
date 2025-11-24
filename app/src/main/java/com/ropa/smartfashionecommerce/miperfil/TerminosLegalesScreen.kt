@@ -54,11 +54,23 @@ fun TerminosLegalesScreen(onBack: () -> Unit) {
                 color = Color(0xFF212121),
                 modifier = Modifier.padding(bottom = 12.dp)
             )
+
+            // Política de privacidad ahora se muestra como texto interno
             SeccionLegalItem("Política de privacidad") {
                 context.startActivity(
-                    Intent(context, WebViewActivity::class.java).apply {
+                    Intent(context, DetalleTerminoActivity::class.java).apply {
                         putExtra("titulo", "Política de privacidad")
-                        putExtra("url", "https://www.google.com")
+                        putExtra("contenido", TEXTO_PRIVACIDAD)
+                    }
+                )
+            }
+
+            // Nuevo ítem: Decreto legislativo (abre WebView con el enlace proporcionado)
+            SeccionLegalItem("Decreto legislativo") {
+                context.startActivity(
+                    Intent(context, WebViewActivity::class.java).apply {
+                        putExtra("titulo", "Decreto legislativo")
+                        putExtra("url", "https://busquedas.elperuano.pe/dispositivo/NL/2312442-1")
                     }
                 )
             }

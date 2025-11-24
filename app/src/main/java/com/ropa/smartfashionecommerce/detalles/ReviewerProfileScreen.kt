@@ -132,6 +132,7 @@ private fun loadReviewsForProfile(
                             byUserIdSnap.documents.forEach { doc ->
                                 val review = try {
                                     Review(
+                                        productId = productDoc.id,
                                         id = doc.id,
                                         userId = doc.getString("userId") ?: "",
                                         userName = doc.getString("userName") ?: "Usuario",
@@ -157,6 +158,7 @@ private fun loadReviewsForProfile(
                                         byNameSnap.documents.forEach { doc ->
                                             val review = try {
                                                 Review(
+                                                    productId = productDoc.id,
                                                     id = doc.id,
                                                     userId = doc.getString("userId") ?: "",
                                                     userName = doc.getString("userName") ?: "Usuario",

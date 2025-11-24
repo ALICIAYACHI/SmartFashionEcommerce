@@ -122,11 +122,26 @@ fun ShoppingCartScreen(activity: ComponentActivity? = null) {
                         items(cartItems, key = { it.name + it.size + it.color }) { item ->
                             CartItemCard(
                                 item = item,
-                                onIncrease = { CartManager.updateQuantity(item, item.quantity + 1) },
-                                onDecrease = {
-                                    if (item.quantity > 1) CartManager.updateQuantity(item, item.quantity - 1)
+                                onIncrease = {
+                                    // Verificar stock disponible antes de aumentar
+                                    val currentStock = StockManager.getStock(context, item.name, 15)
+                                    if (currentStock > 0) {
+                                        StockManager.reduceStock(context, item.name, 1)
+                                        CartManager.updateQuantity(item, item.quantity + 1)
+                                    }
                                 },
-                                onDelete = { CartManager.removeItem(item) }
+                                onDecrease = {
+                                    if (item.quantity > 1) {
+                                        // Al disminuir cantidad, devolver 1 unidad al stock
+                                        StockManager.increaseStock(context, item.name, 1)
+                                        CartManager.updateQuantity(item, item.quantity - 1)
+                                    }
+                                },
+                                onDelete = {
+                                    // Al eliminar del carrito, devolver stock
+                                    StockManager.increaseStock(context, item.name, item.quantity)
+                                    CartManager.removeItem(item)
+                                }
                             )
                         }
                     }

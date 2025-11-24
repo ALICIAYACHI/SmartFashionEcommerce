@@ -56,7 +56,7 @@ fun WebViewScreen(url: String, title: String, onBack: () -> Unit) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Volver",
-                            tint = Color.Black
+                            tint = Color.White
                         )
                     }
                 }

@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -14,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +23,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -71,6 +74,8 @@ data class RelatedProductData(
     val tags: List<String>,
     val category: String
 )
+
+data class ProductImageSource(val resId: Int? = null, val url: String? = null)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -317,11 +322,48 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
         )
     }
 
-    val painter = if (imageType == "url" && !productImageUrl.isNullOrEmpty()) {
-        rememberAsyncImagePainter(productImageUrl)
-    } else {
-        painterResource(id = productImageRes ?: R.drawable.modelo_ropa)
+    val baseImageResId = productImageRes ?: R.drawable.modelo_ropa
+
+    // 🖼️ Galería de imágenes del producto (imagen principal + extras por URL)
+    var currentImageIndex by remember { mutableIntStateOf(0) }
+
+    val extraImageUrls = remember(productName) {
+        when (productName) {
+            "Blusa Elegante Negra" -> listOf(
+                "https://img.kwcdn.com/product/Fancyalgo/VirtualModelMatting/313c670824ac7129ac6e630fae1c3414.jpg?imageMogr2/auto-orient%7CimageView2/2/w/800/q/70/format/webp"
+            )
+            "Vestido Dorado Noche" -> listOf(
+                "https://www.dhresource.com/webp/m/0x0/f2/albu/g20/M01/70/19/rBVaqGETnTuARlAtAAV5mGNXsT8264.jpg"
+            )
+            "Casaca Moderna" -> listOf(
+                "https://cueroperu.com/wp-content/uploads/2023/06/Abrigo-de-piel-de-vaca-para-hombre-chaqueta-de-cuero-genuino-Estilo-Vintage-ropa-de-motociclista.jpg_Q90.jpg"
+            )
+            "Pantalón Beige" -> listOf(
+                "https://oggi.mx/cdn/shop/files/ATRACTIONGABAKHAKIVISTA2.jpg?v=1753209029"
+            )
+            "Camisa Blanca" -> listOf(
+                "https://elbosqueperu.vtexassets.com/arquivos/ids/178144-800-800?v=638375798439900000&width=800&height=800&aspect=true"
+            )
+            "Vestido Floral" -> listOf(
+                "https://img.kwcdn.com/product/fancy/caf80589-7a2c-47d5-a79c-e3b6da1d677f.jpg?imageView2/2/w/500/q/60/format/webp"
+            )
+            else -> emptyList()
+        }
     }
+
+    val productImageSources = remember(baseImageResId, productImageUrl, imageType, extraImageUrls) {
+        buildList {
+            if (imageType == "url" && !productImageUrl.isNullOrEmpty()) {
+                add(ProductImageSource(url = productImageUrl))
+            } else {
+                add(ProductImageSource(resId = baseImageResId))
+            }
+            extraImageUrls.forEach { url ->
+                add(ProductImageSource(url = url))
+            }
+        }
+    }
+    val totalImages = productImageSources.size
 
     // 🧮 Stock actual del producto (demo: partimos de 15 unidades)
     val baseStock = 15
@@ -348,16 +390,62 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                 .padding(top = 16.dp)
                 .padding(paddingValues)
         ) {
-            // 🔹 Imagen principal
-            Image(
-                painter = painter,
-                contentDescription = productName,
+            // 🔹 Imagen principal con indicador (galería + swipe izquierda/derecha)
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(340.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
-            )
+                    .clip(RoundedCornerShape(12.dp))
+                    .pointerInput(totalImages) {
+                        detectHorizontalDragGestures { change, dragAmount: Float ->
+                            // Consumir el cambio para que no se propague a otros gestos
+                            change.consume()
+                            if (totalImages <= 1) return@detectHorizontalDragGestures
+
+                            if (dragAmount > 20f) {
+                                // Deslizar de izquierda a derecha -> imagen anterior
+                                currentImageIndex =
+                                    if (currentImageIndex > 0) currentImageIndex - 1 else totalImages - 1
+                            } else if (dragAmount < -20f) {
+                                // Deslizar de derecha a izquierda -> siguiente imagen
+                                currentImageIndex =
+                                    if (currentImageIndex < totalImages - 1) currentImageIndex + 1 else 0
+                            }
+                        }
+                    }
+            ) {
+                val currentSource = productImageSources.getOrNull(currentImageIndex)
+                val mainPainter = when {
+                    currentSource?.url != null -> rememberAsyncImagePainter(currentSource.url)
+                    currentSource?.resId != null -> painterResource(id = currentSource.resId)
+                    imageType == "url" && !productImageUrl.isNullOrEmpty() -> rememberAsyncImagePainter(productImageUrl)
+                    else -> painterResource(id = baseImageResId)
+                }
+
+                Image(
+                    painter = mainPainter,
+                    contentDescription = productName,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+
+                if (totalImages > 1) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(8.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Color(0xCC000000))
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = "${currentImageIndex + 1}/$totalImages",
+                            color = Color.White,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            }
 
             Spacer(modifier = Modifier.height(16.dp))
             Text(productName, fontSize = 24.sp, fontWeight = FontWeight.Bold)
@@ -464,11 +552,56 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Color", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ColorOption(Color.Black, "Negro", selectedColor) { selectedColor = it }
-                ColorOption(Color(0xFF607D8B), "Gris", selectedColor) { selectedColor = it }
-                ColorOption(Color(0xFFD1B2FF), "Lila", selectedColor) { selectedColor = it }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("Color", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                if (selectedColor.isNotEmpty()) {
+                    Text(
+                        text = "Seleccionado: [$selectedColor]",
+                        fontSize = 13.sp,
+                        color = Color(0xFF2E7D32)
+                    )
+                }
+            }
+
+            val baseImageRes = productImageRes ?: R.drawable.modelo_ropa
+            val colorVariants = listOf(
+                "Negro" to baseImageRes,
+                "Blanco" to baseImageRes,
+                "Gris" to baseImageRes
+            )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                colorVariants.forEach { (name, imageResVariant) ->
+                    val isSelected = selectedColor == name
+                    Box(
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(8.dp))
+                            .border(
+                                width = if (isSelected) 2.dp else 1.dp,
+                                color = if (isSelected) Color(0xFF2E7D32) else Color.LightGray,
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .clickable { selectedColor = name }
+                    ) {
+                        Image(
+                            painter = painterResource(id = imageResVariant),
+                            contentDescription = "Color $name",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    }
+                }
             }
 
             if (currentStock > 0) {
@@ -497,7 +630,30 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                 }
 
                 Spacer(modifier = Modifier.height(20.dp))
-                Text("$currentStock en stock", color = Color(0xFF0D47A1), fontSize = 14.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("$currentStock en stock", color = Color(0xFF0D47A1), fontSize = 14.sp)
+
+                    when {
+                        currentStock in 3..5 -> {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "ÚLTIMOS",
+                                color = Color(0xFFD32F2F),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        currentStock in 1..2 -> {
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "Casi agotados",
+                                color = Color(0xFFFF6F00),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -875,6 +1031,7 @@ private fun submitReviewCompose(
     }
 
     val reviewData = mapOf(
+        "productId" to productId,
         "userId" to user.uid,
         "userName" to (user.displayName ?: "Cliente"),
         "userPhotoUrl" to photoUrlToSave,
@@ -882,7 +1039,8 @@ private fun submitReviewCompose(
         "comment" to comment,
         "createdAt" to com.google.firebase.Timestamp.now(),
         "isVerifiedPurchase" to false,
-        "status" to "APPROVED"
+        "status" to "APPROVED",
+        "likedUserIds" to emptyList<String>()
     )
 
     db.collection("products")
@@ -965,6 +1123,9 @@ fun ReviewCard(
     val isOwner = currentUserId == review.userId
     val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale("es", "ES"))
     val dateString = review.createdAt?.toDate()?.let { dateFormat.format(it) } ?: ""
+    var liked by remember(review.likedUserIds, currentUserId) {
+        mutableStateOf(currentUserId != null && review.likedUserIds.contains(currentUserId))
+    }
 
     // Cargar la foto de perfil local (si existe) para poder usarla en las reseñas propias
     LaunchedEffect(Unit) {
@@ -1072,12 +1233,43 @@ fun ReviewCard(
                 }
             }
             if (review.comment.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = review.comment,
                     fontSize = 14.sp,
                     color = Color.DarkGray
                 )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val icon = if (liked) Icons.Filled.ThumbUp else Icons.Outlined.ThumbUp
+                    val tint = if (liked) Color(0xFFD32F2F) else Color.Gray
+                    val likesCount = review.likedUserIds.size
+
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = "Útil",
+                        tint = tint,
+                        modifier = Modifier
+                            .size(18.dp)
+                            .clickable {
+                                liked = !liked
+                                toggleReviewLike(review.productId, review.id, context)
+                            }
+                    )
+
+                    if (likesCount > 0) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Útil ($likesCount)",
+                            fontSize = 12.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
             }
         }
     }
@@ -1102,6 +1294,7 @@ private fun loadReviews(
             val reviewsList = snapshot?.documents?.mapNotNull { doc ->
                 try {
                     Review(
+                        productId = productId,
                         id = doc.id,
                         userId = doc.getString("userId") ?: "",
                         userName = doc.getString("userName") ?: "Usuario",
@@ -1109,7 +1302,10 @@ private fun loadReviews(
                         rating = doc.getLong("rating")?.toInt() ?: 0,
                         comment = doc.getString("comment") ?: "",
                         createdAt = doc.getTimestamp("createdAt"),
-                        isVerifiedPurchase = doc.getBoolean("isVerifiedPurchase") ?: false
+                        isVerifiedPurchase = doc.getBoolean("isVerifiedPurchase") ?: false,
+                        likedUserIds = (doc.get("likedUserIds") as? List<*>)
+                            ?.filterIsInstance<String>()
+                            ?: emptyList()
                     )
                 } catch (e: Exception) {
                     null
@@ -1118,6 +1314,37 @@ private fun loadReviews(
             
             onReviewsLoaded(reviewsList)
         }
+}
+
+private fun toggleReviewLike(
+    productId: String,
+    reviewId: String,
+    context: Context
+) {
+    val user = FirebaseAuth.getInstance().currentUser ?: return
+    val db = FirebaseFirestore.getInstance()
+
+    val reviewRef = db.collection("products")
+        .document(productId)
+        .collection("reviews")
+        .document(reviewId)
+
+    db.runTransaction { transaction ->
+        val snapshot = transaction.get(reviewRef)
+        val currentList = (snapshot.get("likedUserIds") as? List<*>)
+            ?.filterIsInstance<String>()
+            ?: emptyList()
+
+        val updatedList = if (currentList.contains(user.uid)) {
+            currentList.filter { it != user.uid }
+        } else {
+            currentList + user.uid
+        }
+
+        transaction.update(reviewRef, "likedUserIds", updatedList)
+    }.addOnFailureListener {
+        Toast.makeText(context, "No se pudo actualizar el like", Toast.LENGTH_SHORT).show()
+    }
 }
 
 private fun updateReview(
