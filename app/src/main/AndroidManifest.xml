@@ -177,6 +177,21 @@
             android:exported="false"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
+        <!-- 💰 Retorno de pago de Mercado Pago -->
+        <activity
+            android:name=".carrito.PaymentReturnActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="smartfashion"
+                    android:host="payment" />
+            </intent-filter>
+        </activity>
+
         <!-- ✅ Confirmación del pedido -->
         <activity
             android:name=".pedidos.PedidoConfirmado"
