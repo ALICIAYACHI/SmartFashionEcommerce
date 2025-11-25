@@ -208,6 +208,31 @@ fun YapePaymentScreen(
                     if (numeroYape.isBlank() || codigoAprobacion.isBlank()) {
                         return@Button
                     }
+
+                    // 🔹 Aquí es donde, en una integración real, llamarías a tu backend Yape.
+                    // Ejemplo de flujo (código no implementado todavía):
+                    //
+                    // 1. Construir el request para tu API:
+                    //    val request = YapeCreatePaymentRequest(
+                    //        amount = total,
+                    //        customerPhone = numeroYape,
+                    //        description = "Pedido SmartFashion",
+                    //        orderId = "GENERAR_ID_PEDIDO"
+                    //    )
+                    //
+                    // 2. Llamar a tu backend usando Retrofit (YapeApiService):
+                    //    coroutineScope.launch {
+                    //        val response = yapeApi.createPayment(request)
+                    //        if (response.isSuccessful) {
+                    //            val body = response.body()
+                    //            // 3. Abrir body.paymentUrl en un Custom Tab / navegador
+                    //            //    o mostrar un QR según lo que devuelva tu backend.
+                    //        } else {
+                    //            // Mostrar error de integración
+                    //        }
+                    //    }
+                    //
+                    // Mientras no exista backend, seguimos usando la simulación actual:
                     onConfirm()
                 },
                 modifier = Modifier

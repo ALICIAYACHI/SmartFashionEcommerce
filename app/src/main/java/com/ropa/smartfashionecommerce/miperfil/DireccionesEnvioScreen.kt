@@ -21,12 +21,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DireccionesEnvioScreen(onBack: () -> Unit, direccionInicial: String? = null) {
     val context = LocalContext.current
-    val sharedPrefs = context.getSharedPreferences("SmartFashionPrefs", Context.MODE_PRIVATE)
+    val user = Firebase.auth.currentUser
+    val userEmail = user?.email ?: ""
+    val sharedPrefs = context.getSharedPreferences("direcciones_envio_" + userEmail, Context.MODE_PRIVATE)
 
     // ✅ El estado debe ser un nuevo Set mutable cuando cambie
     var direcciones by remember {

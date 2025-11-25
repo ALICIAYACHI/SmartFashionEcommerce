@@ -15,7 +15,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
 import com.ropa.smartfashionecommerce.model.Review
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -99,6 +98,8 @@ private fun loadReviewsForProfile(
 ) {
     val db = FirebaseFirestore.getInstance()
 
+    // Recorremos todos los productos y obtenemos TODAS las reseñas,
+    // luego filtramos por userName en el cliente
     db.collection("products")
         .get()
         .addOnSuccessListener { productsSnapshot ->
@@ -108,77 +109,49 @@ private fun loadReviewsForProfile(
             }
 
             val allReviews = mutableListOf<Review>()
-            var pendingQueries = productsSnapshot.size()
+            var pending = productsSnapshot.size()
 
             fun finishIfDone() {
-                pendingQueries--
-                if (pendingQueries == 0) {
-                    onReviewsLoaded(
-                        allReviews
-                            .sortedByDescending { it.createdAt?.toDate() }
-                    )
+                pending--
+                if (pending == 0) {
+                    val sorted = allReviews.sortedByDescending { it.createdAt?.toDate() }
+                    onReviewsLoaded(sorted)
                 }
             }
 
             for (productDoc in productsSnapshot.documents) {
-                val productRef = productDoc.reference
-
-                // 1️⃣ Buscar reseñas por userId para este producto
-                productRef.collection("reviews")
-                    .whereEqualTo("userId", userId)
+                val productId = productDoc.id
+                productDoc.reference
+                    .collection("reviews")
                     .get()
-                    .addOnSuccessListener { byUserIdSnap ->
-                        if (!byUserIdSnap.isEmpty) {
-                            byUserIdSnap.documents.forEach { doc ->
-                                val review = try {
-                                    Review(
-                                        productId = productDoc.id,
-                                        id = doc.id,
-                                        userId = doc.getString("userId") ?: "",
-                                        userName = doc.getString("userName") ?: "Usuario",
-                                        userPhotoUrl = doc.getString("userPhotoUrl"),
-                                        rating = doc.getLong("rating")?.toInt() ?: 0,
-                                        comment = doc.getString("comment") ?: "",
-                                        createdAt = doc.getTimestamp("createdAt"),
-                                        isVerifiedPurchase = doc.getBoolean("isVerifiedPurchase") ?: false
-                                    )
-                                } catch (e: Exception) {
-                                    null
-                                }
-                                review?.let { allReviews.add(it) }
-                            }
-                            finishIfDone()
-                        } else {
-                            // 2️⃣ Si no hay por userId, intentamos por userName
-                            productRef.collection("reviews")
-                                .whereEqualTo("userName", userName)
-                                .get()
-                                .addOnSuccessListener { byNameSnap ->
-                                    if (!byNameSnap.isEmpty) {
-                                        byNameSnap.documents.forEach { doc ->
-                                            val review = try {
-                                                Review(
-                                                    productId = productDoc.id,
-                                                    id = doc.id,
-                                                    userId = doc.getString("userId") ?: "",
-                                                    userName = doc.getString("userName") ?: "Usuario",
-                                                    rating = doc.getLong("rating")?.toInt() ?: 0,
-                                                    comment = doc.getString("comment") ?: "",
-                                                    createdAt = doc.getTimestamp("createdAt"),
-                                                    isVerifiedPurchase = doc.getBoolean("isVerifiedPurchase") ?: false
-                                                )
-                                            } catch (e: Exception) {
-                                                null
-                                            }
-                                            review?.let { allReviews.add(it) }
-                                        }
+                    .addOnSuccessListener { reviewsSnapshot ->
+                        if (!reviewsSnapshot.isEmpty) {
+                            reviewsSnapshot.documents.forEach { doc ->
+                                val docUserName = doc.getString("userName") ?: ""
+                                if (docUserName == userName) {
+                                    val review = try {
+                                        Review(
+                                            productId = productId,
+                                            id = doc.id,
+                                            userId = doc.getString("userId") ?: "",
+                                            userName = docUserName,
+                                            userPhotoUrl = doc.getString("userPhotoUrl"),
+                                            rating = doc.getLong("rating")?.toInt() ?: 0,
+                                            comment = doc.getString("comment") ?: "",
+                                            createdAt = doc.getTimestamp("createdAt"),
+                                            isVerifiedPurchase = doc.getBoolean("isVerifiedPurchase") ?: false,
+                                            likedUserIds = (doc.get("likedUserIds") as? List<*>)
+                                                ?.filterIsInstance<String>()
+                                                ?: emptyList()
+                                        )
+                                    } catch (e: Exception) {
+                                        null
                                     }
-                                    finishIfDone()
+                                    review?.let { allReviews.add(it) }
                                 }
-                                .addOnFailureListener {
-                                    finishIfDone()
-                                }
+                            }
                         }
+                        finishIfDone()
                     }
                     .addOnFailureListener {
                         finishIfDone()

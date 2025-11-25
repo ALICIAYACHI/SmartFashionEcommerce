@@ -232,6 +232,44 @@ fun CardPaymentScreen(
                         // aquí simplemente no avanzamos si faltan datos.
                         return@Button
                     }
+
+                    // 🔹 Punto de integración real con backend de tarjeta
+                    // Aquí es donde, cuando tengas tu API, llamarías a tu servidor
+                    // para procesar el pago con una pasarela (Niubiz, Culqi, Izipay, etc.).
+                    // Ejemplo de flujo (no implementado todavía):
+                    //
+                    // 1. Parsear fecha de vencimiento "MM/AAAA" en mes y año:
+                    //    val partes = fechaVencimiento.split("/")
+                    //    val mes = partes.getOrNull(0)?.toIntOrNull() ?: 0
+                    //    val anio = partes.getOrNull(1)?.toIntOrNull() ?: 0
+                    //
+                    // 2. Construir el request para tu API:
+                    //    val request = CardCreatePaymentRequest(
+                    //        amount = total,
+                    //        cardNumber = numeroTarjeta,
+                    //        cardHolder = nombreFacturacion,
+                    //        expMonth = mes,
+                    //        expYear = anio,
+                    //        cvv = cvv,
+                    //        orderId = "GENERAR_ID_PEDIDO"
+                    //    )
+                    //
+                    // 3. Llamar a tu backend usando Retrofit (PaymentApiService / YapeApiService):
+                    //    coroutineScope.launch {
+                    //        val response = api.createCardPayment(request)
+                    //        if (response.isSuccessful) {
+                    //            val body = response.body()
+                    //            when (body?.status) {
+                    //                "APPROVED" -> onConfirm() // marcar como pagado
+                    //                "PENDING"  -> mostrar pantalla de espera / 3DS
+                    //                else        -> mostrar error de pago
+                    //            }
+                    //        } else {
+                    //            // Mostrar error de integración
+                    //        }
+                    //    }
+                    //
+                    // Mientras no exista backend, seguimos usando la simulación actual:
                     onConfirm()
                 },
                 modifier = Modifier

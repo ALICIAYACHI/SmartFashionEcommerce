@@ -53,7 +53,7 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
     val user = Firebase.auth.currentUser
     val userEmail = user?.email ?: ""
     val sharedPrefs = context.getSharedPreferences("user_profile_$userEmail", android.content.Context.MODE_PRIVATE)
-    val direccionesPrefs = context.getSharedPreferences("SmartFashionPrefs", Context.MODE_PRIVATE)
+    val direccionesPrefs = context.getSharedPreferences("direcciones_envio_$userEmail", Context.MODE_PRIVATE)
 
     val cartItems by remember { derivedStateOf { CartManager.cartItems } }
     val subtotal = remember { derivedStateOf { CartManager.getTotal() } }
