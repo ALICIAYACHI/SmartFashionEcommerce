@@ -1,6 +1,7 @@
 package com.ropa.smartfashionecommerce.carrito
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -27,6 +28,10 @@ import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.ropa.smartfashionecommerce.pedidos.PedidoConfirmado
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
+import com.ropa.smartfashionecommerce.network.PaymentManager
+import com.ropa.smartfashionecommerce.network.PayerInfo
+import com.ropa.smartfashionecommerce.network.PaymentResult
+import kotlinx.coroutines.launch
 
 class FinalizarCompra : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -312,55 +317,58 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Sección: Método de pago
+            // Sección: Método de pago - Mercado Pago
             SectionCard(title = "Forma de pago") {
-                // Opción Yape (primera)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp),
+                        .padding(vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     RadioButton(
-                        selected = metodoPago == "Yape",
-                        onClick = { metodoPago = "Yape" }
+                        selected = true,
+                        onClick = { metodoPago = "Mercado Pago" }
                     )
-                    Column(modifier = Modifier.padding(start = 4.dp)) {
-                        Text("Yape", fontWeight = FontWeight.SemiBold, color = Color.Black)
+                    Column(modifier = Modifier.padding(start = 8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("Mercado Pago", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Yapea utilizando tu código de aprobación desde tu app Yape.",
+                            text = "✅ Acepta Yape, tarjetas, banca móvil y más",
+                            fontSize = 13.sp,
+                            color = Color(0xFF2E7D32),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = "Pago 100% seguro y protegido",
                             fontSize = 12.sp,
                             color = Color.Gray
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(4.dp))
-
-                // Opción Tarjeta de Crédito/Débito (segunda)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Info adicional
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
                 ) {
-                    RadioButton(
-                        selected = metodoPago == "Tarjeta",
-                        onClick = { metodoPago = "Tarjeta" }
-                    )
-                    Column(modifier = Modifier.padding(start = 4.dp)) {
-                        Text("Tarjeta de Crédito/Débito", fontWeight = FontWeight.SemiBold, color = Color.Black)
+                    Column(modifier = Modifier.padding(12.dp)) {
                         Text(
-                            text = "Paga con tu tarjeta de crédito o débito.",
-                            fontSize = 12.sp,
-                            color = Color.Gray
+                            "💳 Métodos disponibles:",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Color.Black
                         )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text("• Yape", fontSize = 12.sp, color = Color.Black)
+                        Text("• Tarjetas de crédito/débito", fontSize = 12.sp, color = Color.Black)
+                        Text("• Banca móvil", fontSize = 12.sp, color = Color.Black)
+                        Text("• Efectivo (PagoEfectivo, Tambo+)", fontSize = 12.sp, color = Color.Black)
                     }
                 }
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                // Los datos de tarjeta se ingresarán en la siguiente pantalla (CardPaymentActivity)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -386,85 +394,125 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Botón inferior según método de pago
-            if (metodoPago == "Tarjeta") {
-                Button(
-                    onClick = {
-                        val faltantes = mutableListOf<String>()
-                        if (nombresCompletos.isBlank()) faltantes.add("Nombres Completos")
-                        if (correo.isBlank()) faltantes.add("Correo electrónico")
-                        if (telefono.isBlank()) faltantes.add("Teléfono")
-                        if (numeroDocumento.isBlank()) faltantes.add(if (tipoDocumento == "RUC") "RUC" else "DNI")
-                        if (direccion.isBlank()) faltantes.add("Dirección")
-                        if (departamento.isBlank()) faltantes.add("Departamento")
-                        if (provincia.isBlank()) faltantes.add("Provincia")
-                        if (distrito.isBlank()) faltantes.add("Distrito")
-                        if (codigoPostal.isBlank()) faltantes.add("Código postal")
+            // Estado de carga y mensaje de error
+            var isProcessing by remember { mutableStateOf(false) }
+            var errorMessage by remember { mutableStateOf<String?>(null) }
+            val scope = rememberCoroutineScope()
 
-                        if (faltantes.isNotEmpty()) {
-                            androidx.appcompat.app.AlertDialog.Builder(context)
-                                .setTitle("Campos incompletos ⚠️")
-                                .setMessage("Faltan: \n\n${faltantes.joinToString(", ")}")
-                                .setPositiveButton("Aceptar", null)
-                                .show()
-                        } else {
-                            // 👉 Ir a pantalla de pago con tarjeta, enviando datos de facturación y resumen
-                            val resumenPedido = ArrayList(cartItems.map { "${it.name} x${it.quantity} - S/ ${"%.2f".format(it.price * it.quantity)}" })
-
-                            val intent = Intent(context, CardPaymentActivity::class.java).apply {
-                                putExtra("total", total)
-                                putExtra("nombreFacturacion", nombresCompletos)
-                                putExtra("telefonoFacturacion", telefono)
-                                putExtra("direccionFacturacion", direccion)
-                                putExtra("referenciasFacturacion", referencias)
-                                putStringArrayListExtra("resumenPedido", resumenPedido)
-                            }
-                            context.startActivity(intent)
-                        }
-                    },
+            // Mostrar error si existe
+            errorMessage?.let { error ->
+                Card(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                    shape = RoundedCornerShape(12.dp)
+                        .padding(bottom = 12.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
                 ) {
-                    Text("Proceder al pago", color = Color.White, fontSize = 16.sp)
+                    Text(
+                        text = error,
+                        color = Color(0xFFD32F2F),
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(12.dp)
+                    )
                 }
-            } else if (metodoPago == "Yape") {
-                Button(
-                    onClick = {
-                        val faltantes = mutableListOf<String>()
-                        if (nombresCompletos.isBlank()) faltantes.add("Nombres Completos")
-                        if (correo.isBlank()) faltantes.add("Correo electrónico")
-                        if (telefono.isBlank()) faltantes.add("Teléfono")
-                        if (numeroDocumento.isBlank()) faltantes.add(if (tipoDocumento == "RUC") "RUC" else "DNI")
-                        if (direccion.isBlank()) faltantes.add("Dirección")
-                        if (departamento.isBlank()) faltantes.add("Departamento")
-                        if (provincia.isBlank()) faltantes.add("Provincia")
-                        if (distrito.isBlank()) faltantes.add("Distrito")
-                        if (codigoPostal.isBlank()) faltantes.add("Código postal")
+            }
 
-                        if (faltantes.isNotEmpty()) {
-                            androidx.appcompat.app.AlertDialog.Builder(context)
-                                .setTitle("Campos incompletos ⚠️")
-                                .setMessage("Faltan: \n\n${faltantes.joinToString(", ")}")
-                                .setPositiveButton("Aceptar", null)
-                                .show()
-                        } else {
-                            // 👉 Ir a pantalla tipo Yape (el número se ingresará allí)
-                            val intent = Intent(context, YapePaymentActivity::class.java).apply {
-                                putExtra("total", total)
+            // Botón de pago con Mercado Pago
+            Button(
+                onClick = {
+                    val faltantes = mutableListOf<String>()
+                    if (nombresCompletos.isBlank()) faltantes.add("Nombres Completos")
+                    if (correo.isBlank()) faltantes.add("Correo electrónico")
+                    if (telefono.isBlank()) faltantes.add("Teléfono")
+                    if (numeroDocumento.isBlank()) faltantes.add(if (tipoDocumento == "RUC") "RUC" else "DNI")
+                    if (direccion.isBlank()) faltantes.add("Dirección")
+                    if (departamento.isBlank()) faltantes.add("Departamento")
+                    if (provincia.isBlank()) faltantes.add("Provincia")
+                    if (distrito.isBlank()) faltantes.add("Distrito")
+                    if (codigoPostal.isBlank()) faltantes.add("Código postal")
+
+                    if (faltantes.isNotEmpty()) {
+                        androidx.appcompat.app.AlertDialog.Builder(context)
+                            .setTitle("Campos incompletos ⚠️")
+                            .setMessage("Faltan: \n\n${faltantes.joinToString(", ")}")
+                            .setPositiveButton("Aceptar", null)
+                            .show()
+                    } else {
+                        // Procesar pago con Mercado Pago
+                        isProcessing = true
+                        errorMessage = null
+                        
+                        scope.launch {
+                            // Separar nombre y apellido
+                            val nombrePartes = nombresCompletos.split(" ", limit = 2)
+                            val firstName = nombrePartes.getOrNull(0) ?: nombresCompletos
+                            val lastName = nombrePartes.getOrNull(1) ?: ""
+                            
+                            // Construir información del pagador
+                            val payerInfo = PayerInfo(
+                                firstName = firstName,
+                                lastName = lastName,
+                                email = correo,
+                                phone = telefono,
+                                documentType = tipoDocumento,
+                                documentNumber = numeroDocumento
+                            )
+                            
+                            // Generar ID de referencia único
+                            val externalReference = "SMART-${System.currentTimeMillis()}"
+                            
+                            // Crear preferencia de pago
+                            when (val result = PaymentManager.createMercadoPagoPayment(
+                                items = cartItems,
+                                payerInfo = payerInfo,
+                                externalReference = externalReference
+                            )) {
+                                is PaymentResult.Success -> {
+                                    // Guardar referencia del pedido y total temporalmente
+                                    context.getSharedPreferences("pedidos", Context.MODE_PRIVATE)
+                                        .edit()
+                                        .putString("ultimo_pedido", externalReference)
+                                        .apply()
+                                    
+                                    context.getSharedPreferences("payment_temp", Context.MODE_PRIVATE)
+                                        .edit()
+                                        .putFloat("total", total.toFloat())
+                                        .apply()
+                                    
+                                    // Abrir navegador con el link de pago
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(result.paymentUrl))
+                                    context.startActivity(intent)
+                                    
+                                    isProcessing = false
+                                }
+                                is PaymentResult.Error -> {
+                                    errorMessage = result.message
+                                    isProcessing = false
+                                }
                             }
-                            context.startActivity(intent)
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("Pagar ahora", color = Color.White, fontSize = 16.sp)
+                    }
+                },
+                enabled = !isProcessing,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (metodoPago == "Mercado Pago") Color(0xFF009EE3) else Color.Black
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                if (isProcessing) {
+                    CircularProgressIndicator(
+                        color = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text(
+                        "Pagar con Mercado Pago",
+                        color = Color.White,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
 
