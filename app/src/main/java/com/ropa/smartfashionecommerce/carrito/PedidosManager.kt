@@ -16,6 +16,8 @@ data class Pedido(
     val estado: String = "Procesando", // Procesando, En tránsito, Entregado
     val productos: List<String>,
     val direccionTexto: String,
+    val productIds: List<Int?>? = null,
+    val imagenes: List<String?>? = null,
     val latitud: Double? = null,
     val longitud: Double? = null
 )
@@ -63,7 +65,9 @@ object PedidosManager {
         productos: List<String>,
         direccionTexto: String,
         latitud: Double? = null,
-        longitud: Double? = null
+        longitud: Double? = null,
+        imagenes: List<String?>? = null,
+        productIds: List<Int?>? = null
     ) {
         // Asegurar que la lista en memoria esté sincronizada con lo que hay guardado
         // para no perder pedidos anteriores al agregar uno nuevo.
@@ -83,7 +87,9 @@ object PedidosManager {
             productos = productos,
             direccionTexto = direccionTexto,
             latitud = latitud,
-            longitud = longitud
+            longitud = longitud,
+            imagenes = imagenes,
+            productIds = productIds
         )
 
         pedidos.add(0, nuevoPedido) // Agregar al inicio

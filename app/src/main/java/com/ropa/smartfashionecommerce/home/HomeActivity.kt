@@ -141,6 +141,7 @@ fun FashionHomeScreen(activity: ComponentActivity) {
 
     var productos by remember { mutableStateOf<List<Producto>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    var apiCategories by remember { mutableStateOf<List<Categoria>>(emptyList()) }
 
     var searchText by remember { mutableStateOf("") }
     var selectedCategory by remember { mutableStateOf("Todos") }
@@ -161,19 +162,65 @@ fun FashionHomeScreen(activity: ComponentActivity) {
         ProfileImageManager.loadProfileImage(context)
     }
 
-    LaunchedEffect(Unit) {
+    // Cargar productos desde /api/home/ y aplicar filtros según tab y circulitos
+    LaunchedEffect(selectedCategory, selectedCircleFilter, searchText) {
+        isLoading = true
         try {
-            val response = ApiClient.apiService.getProductos()
+            // Determinar category_id a partir de las categorías devueltas por la API
+            val categoryId: Int? = when (selectedCategory) {
+                // En "Todos" no filtramos por categoría
+                "Todos" -> null
+                else -> apiCategories.firstOrNull { it.nombre.equals(selectedCategory, ignoreCase = true) }?.id
+            }
+
+            // Determinar término de búsqueda según circulito
+            val circleTerm: String? = when {
+                // En "Todos" ignoramos los circulitos
+                selectedCategory == "Todos" -> null
+                selectedCircleFilter == "Todos" -> null
+                selectedCircleFilter == "Vestidos" -> "Vestido"
+                selectedCircleFilter == "Camisas" -> "Camisa"
+                selectedCircleFilter == "Casacas" -> "Casaca"
+                selectedCircleFilter == "Polos" -> "Polo"
+                selectedCircleFilter == "Pantalones" -> "Pantalón"
+                selectedCircleFilter == "Ofertas" -> "Oferta"
+                else -> selectedCircleFilter
+            }
+
+            // Combinar texto escrito con el filtro del circulito
+            val manualQuery = searchText.trim().takeIf { it.isNotEmpty() }
+            val finalQuery = listOfNotNull(manualQuery, circleTerm)
+                .joinToString(" ")
+                .ifBlank { null }
+
+            val response = ApiClient.apiService.getHome(
+                categoryId = categoryId,
+                query = finalQuery,
+                sizeId = null,
+                colorId = null,
+                page = 1,
+                // Subimos el límite para aproximarnos a "todos" los productos del web
+                limit = 100
+            )
+
             if (response.isSuccessful) {
-                val apiProducts = response.body()?.data.orEmpty()
+                val body = response.body()
+                val data = body?.data
+                apiCategories = data?.categories.orEmpty()
+                val apiProducts = data?.featured_products.orEmpty()
                 productos = if (apiProducts.isNotEmpty()) apiProducts else localProducts
             } else {
+                // Si falla la API, mantenemos el fallback local
                 productos = localProducts
-                Toast.makeText(context, "Error al cargar desde la API. Usando productos locales.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Error al cargar desde la API (home). Usando productos locales.", Toast.LENGTH_SHORT).show()
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             productos = localProducts
-            Toast.makeText(context, "Sin conexión. Mostrando productos locales.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                context,
+                "Error de red: ${e.localizedMessage ?: "desconocido"}. Mostrando productos locales.",
+                Toast.LENGTH_LONG
+            ).show()
         } finally {
             isLoading = false
         }
@@ -463,16 +510,28 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                 }
             }
 
-            if (selectedCategory in listOf("Mujer", "Hombre", "Niños", "Bebé")) {
+            // Circulitos de filtro por tipo de producto según categoría
+            if (selectedCategory in listOf("Mujer", "Hombre")) {
                 Spacer(modifier = Modifier.height(4.dp))
 
                 data class CircleFilter(val label: String, val iconUrl: String)
-                val circleFilters = listOf(
-                    CircleFilter("Todos", "https://i.pinimg.com/564x/6a/59/49/6a5949963b7705a7c3927c044b2f4c38.jpg"),
-                    CircleFilter("Ofertas", "https://d23ye9eewymoys.cloudfront.net/colecciones/web/1c45-miren-aire-barcelona-1-thumb.jpg"),
-                    CircleFilter("Vestidos", "https://i.pinimg.com/236x/e2/04/25/e20425efb02a5185ba8f4d1cd710183d.jpg"),
-                    CircleFilter("Casacas", "https://cuerosvelezpe.vtexassets.com/arquivos/ids/358118/1035983-02-01--Chaqueta-ebro.jpg?v=638482126287130000")
-                )
+
+                val circleFilters = when (selectedCategory) {
+                    "Mujer" -> listOf(
+                        CircleFilter("Todos", "https://i.pinimg.com/564x/6a/59/49/6a5949963b7705a7c3927c044b2f4c38.jpg"),
+                        CircleFilter("Vestidos", "https://i.pinimg.com/236x/e2/04/25/e20425efb02a5185ba8f4d1cd710183d.jpg"),
+                        CircleFilter("Camisas", "https://images.pexels.com/photos/7697309/pexels-photo-7697309.jpeg?auto=compress&cs=tinysrgb&w=600"),
+                        CircleFilter("Pantalones", "https://oggi.mx/cdn/shop/files/ATRACTIONGABAKHAKIVISTA2.jpg?v=1753209029"),
+                        CircleFilter("Casacas", "https://cuerosvelezpe.vtexassets.com/arquivos/ids/358118/1035983-02-01--Chaqueta-ebro.jpg?v=638482126287130000"),
+                    )
+                    "Hombre" -> listOf(
+                        CircleFilter("Todos", "https://images.pexels.com/photos/428340/pexels-photo-428340.jpeg?auto=compress&cs=tinysrgb&w=600"),
+                        CircleFilter("Casacas", "https://cuerosvelezpe.vtexassets.com/arquivos/ids/358118/1035983-02-01--Chaqueta-ebro.jpg?v=638482126287130000"),
+                        CircleFilter("Pantalones", "https://oggi.mx/cdn/shop/files/ATRACTIONGABAKHAKIVISTA2.jpg?v=1753209029"),
+                        CircleFilter("Polos", "https://images.pexels.com/photos/428340/pexels-photo-428340.jpeg?auto=compress&cs=tinysrgb&w=600"),
+                    )
+                    else -> emptyList()
+                }
 
                 LazyRow(
                     modifier = Modifier
@@ -557,6 +616,8 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                                             putExtra("productId", producto.id)
                                             putExtra("productName", producto.nombre)
                                             putExtra("productPrice", producto.precio.toDoubleOrNull() ?: 0.0)
+                                            putExtra("productDescription", producto.descripcion)
+                                            putExtra("productStock", producto.stock_total)
                                             if (producto.image_preview.isNullOrEmpty()) {
                                                 putExtra("imageType", "local")
                                                 putExtra("productImageRes", producto.localImageRes ?: R.drawable.modelo_ropa)
@@ -674,35 +735,11 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                     CircularProgressIndicator()
                 }
             } else {
+                // El backend ya aplica categoría y texto (q). Aquí solo refinamos por búsqueda local.
                 val filteredProducts = productos
-                    .filter { producto ->
-                        when (selectedCategory) {
-                            "Todos" -> true
-                            "Black Friday" -> producto.categoria?.nombre.equals("Black Friday", ignoreCase = true)
-                            "Mujer" -> producto.categoria?.nombre.equals("Mujer", ignoreCase = true)
-                            "Hombre" -> producto.categoria?.nombre.equals("Hombre", ignoreCase = true)
-                            "Niños" -> producto.categoria?.nombre.equals("Niños", ignoreCase = true)
-                            "Bebé" -> producto.categoria?.nombre.equals("Bebé", ignoreCase = true)
-                            else -> true
-                        }
-                    }
                     .filter { producto ->
                         if (searchText.isBlank()) true
                         else producto.nombre.contains(searchText, ignoreCase = true)
-                    }
-                    .filter { producto ->
-                        if (selectedCategory !in listOf("Mujer", "Hombre", "Niños", "Bebé")) {
-                            true
-                        } else {
-                            when (selectedCircleFilter) {
-                                "Todos" -> true
-                                "Ofertas" -> producto.categoria?.nombre.equals("Black Friday", ignoreCase = true)
-                                "Calzado" -> producto.descripcion.equals("Calzado", ignoreCase = true) || producto.nombre.contains("Zapatilla", ignoreCase = true)
-                                "Vestidos" -> producto.nombre.contains("Vestido", ignoreCase = true)
-                                "Casacas" -> producto.nombre.contains("Casaca", ignoreCase = true)
-                                else -> true
-                            }
-                        }
                     }
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
@@ -766,6 +803,7 @@ fun ProductCard(producto: Producto) {
                                             putExtra("productId", producto.id)
                                             putExtra("productName", producto.nombre)
                                             putExtra("productPrice", producto.precio.toDoubleOrNull() ?: 0.0)
+                                            putExtra("productDescription", producto.descripcion)
                                             putExtra("imageType", "local")
                                             putExtra("productImageRes", img)
                                         }
@@ -792,6 +830,8 @@ fun ProductCard(producto: Producto) {
                                         putExtra("productId", producto.id)
                                         putExtra("productName", producto.nombre)
                                         putExtra("productPrice", producto.precio.toDoubleOrNull() ?: 0.0)
+                                        putExtra("productDescription", producto.descripcion)
+                                        putExtra("productStock", producto.stock_total)
                                         putExtra("imageType", "url")
                                         putExtra("productImageUrl", producto.image_preview)
                                     }
@@ -837,6 +877,8 @@ fun ProductCard(producto: Producto) {
                             putExtra("productId", producto.id)
                             putExtra("productName", producto.nombre)
                             putExtra("productPrice", producto.precio.toDoubleOrNull() ?: 0.0)
+                            putExtra("productDescription", producto.descripcion)
+                            putExtra("productStock", producto.stock_total)
                             if (producto.image_preview.isNullOrEmpty()) {
                                 putExtra("imageType", "local")
                                 putExtra("productImageRes", producto.localImageRes ?: R.drawable.modelo_ropa)
@@ -871,6 +913,8 @@ fun ProductCard(producto: Producto) {
                                 putExtra("productId", producto.id)
                                 putExtra("productName", producto.nombre)
                                 putExtra("productPrice", producto.precio.toDoubleOrNull() ?: 0.0)
+                                putExtra("productDescription", producto.descripcion)
+                                putExtra("productStock", producto.stock_total)
                                 if (producto.image_preview.isNullOrEmpty()) {
                                     putExtra("imageType", "local")
                                     putExtra("productImageRes", producto.localImageRes ?: R.drawable.modelo_ropa)

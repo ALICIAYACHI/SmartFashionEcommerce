@@ -2,6 +2,7 @@ package com.ropa.smartfashionecommerce.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ropa.smartfashionecommerce.model.ProductListData
 import com.ropa.smartfashionecommerce.model.Producto
 import com.ropa.smartfashionecommerce.network.ApiClient
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,8 +27,9 @@ class HomeViewModel : ViewModel() {
             _loading.value = true
             try {
                 val response = apiService.getProductos()
-                if (response.isSuccessful && response.body()?.status == "ok") {
-                    _productos.value = response.body()?.data ?: emptyList()
+                if (response.isSuccessful) {
+                    val body: com.ropa.smartfashionecommerce.model.ApiResponse<ProductListData>? = response.body()
+                    _productos.value = body?.data?.products ?: emptyList()
                 } else {
                     _error.value = "Error al obtener productos"
                 }

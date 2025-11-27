@@ -4,7 +4,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object ApiClient {
-    private const val BASE_URL = "http://10.0.2.2:8000/api/" // localhost para emulador Android
+    private const val BASE_URL = "http://10.147.1.123:8000/"
 
     private val retrofit: Retrofit by lazy {
         Retrofit.Builder()

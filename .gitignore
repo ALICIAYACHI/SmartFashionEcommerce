@@ -30,3 +30,7 @@ app/google-services.json
 # Ignorar carpetas de errores de Kotlin
 .kotlin/
 *.log
+
+# No subir estas carpetas
+SmarthFashion/
+admin/

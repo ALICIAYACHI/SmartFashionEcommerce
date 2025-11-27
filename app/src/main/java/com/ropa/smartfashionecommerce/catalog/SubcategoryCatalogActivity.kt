@@ -8,8 +8,11 @@ import androidx.appcompat.widget.SearchView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import androidx.appcompat.R as AppCompatR
 import com.ropa.smartfashionecommerce.R
+import com.ropa.smartfashionecommerce.network.ApiClient
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import androidx.appcompat.R as AppCompatR
 
 class SubcategoryCatalogActivity : AppCompatActivity() {
 
@@ -27,49 +30,52 @@ class SubcategoryCatalogActivity : AppCompatActivity() {
         val btnBack = findViewById<android.widget.ImageButton>(R.id.btn_back_subcategory)
         val btnSearchIcon = findViewById<android.widget.ImageButton>(R.id.btn_search_subcategory)
 
-        titleView.text = "$subcategory de $category"
+        // Ocultamos el título para que no se muestre "Camisa de Mujeres", etc.
+        titleView.visibility = android.view.View.GONE
 
         // Botón atrás: cerrar esta activity
         btnBack.setOnClickListener { finish() }
 
-        val allProducts = listOf(
-            Product(
-                name = "Vestido blanco largo",
-                price = "S/ 189.90",
-                imageRes = R.drawable.mujeres,
-                imageUrl = "https://boutiquemariaregna.com/cdn/shop/files/cd715_silver-nude_front.jpg?v=1759364563&width=533",
-                colorTag = "blanco",
-                sizeTag = "S"
-            ),
-            Product(
-                name = "Vestido de novia",
-                price = "S/ 259.90",
-                imageRes = R.drawable.mujeres,
-                imageUrl = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcShhMtV2W9OG2w7GQcp4VYQslbSgS-npZz-k5eajXnQDMjzgElzMyxLgzDg9T8HwoM-sq4&usqp=CAU",
-                colorTag = "blanco",
-                sizeTag = "M"
-            ),
-            Product(
-                name = "Vestido color vino",
-                price = "S/ 179.90",
-                imageRes = R.drawable.mujeres,
-                imageUrl = "https://media.falabella.com/falabellaPE/139054815_01/w=1500,h=1500,fit=pad",
-                colorTag = "rojo",
-                sizeTag = "L"
-            ),
-            Product(
-                name = "Vestido de noche azul",
-                price = "S/ 199.90",
-                imageRes = R.drawable.mujeres,
-                imageUrl = "https://image.made-in-china.com/365f3j00IWNVgpbGbKqi/Vestidos-de-Noche-Azules-de-Sat-n-con-Abertura-y-Beads-para-Prom-E13189.webp",
-                colorTag = "azul",
-                sizeTag = "XL"
-            )
-        )
-
         recyclerView.layoutManager = GridLayoutManager(this, 2)
-        val adapter = ViewHolderAdapter(this, allProducts)
+        val adapter = ViewHolderAdapter(this, emptyList())
         recyclerView.adapter = adapter
+
+        // Lista remota cargada desde /api/home/
+        var remoteProducts: List<Product> = emptyList()
+
+        // Cargar productos reales filtrando por la subcategoría como texto de búsqueda
+        lifecycleScope.launch {
+            try {
+                val resp = ApiClient.apiService.getHome(
+                    // Por ahora usamos la subcategoría como búsqueda libre (q) para aproximar la misma vista
+                    categoryId = null,
+                    query = subcategory,
+                    sizeId = null,
+                    colorId = null,
+                    page = 1,
+                    limit = 20
+                )
+                if (resp.isSuccessful) {
+                    val body = resp.body()
+                    val apiProducts = body?.data?.featured_products.orEmpty()
+
+                    remoteProducts = apiProducts.map { p ->
+                        Product(
+                            id = p.id,
+                            name = p.nombre,
+                            price = "S/ ${p.precio}",
+                            imageRes = R.drawable.modelo_ropa,
+                            imageUrl = p.image_preview,
+                            description = p.descripcion
+                        )
+                    }
+
+                    adapter.updateList(remoteProducts)
+                }
+            } catch (_: Exception) {
+                // Si falla la API dejamos la lista vacía
+            }
+        }
 
         // Estado de filtros/orden/búsqueda
         var currentColorFilter: String? = null
@@ -87,7 +93,8 @@ class SubcategoryCatalogActivity : AppCompatActivity() {
         }
 
         fun applyFiltersAndSort() {
-            var sequence = allProducts.asSequence()
+            // Partimos de la lista remota cargada desde la API
+            var sequence = remoteProducts.asSequence()
 
             if (currentSearchQuery.isNotEmpty()) {
                 sequence = sequence.filter { it.name.contains(currentSearchQuery, ignoreCase = true) }
@@ -314,18 +321,12 @@ class SubcategoryCatalogActivity : AppCompatActivity() {
         searchView.setIconifiedByDefault(false)
         searchView.clearFocus()
 
-        val searchText = searchView.findViewById<android.widget.TextView>(AppCompatR.id.search_src_text)
-        searchText?.let {
-            it.setTextColor(android.graphics.Color.BLACK)
-            it.setHintTextColor(android.graphics.Color.DKGRAY)
-            it.textSize = 16f
-        }
-
-        val plate = searchView.findViewById<android.view.View>(AppCompatR.id.search_plate)
-        plate?.background = GradientDrawable().apply {
-            setColor(android.graphics.Color.parseColor("#FAFAFA"))
-            setStroke(3, android.graphics.Color.BLACK)
-            cornerRadius = 24f
+        // Asegurar que el texto del buscador sea visible (negro) y el hint gris oscuro
+        (searchView.findViewById(
+            AppCompatR.id.search_src_text
+        ) as? android.widget.TextView)?.let { tv ->
+            tv.setTextColor(android.graphics.Color.BLACK)
+            tv.setHintTextColor(android.graphics.Color.DKGRAY)
         }
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {

@@ -4,5 +4,7 @@
         <!-- Permitir tráfico HTTP local -->
         <domain includeSubdomains="true">10.0.2.2</domain>
         <domain includeSubdomains="true">localhost</domain>
+        <!-- ✅ Añadir IP de tu PC para el celular físico -->
+        <domain includeSubdomains="true">10.147.1.123</domain>
     </domain-config>
 </network-security-config>

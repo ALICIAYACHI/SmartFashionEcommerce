@@ -57,7 +57,9 @@ class YapePaymentActivity : ComponentActivity() {
                                 context = context,
                                 total = total,
                                 productos = cartItems.map { "${it.name} x${it.quantity}" },
-                                direccionTexto = "Pago con Yape"
+                                direccionTexto = "Pago con Yape",
+                                imagenes = cartItems.map { it.imageUrl },
+                                productIds = cartItems.map { it.productId }
                             )
 
                             // Limpiar carrito y mostrar pantalla de confirmación

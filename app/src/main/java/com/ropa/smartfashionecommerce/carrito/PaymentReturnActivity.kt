@@ -83,7 +83,9 @@ class PaymentReturnActivity : ComponentActivity() {
                                     context = this,
                                     total = total,
                                     productos = cartItems.map { "${it.name} x${it.quantity}" },
-                                    direccionTexto = "Pago con Mercado Pago"
+                                    direccionTexto = "Pago con Mercado Pago",
+                                    imagenes = cartItems.map { it.imageUrl },
+                                    productIds = cartItems.map { it.productId }
                                 )
                                 
                                 // Limpiar carrito

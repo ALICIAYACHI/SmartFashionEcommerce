@@ -42,12 +42,17 @@ import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartItem
 import com.ropa.smartfashionecommerce.carrito.CartManager
 import com.ropa.smartfashionecommerce.carrito.StockManager
-import com.ropa.smartfashionecommerce.home.FavActivity
 import com.ropa.smartfashionecommerce.home.FavoriteItem
 import com.ropa.smartfashionecommerce.home.FavoritesManager
 import com.ropa.smartfashionecommerce.home.HomeActivity
 import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
 import com.ropa.smartfashionecommerce.miperfil.ProfileImageManager
+import com.ropa.smartfashionecommerce.model.ColorDto
+import com.ropa.smartfashionecommerce.model.ProductDetailData
+import com.ropa.smartfashionecommerce.model.ProductVariantDto
+import com.ropa.smartfashionecommerce.model.Producto
+import com.ropa.smartfashionecommerce.model.SizeDto
+import com.ropa.smartfashionecommerce.network.ApiClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -66,16 +71,79 @@ class ProductDetailActivity : ComponentActivity() {
     }
 }
 
-data class RelatedProductData(
-    val name: String,
-    val price: Double,
-    val description: String,
-    val imageRes: Int,
-    val tags: List<String>,
-    val category: String
-)
+@Composable
+fun RelatedProductFromApi(producto: Producto) {
+    val context = LocalContext.current
+
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .width(160.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(Color(0xFFF9F9F9))
+            .clickable {
+                val intent = Intent(context, ProductDetailActivity::class.java).apply {
+                    putExtra("productId", producto.id)
+                    putExtra("productName", producto.nombre)
+                    putExtra("productPrice", producto.precio.toDoubleOrNull() ?: 0.0)
+                    putExtra("productDescription", producto.descripcion)
+                    putExtra("imageType", "url")
+                    putExtra("productImageUrl", producto.image_preview)
+                    putExtra("productStock", producto.stock_total)
+                }
+                context.startActivity(intent)
+            }
+            .padding(8.dp)
+    ) {
+        if (!producto.image_preview.isNullOrEmpty()) {
+            Image(
+                painter = rememberAsyncImagePainter(producto.image_preview),
+                contentDescription = producto.nombre,
+                modifier = Modifier
+                    .height(140.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+        } else {
+            Image(
+                painter = painterResource(id = R.drawable.modelo_ropa),
+                contentDescription = producto.nombre,
+                modifier = Modifier
+                    .height(140.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(8.dp)),
+                contentScale = ContentScale.Crop
+            )
+        }
+
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(producto.nombre, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 2)
+        Text(
+            text = "S/ %.2f".format(producto.precio.toDoubleOrNull() ?: 0.0),
+            color = Color(0xFF0D47A1),
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
 
 data class ProductImageSource(val resId: Int? = null, val url: String? = null)
+
+// Utilidad simple para convertir un código hex (#RRGGBB) en Color de Compose
+fun parseHexColor(hex: String): Color {
+    val clean = hex.trim().removePrefix("#")
+    if (clean.length != 6) return Color.Black
+    return try {
+        val value = clean.toLong(16)
+        val r = ((value shr 16) and 0xFF).toInt()
+        val g = ((value shr 8) and 0xFF).toInt()
+        val b = (value and 0xFF).toInt()
+        Color(r / 255f, g / 255f, b / 255f)
+    } catch (_: Exception) {
+        Color.Black
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -171,23 +239,23 @@ fun ProductDetailActions(
 ) {
     val activity = context as? ProductDetailActivity
     val intent = activity?.intent
-    
+
     val productId = intent?.getIntExtra("productId", 0) ?: 0
     val productName = intent?.getStringExtra("productName") ?: "Producto"
-    val productPrice = intent?.getDoubleExtra("productPrice", 0.0) ?: 0.0
+    val initialPrice = intent?.getDoubleExtra("productPrice", 0.0) ?: 0.0
     val productImageRes = intent?.getIntExtra("productImageRes", R.drawable.modelo_ropa) ?: R.drawable.modelo_ropa
-    
+
     // ✅ Verificar si el producto está en favoritos - Solo si tiene ID válido
     val favoriteItems = FavoritesManager.favoriteItems
     var isFavorite by remember(productId) {
         mutableStateOf(favoriteItems.any { it.id == productId && productId != 0 })
     }
-    
+
     // Actualizar estado cuando cambia la lista de favoritos
     LaunchedEffect(favoriteItems.size, productId) {
         isFavorite = favoriteItems.any { it.id == productId && productId != 0 }
     }
-    
+
     Row(verticalAlignment = Alignment.CenterVertically) {
         // ❤️ Botón Favoritos
         IconButton(onClick = {
@@ -195,7 +263,7 @@ fun ProductDetailActions(
                 Toast.makeText(context, "Error: Producto sin ID válido", Toast.LENGTH_SHORT).show()
                 return@IconButton
             }
-            
+
             if (isFavorite) {
                 // Eliminar de favoritos
                 val itemToRemove = favoriteItems.find { it.id == productId }
@@ -209,7 +277,7 @@ fun ProductDetailActions(
                 val favoriteItem = FavoriteItem(
                     id = productId,
                     name = productName,
-                    price = "S/ %.2f".format(productPrice),
+                    price = "S/ %.2f".format(initialPrice),
                     sizes = listOf("S", "M", "L", "XL"),
                     imageRes = productImageRes,
                     imageUrl = null,
@@ -267,8 +335,8 @@ fun ProductDetailActions(
 @Composable
 fun ProductDetailContent(modifier: Modifier = Modifier) {
     val scrollState = rememberScrollState()
-    var selectedSize by remember { mutableStateOf("M") }
-    var selectedColor by remember { mutableStateOf("Negro") }
+    var selectedSize by remember { mutableStateOf<String?>(null) }
+    var selectedColor by remember { mutableStateOf<String?>(null) }
     var quantity by remember { mutableIntStateOf(1) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -277,10 +345,19 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
     val intent = activity?.intent
 
     val productId = intent?.getIntExtra("productId", 0) ?: 0
-    val productName = intent?.getStringExtra("productName") ?: "Blusa Elegante Negra"
-    val productPrice = intent?.getDoubleExtra("productPrice", 89.90) ?: 89.90
-    val productDescription = intent?.getStringExtra("productDescription")
-        ?: "Blusa elegante de corte moderno, perfecta para ocasiones especiales. Confeccionada en tela de alta calidad con acabados refinados."
+    val productName = intent?.getStringExtra("productName") ?: ""
+    val initialPrice = intent?.getDoubleExtra("productPrice", 0.0) ?: 0.0
+
+    // Descripción y precio reactivos del producto: se rellenarán con lo que devuelva el backend.
+    var productDescription by remember { mutableStateOf("") }
+    var productPrice by remember { mutableStateOf(initialPrice) }
+    // Si viene una descripción por Intent (por ejemplo, desde el listado), la usamos como valor inicial.
+    LaunchedEffect(Unit) {
+        val fromIntent = intent?.getStringExtra("productDescription")
+        if (!fromIntent.isNullOrBlank()) {
+            productDescription = fromIntent
+        }
+    }
 
     // ✅ Manejo de imágenes locales y por URL
     val imageType = intent?.getStringExtra("imageType")
@@ -290,7 +367,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
     var showReviewDialog by remember { mutableStateOf(false) }
     var reviewRating by remember { mutableIntStateOf(0) }
     var reviewComment by remember { mutableStateOf("") }
-    
+
     // 📝 Estado para reseñas
     var reviews by remember { mutableStateOf<List<Review>>(emptyList()) }
     var averageRating by remember { mutableFloatStateOf(0f) }
@@ -306,11 +383,12 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
             else -> "MUJER"
         }
     }
-    
-    // 🔄 Cargar reseñas en tiempo real
-    LaunchedEffect(productName) {
+
+    // 🔄 Cargar reseñas en tiempo real (usando el ID real del producto en Firestore)
+    LaunchedEffect(productId) {
+        if (productId == 0) return@LaunchedEffect
         loadReviews(
-            productId = productName,
+            productId = productId.toString(),
             onReviewsLoaded = { loadedReviews ->
                 reviews = loadedReviews
                 averageRating = if (loadedReviews.isNotEmpty()) {
@@ -324,51 +402,161 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
 
     val baseImageResId = productImageRes ?: R.drawable.modelo_ropa
 
-    // 🖼️ Galería de imágenes del producto (imagen principal + extras por URL)
-    var currentImageIndex by remember { mutableIntStateOf(0) }
+    // ✅ Datos de variantes, tallas, colores e imágenes reales desde el backend (similar a ProductDetail.jsx)
+    var variants by remember { mutableStateOf<List<ProductVariantDto>>(emptyList()) }
+    var sizes by remember { mutableStateOf<List<SizeDto>>(emptyList()) }
+    var colors by remember { mutableStateOf<List<ColorDto>>(emptyList()) }
+    var images by remember { mutableStateOf<List<String>>(emptyList()) }
+    var imagesByColor by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
+    var imagesByVariant by remember { mutableStateOf<Map<String, List<String>>>(emptyMap()) }
+    var relatedProducts by remember { mutableStateOf<List<Producto>>(emptyList()) }
 
-    val extraImageUrls = remember(productName) {
-        when (productName) {
-            "Blusa Elegante Negra" -> listOf(
-                "https://img.kwcdn.com/product/Fancyalgo/VirtualModelMatting/313c670824ac7129ac6e630fae1c3414.jpg?imageMogr2/auto-orient%7CimageView2/2/w/800/q/70/format/webp"
-            )
-            "Vestido Dorado Noche" -> listOf(
-                "https://www.dhresource.com/webp/m/0x0/f2/albu/g20/M01/70/19/rBVaqGETnTuARlAtAAV5mGNXsT8264.jpg"
-            )
-            "Casaca Moderna" -> listOf(
-                "https://cueroperu.com/wp-content/uploads/2023/06/Abrigo-de-piel-de-vaca-para-hombre-chaqueta-de-cuero-genuino-Estilo-Vintage-ropa-de-motociclista.jpg_Q90.jpg"
-            )
-            "Pantalón Beige" -> listOf(
-                "https://oggi.mx/cdn/shop/files/ATRACTIONGABAKHAKIVISTA2.jpg?v=1753209029"
-            )
-            "Camisa Blanca" -> listOf(
-                "https://elbosqueperu.vtexassets.com/arquivos/ids/178144-800-800?v=638375798439900000&width=800&height=800&aspect=true"
-            )
-            "Vestido Floral" -> listOf(
-                "https://img.kwcdn.com/product/fancy/caf80589-7a2c-47d5-a79c-e3b6da1d677f.jpg?imageView2/2/w/500/q/60/format/webp"
-            )
-            else -> emptyList()
+    // 🧮 Stock actual del producto
+    // Empezamos con el stock que llega desde el listado (si lo hay) y luego lo
+    // actualizamos con el stock_total real del backend cuando llega el detalle.
+    val productStockFromList = intent?.getIntExtra("productStock", -1) ?: -1
+    var baseStock by remember { mutableIntStateOf(if (productStockFromList >= 0) productStockFromList else 0) }
+    var currentStock by remember(productName) {
+        mutableIntStateOf(StockManager.getStock(context, productName, baseStock))
+    }
+
+    LaunchedEffect(productId) {
+        if (productId == 0) return@LaunchedEffect
+        try {
+            val api = ApiClient.apiService
+
+            // Detalle de producto (variantes + imágenes)
+            val detailResp = api.getProductDetail(productId)
+            if (detailResp.isSuccessful) {
+                val body: com.ropa.smartfashionecommerce.model.ApiResponse<ProductDetailData>? = detailResp.body()
+                val data = body?.data
+                variants = data?.variants.orEmpty()
+                images = data?.images.orEmpty()
+                imagesByColor = data?.imagesByColor ?: emptyMap()
+                imagesByVariant = data?.imagesByVariant ?: emptyMap()
+                relatedProducts = data?.related.orEmpty()
+
+                // Stock general desde backend (stock_total) para que coincida con el web
+                val backendStockTotal = data?.product?.stock_total
+                if (backendStockTotal != null) {
+                    baseStock = backendStockTotal
+                    currentStock = StockManager.getStock(context, productName, baseStock)
+                }
+
+                // Actualizar descripción con la que viene del backend (product.descripcion), si existe
+                val backendDescription = data?.product?.descripcion
+                if (!backendDescription.isNullOrEmpty()) {
+                    productDescription = backendDescription
+                }
+
+                // Actualizar precio con el del backend (product.precio) para que no quede en 0.0
+                val backendPrice = data?.product?.precio
+                if (backendPrice != null) {
+                    productPrice = backendPrice
+                }
+            }
+
+            // Catálogo de tallas y colores (como en el frontend React)
+            val sizesResp = api.getSizes()
+            if (sizesResp.isSuccessful) {
+                sizes = sizesResp.body()?.data.orEmpty()
+            }
+            val colorsResp = api.getColors()
+            if (colorsResp.isSuccessful) {
+                colors = colorsResp.body()?.data.orEmpty()
+            }
+        } catch (_: Exception) {
+            // Silenciar errores de red aquí; la UI seguirá usando valores por defecto
         }
     }
 
-    val productImageSources = remember(baseImageResId, productImageUrl, imageType, extraImageUrls) {
+    // 🖼️ Galería de imágenes del producto (se alimenta de images / imagesByColor / imagesByVariant como en la web)
+    var currentImageIndex by remember { mutableIntStateOf(0) }
+
+    // URLs priorizadas según selección de talla/color
+    val galleryUrls = remember(images, imagesByColor, imagesByVariant, selectedSize, selectedColor, productImageUrl) {
+        // 1) Imágenes específicas de variante talla+color
+        if (selectedSize != null && selectedColor != null) {
+            val key = "${selectedSize}-${selectedColor}"
+            val byVar = imagesByVariant[key]
+            if (!byVar.isNullOrEmpty()) return@remember byVar
+        }
+
+        // 2) Imágenes por color seleccionado
+        if (selectedColor != null) {
+            val byColor = imagesByColor[selectedColor]
+            if (!byColor.isNullOrEmpty()) return@remember byColor
+        }
+
+        // 3) Imágenes generales del producto
+        if (images.isNotEmpty()) return@remember images
+
+        // 4) Fallback: preview del listado (si es URL)
+        if (imageType == "url" && !productImageUrl.isNullOrEmpty()) return@remember listOf(productImageUrl)
+
+        emptyList()
+    }
+
+    // Construir lista de fuentes para Compose (URL o recurso local)
+    val productImageSources = remember(galleryUrls, baseImageResId, productImageUrl, imageType) {
         buildList {
-            if (imageType == "url" && !productImageUrl.isNullOrEmpty()) {
+            if (galleryUrls.isNotEmpty()) {
+                galleryUrls.forEach { url -> add(ProductImageSource(url = url)) }
+            } else if (imageType == "url" && !productImageUrl.isNullOrEmpty()) {
                 add(ProductImageSource(url = productImageUrl))
             } else {
                 add(ProductImageSource(resId = baseImageResId))
             }
-            extraImageUrls.forEach { url ->
-                add(ProductImageSource(url = url))
-            }
         }
     }
+
+    // Cuando cambie la galería (por color/talla), volver a la primera imagen
+    LaunchedEffect(galleryUrls) {
+        currentImageIndex = 0
+    }
+
     val totalImages = productImageSources.size
 
-    // 🧮 Stock actual del producto (demo: partimos de 15 unidades)
-    val baseStock = 15
-    var currentStock by remember(productName) {
-        mutableIntStateOf(StockManager.getStock(context, productName, baseStock))
+    // Mapas de tallas/colores por id (como en React)
+    val sizeMap = remember(sizes) {
+        sizes.associateBy { it.id.toString() }
+    }
+    val colorMap = remember(colors) {
+        colors.associateBy { it.id.toString() }
+    }
+
+    // IDs disponibles a partir de las variantes
+    val variantsState by rememberUpdatedState(variants)
+    val availableSizeIds = remember(variantsState) {
+        variantsState.map { it.size_id.toString() }.toSet().toList()
+    }
+    val availableColorIds = remember(variantsState) {
+        variantsState.map { it.color_id.toString() }.toSet().toList()
+    }
+
+    // Filtrado cruzado: colores válidos para una talla y viceversa
+    val filteredColorsForSize = remember(variantsState, selectedSize, availableColorIds) {
+        if (selectedSize == null) availableColorIds
+        else variantsState.filter { it.size_id.toString() == selectedSize }
+            .map { it.color_id.toString() }
+            .toSet()
+            .toList()
+    }
+
+    val filteredSizesForColor = remember(variantsState, selectedColor, availableSizeIds) {
+        if (selectedColor == null) availableSizeIds
+        else variantsState.filter { it.color_id.toString() == selectedColor }
+            .map { it.size_id.toString() }
+            .toSet()
+            .toList()
+    }
+
+    // Stock de la combinación seleccionada (si existe)
+    val selectedStock = remember(variantsState, selectedSize, selectedColor) {
+        if (selectedSize == null || selectedColor == null) null
+        else variantsState.find {
+            it.size_id.toString() == selectedSize && it.color_id.toString() == selectedColor
+        }?.stock
     }
 
     // 💖 Estado de favorito para este producto - SINCRONIZADO con el header
@@ -376,7 +564,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
     var isFavorite by remember(productId) {
         mutableStateOf(favoriteItems.any { it.id == productId && productId != 0 })
     }
-    
+
     // Actualizar estado cuando cambia la lista de favoritos
     LaunchedEffect(favoriteItems.size, productId) {
         isFavorite = favoriteItems.any { it.id == productId && productId != 0 }
@@ -527,26 +715,35 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                val sizes = when (productCategory) {
-                    "BEBE" -> {
-                        // Tallas tipo bebé
-                        listOf("0-3M", "3-6M", "6-9M", "9-12M", "12-18M", "18-24M")
-                    }
-                    else -> listOf("S", "M", "L", "XL")
+                // Opciones de talla reales a partir de variants + sizes
+                val sizeOptions: List<Pair<String, String>> = availableSizeIds.mapNotNull { idStr ->
+                    val s = sizeMap[idStr]
+                    if (s != null) idStr to s.nombre else null
                 }
 
-                sizes.forEach { size ->
-                    OutlinedButton(
-                        onClick = { selectedSize = size },
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (selectedSize == size) Color.Black else Color.Transparent,
-                            contentColor = if (selectedSize == size) Color.White else Color.Black
-                        ),
-                        shape = RoundedCornerShape(50),
-                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                        modifier = Modifier.height(32.dp)
-                    ) {
-                        Text(size, fontSize = 13.sp)
+                // Si solo hay una talla disponible y no hay selección, la seleccionamos por defecto
+                LaunchedEffect(sizeOptions.size) {
+                    if (selectedSize == null && sizeOptions.size == 1) {
+                        selectedSize = sizeOptions.first().first
+                    }
+                }
+
+                sizeOptions.forEach { (idStr, displayName) ->
+                    // Solo mostrar tallas compatibles con el color seleccionado
+                    if (filteredSizesForColor.contains(idStr)) {
+                        val isSelected = selectedSize == idStr
+                        OutlinedButton(
+                            onClick = { selectedSize = idStr },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (isSelected) Color.Black else Color.Transparent,
+                                contentColor = if (isSelected) Color.White else Color.Black
+                            ),
+                            shape = RoundedCornerShape(50),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.height(32.dp)
+                        ) {
+                            Text(displayName, fontSize = 13.sp)
+                        }
                     }
                 }
             }
@@ -559,21 +756,15 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text("Color", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                if (selectedColor.isNotEmpty()) {
+                if (!selectedColor.isNullOrEmpty()) {
+                    val colorName = colorMap[selectedColor]?.nombre ?: selectedColor.orEmpty()
                     Text(
-                        text = "Seleccionado: [$selectedColor]",
+                        text = "Seleccionado: [$colorName]",
                         fontSize = 13.sp,
                         color = Color(0xFF2E7D32)
                     )
                 }
             }
-
-            val baseImageRes = productImageRes ?: R.drawable.modelo_ropa
-            val colorVariants = listOf(
-                "Negro" to baseImageRes,
-                "Blanco" to baseImageRes,
-                "Gris" to baseImageRes
-            )
 
             Row(
                 modifier = Modifier
@@ -581,30 +772,56 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                     .padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                colorVariants.forEach { (name, imageResVariant) ->
-                    val isSelected = selectedColor == name
-                    Box(
-                        modifier = Modifier
-                            .size(56.dp)
-                            .clip(RoundedCornerShape(8.dp))
-                            .border(
-                                width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) Color(0xFF2E7D32) else Color.LightGray,
-                                shape = RoundedCornerShape(8.dp)
+                // Opciones de color reales a partir de variants + colors
+                val colorOptions: List<Pair<String, String>> = availableColorIds.mapNotNull { idStr ->
+                    val c = colorMap[idStr]
+                    if (c != null) idStr to c.nombre else null
+                }
+
+                // Si solo hay un color disponible y no hay selección, seleccionarlo por defecto
+                LaunchedEffect(colorOptions.size) {
+                    if (selectedColor == null && colorOptions.size == 1) {
+                        selectedColor = colorOptions.first().first
+                    }
+                }
+
+                colorOptions.forEach { (idStr, _) ->
+                    if (filteredColorsForSize.contains(idStr)) {
+                        val colorDto = colorMap[idStr]
+                        val isSelected = selectedColor == idStr
+
+                        val dotColor = remember(colorDto?.codigo_hex) {
+                            colorDto?.codigo_hex?.let { hex ->
+                                runCatching { parseHexColor(hex) }.getOrElse { Color.Black }
+                            } ?: Color.Black
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .border(
+                                    width = if (isSelected) 2.dp else 1.dp,
+                                    color = if (isSelected) Color.Black else Color.LightGray,
+                                    shape = CircleShape
+                                )
+                                .clickable { selectedColor = idStr },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .background(dotColor)
                             )
-                            .clickable { selectedColor = name }
-                    ) {
-                        Image(
-                            painter = painterResource(id = imageResVariant),
-                            contentDescription = "Color $name",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
+                        }
                     }
                 }
             }
 
-            if (currentStock > 0) {
+            val effectiveStock = selectedStock ?: currentStock
+
+            if (effectiveStock > 0) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text("Cantidad", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                 Row(
@@ -622,7 +839,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                     Button(
                         onClick = {
                             // No permitir seleccionar más cantidad que el stock disponible
-                            if (quantity < currentStock) quantity++
+                            if (quantity < effectiveStock) quantity++
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
                         shape = CircleShape
@@ -631,10 +848,10 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
 
                 Spacer(modifier = Modifier.height(20.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("$currentStock en stock", color = Color(0xFF0D47A1), fontSize = 14.sp)
+                    Text("$effectiveStock en stock", color = Color(0xFF0D47A1), fontSize = 14.sp)
 
                     when {
-                        currentStock in 3..5 -> {
+                        effectiveStock in 3..5 -> {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "ÚLTIMOS",
@@ -643,7 +860,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                                 fontWeight = FontWeight.Bold
                             )
                         }
-                        currentStock in 1..2 -> {
+                        effectiveStock in 1..2 -> {
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = "Casi agotados",
@@ -658,7 +875,6 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                 Spacer(modifier = Modifier.height(20.dp))
 
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -669,16 +885,42 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                                 Toast.makeText(context, "Inicia sesión para agregar al carrito", Toast.LENGTH_SHORT).show()
                                 context.startActivity(Intent(context, com.ropa.smartfashionecommerce.DarkLoginActivity::class.java))
                             } else {
-                                if (currentStock <= 0) {
+                                // Si el producto tiene variantes, exigir selección de talla y color
+                                if (variants.isNotEmpty() && (selectedSize == null || selectedColor == null)) {
+                                    val msg = when {
+                                        selectedSize == null && selectedColor == null -> "Selecciona talla y color"
+                                        selectedSize == null -> "Selecciona una talla"
+                                        else -> "Selecciona un color"
+                                    }
+                                    Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+                                    return@Button
+                                }
+
+                                if (effectiveStock <= 0) {
                                     Toast.makeText(context, "Producto sin stock", Toast.LENGTH_SHORT).show()
                                     return@Button
                                 }
+
+                                val sizeNameForCart = selectedSize?.let { idStr ->
+                                    sizeMap[idStr]?.nombre
+                                } ?: selectedSize ?: ""
+                                val colorNameForCart = selectedColor?.let { idStr ->
+                                    colorMap[idStr]?.nombre
+                                } ?: selectedColor ?: ""
+
+                                // IDs numéricos para checkout/backend
+                                val sizeIdInt = selectedSize?.toIntOrNull()
+                                val colorIdInt = selectedColor?.toIntOrNull()
+
                                 val item = CartItem(
+                                    productId = productId,
+                                    sizeId = sizeIdInt,
+                                    colorId = colorIdInt,
                                     name = productName,
-                                    price = productPrice,
+                                    size = sizeNameForCart,
+                                    color = colorNameForCart,
                                     quantity = quantity,
-                                    size = selectedSize,
-                                    color = selectedColor,
+                                    price = productPrice,
                                     imageRes = productImageRes ?: R.drawable.modelo_ropa,
                                     imageUrl = if (imageType == "url") productImageUrl else null
                                 )
@@ -778,83 +1020,23 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
             Text("Productos relacionados", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Productos relacionados dinámicos según la categoría del producto actual (solo ropa)
-            val relatedCandidates = remember {
-                listOf(
-                    // MUJER
-                    RelatedProductData(
-                        name = "Vestido Dorado Noche",
-                        price = 159.90,
-                        description = "Vestido elegante de noche con detalles dorados brillantes.",
-                        imageRes = R.drawable.vestidodorado,
-                        tags = listOf("vestido", "noche", "elegante"),
-                        category = "MUJER"
-                    ),
-                    RelatedProductData(
-                        name = "Vestido Negro Clásico",
-                        price = 139.90,
-                        description = "Vestido negro clásico ideal para eventos formales.",
-                        imageRes = R.drawable.modelo_ropa,
-                        tags = listOf("vestido", "negro"),
-                        category = "MUJER"
-                    ),
-                    RelatedProductData(
-                        name = "Blusa Casual Beige",
-                        price = 89.90,
-                        description = "Blusa casual en tono beige, perfecta para el uso diario.",
-                        imageRes = R.drawable.modelo_ropa,
-                        tags = listOf("blusa", "casual"),
-                        category = "MUJER"
-                    ),
-
-                    // HOMBRE
-                    RelatedProductData(
-                        name = "Casaca Moderna Hombre",
-                        price = 129.90,
-                        description = "Casaca moderna para hombre, ideal para el día a día.",
-                        imageRes = R.drawable.casaca,
-                        tags = listOf("casaca", "hombre"),
-                        category = "HOMBRE"
-                    ),
-
-                    // NIÑO / BEBÉ
-                    RelatedProductData(
-                        name = "Conjunto Niño Urbano",
-                        price = 79.90,
-                        description = "Conjunto cómodo y moderno para niño.",
-                        imageRes = R.drawable.modelo_ropa,
-                        tags = listOf("niño", "nino"),
-                        category = "NINO"
-                    ),
-                    RelatedProductData(
-                        name = "Conjunto Bebé Niña",
-                        price = 69.90,
-                        description = "Conjunto tierno y cómodo para bebé niña.",
-                        imageRes = R.drawable.modelo_ropa,
-                        tags = listOf("bebé", "bebe"),
-                        category = "BEBE"
-                    )
+            if (relatedProducts.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    relatedProducts.forEach { rp ->
+                        RelatedProductFromApi(producto = rp)
+                    }
+                }
+            } else {
+                Text(
+                    text = "No hay productos relacionados.",
+                    color = Color.Gray,
+                    fontSize = 14.sp
                 )
             }
 
-            val filteredRelated = remember(productCategory, relatedCandidates, productName) {
-                val matches = relatedCandidates.filter { candidate ->
-                    candidate.category == productCategory && candidate.name != productName
-                }
-                if (matches.isNotEmpty()) matches else relatedCandidates
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                filteredRelated.take(2).forEach { rp ->
-                    RelatedProduct(
-                        name = rp.name,
-                        price = rp.price,
-                        description = rp.description,
-                        imageRes = rp.imageRes
-                    )
-                }
-            }
-            
             // 📝 Sección de reseñas
             Spacer(modifier = Modifier.height(28.dp))
             Text("Reseñas de clientes", fontWeight = FontWeight.Bold, fontSize = 18.sp)
@@ -1131,7 +1313,7 @@ fun ReviewCard(
     LaunchedEffect(Unit) {
         ProfileImageManager.loadProfileImage(context)
     }
-    
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color(0xFFF9F9F9)),
@@ -1212,7 +1394,7 @@ fun ReviewCard(
                         }
                     }
                 }
-                
+
                 if (isOwner) {
                     Row {
                         IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
@@ -1280,7 +1462,7 @@ private fun loadReviews(
     onReviewsLoaded: (List<Review>) -> Unit
 ) {
     val db = FirebaseFirestore.getInstance()
-    
+
     db.collection("products")
         .document(productId)
         .collection("reviews")
@@ -1290,7 +1472,7 @@ private fun loadReviews(
                 onReviewsLoaded(emptyList())
                 return@addSnapshotListener
             }
-            
+
             val reviewsList = snapshot?.documents?.mapNotNull { doc ->
                 try {
                     Review(
@@ -1311,7 +1493,7 @@ private fun loadReviews(
                     null
                 }
             } ?: emptyList()
-            
+
             onReviewsLoaded(reviewsList)
         }
 }
@@ -1361,7 +1543,7 @@ private fun updateReview(
         "comment" to comment,
         "updatedAt" to com.google.firebase.Timestamp.now()
     )
-    
+
     db.collection("products")
         .document(productId)
         .collection("reviews")
@@ -1380,7 +1562,7 @@ private fun deleteReview(
     onSuccess: () -> Unit
 ) {
     val db = FirebaseFirestore.getInstance()
-    
+
     db.collection("products")
         .document(productId)
         .collection("reviews")

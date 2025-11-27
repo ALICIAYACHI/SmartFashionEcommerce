@@ -25,8 +25,8 @@ class ViewHolderAdapter(
         val image: ImageView = itemView.findViewById(R.id.image_producto)
         val name: TextView = itemView.findViewById(R.id.name_producto)
         val price: TextView = itemView.findViewById(R.id.product_price)
-        val btnDetails: Button = itemView.findViewById(R.id.btn_details)
         val layoutContent: LinearLayout = itemView.findViewById(R.id.layout_content)
+        val cartIcon: ImageView = itemView.findViewById(R.id.icon_cart)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ProductViewHolder {
@@ -51,12 +51,12 @@ class ViewHolderAdapter(
         holder.name.text = product.name
         holder.price.text = product.price
 
-        // Navegar a ProductDetailActivity con los datos necesarios
+        // Navegar a ProductDetailActivity con los datos reales del producto (mismo id que en Inicio)
         val navigateToDetails = {
             val intent = Intent(context, ProductDetailActivity::class.java).apply {
-                // ID simple basado en posición para este catálogo
-                putExtra("productId", position + 1)
+                putExtra("productId", product.id)
                 putExtra("productName", product.name)
+
                 // Precio en double: extraemos número del string "S/ xx.xx"
                 val numericPrice = product.price
                     .replace("S/", "")
@@ -65,7 +65,9 @@ class ViewHolderAdapter(
                     .replace(",", ".")
                     .toDoubleOrNull() ?: 0.0
                 putExtra("productPrice", numericPrice)
-                putExtra("productDescription", "Vestido elegante ideal para ocasiones especiales.")
+
+                putExtra("productDescription", product.description ?: "")
+
                 if (product.imageUrl != null) {
                     putExtra("imageType", "url")
                     putExtra("productImageUrl", product.imageUrl)
@@ -77,15 +79,12 @@ class ViewHolderAdapter(
             context.startActivity(intent)
         }
 
-        // Desactivar el clic en el resto de la tarjeta.
-        // La imagen y el contenido ya no navegan a detalles.
-        holder.image.setOnClickListener(null)
-        holder.layoutContent.setOnClickListener(null)
+        // Clic en toda la tarjeta (contenido) para ir al detalle
+        holder.layoutContent.setOnClickListener { navigateToDetails() }
+        holder.image.setOnClickListener { navigateToDetails() }
 
-        // ASIGNAR LA NAVEGACIÓN ÚNICAMENTE AL BOTÓN "VER PRODUCTO"
-        holder.btnDetails.setOnClickListener {
-            navigateToDetails()
-        }
+        // Icono de carrito: por ahora también navega al detalle (podemos cambiar a "agregar al carrito" más adelante)
+        holder.cartIcon.setOnClickListener { navigateToDetails() }
     }
 
     override fun getItemCount(): Int = currentList.size

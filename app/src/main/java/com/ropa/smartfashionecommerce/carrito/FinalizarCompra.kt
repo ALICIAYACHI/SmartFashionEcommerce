@@ -31,6 +31,9 @@ import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 import com.ropa.smartfashionecommerce.network.PaymentManager
 import com.ropa.smartfashionecommerce.network.PayerInfo
 import com.ropa.smartfashionecommerce.network.PaymentResult
+import com.ropa.smartfashionecommerce.network.ApiClient
+import com.ropa.smartfashionecommerce.network.CheckoutItemPayload
+import com.ropa.smartfashionecommerce.network.CheckoutConfirmRequest
 import kotlinx.coroutines.launch
 
 class FinalizarCompra : ComponentActivity() {
@@ -152,8 +155,8 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
     }
     var showDireccionesDialog by remember { mutableStateOf(false) }
 
-    // Método de pago
-    var metodoPago by remember { mutableStateOf("Tarjeta") }
+    // Método de pago seleccionado
+    var metodoPago by remember { mutableStateOf("Mercado Pago") }
     var numeroTarjeta by remember { mutableStateOf("") }
     var fechaVencimiento by remember { mutableStateOf("") }
     var cvv by remember { mutableStateOf("") }
@@ -317,56 +320,91 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Sección: Método de pago - Mercado Pago
+            // Sección: Método de pago (selector entre Mercado Pago y Stripe)
             SectionCard(title = "Forma de pago") {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    RadioButton(
-                        selected = true,
-                        onClick = { metodoPago = "Mercado Pago" }
-                    )
-                    Column(modifier = Modifier.padding(start = 8.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Mercado Pago", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = metodoPago == "Mercado Pago",
+                            onClick = { metodoPago = "Mercado Pago" }
+                        )
+                        Column(modifier = Modifier.padding(start = 8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Mercado Pago", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "✅ Acepta Yape, tarjetas, banca móvil y más",
+                                fontSize = 13.sp,
+                                color = Color(0xFF2E7D32),
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Pago 100% seguro y protegido",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
                         }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "✅ Acepta Yape, tarjetas, banca móvil y más",
-                            fontSize = 13.sp,
-                            color = Color(0xFF2E7D32),
-                            fontWeight = FontWeight.Medium
-                        )
-                        Text(
-                            text = "Pago 100% seguro y protegido",
-                            fontSize = 12.sp,
-                            color = Color.Gray
-                        )
                     }
-                }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                
-                // Info adicional
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
-                ) {
-                    Column(modifier = Modifier.padding(12.dp)) {
-                        Text(
-                            "💳 Métodos disponibles:",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Color.Black
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = metodoPago == "Stripe",
+                            onClick = { metodoPago = "Stripe" }
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("• Yape", fontSize = 12.sp, color = Color.Black)
-                        Text("• Tarjetas de crédito/débito", fontSize = 12.sp, color = Color.Black)
-                        Text("• Banca móvil", fontSize = 12.sp, color = Color.Black)
-                        Text("• Efectivo (PagoEfectivo, Tambo+)", fontSize = 12.sp, color = Color.Black)
+                        Column(modifier = Modifier.padding(start = 8.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text("Stripe", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.Black)
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "💳 Pago con tarjeta de crédito o débito",
+                                fontSize = 13.sp,
+                                color = Color(0xFF1D4ED8),
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "Checkout seguro de Stripe (igual que en la web)",
+                                fontSize = 12.sp,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Info adicional para Mercado Pago
+                    if (metodoPago == "Mercado Pago") {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Text(
+                                    "💳 Métodos disponibles:",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.Black
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text("• Yape", fontSize = 12.sp, color = Color.Black)
+                                Text("• Tarjetas de crédito/débito", fontSize = 12.sp, color = Color.Black)
+                                Text("• Banca móvil", fontSize = 12.sp, color = Color.Black)
+                                Text("• Efectivo (PagoEfectivo, Tambo+)", fontSize = 12.sp, color = Color.Black)
+                            }
+                        }
                     }
                 }
             }
@@ -416,9 +454,10 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                 }
             }
 
-            // Botón de pago con Mercado Pago
-            Button(
-                onClick = {
+            // Botón de pago con Mercado Pago (solo visible si está seleccionado)
+            if (metodoPago == "Mercado Pago") {
+                Button(
+                    onClick = {
                     val faltantes = mutableListOf<String>()
                     if (nombresCompletos.isBlank()) faltantes.add("Nombres Completos")
                     if (correo.isBlank()) faltantes.add("Correo electrónico")
@@ -475,7 +514,8 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                                     
                                     context.getSharedPreferences("payment_temp", Context.MODE_PRIVATE)
                                         .edit()
-                                        .putFloat("total", total.toFloat())
+                                        // Para Stripe usamos el subtotal (mismo monto que se muestra en Stripe)
+                                        .putFloat("total", subtotal.value.toFloat())
                                         .apply()
                                     
                                     // Abrir navegador con el link de pago
@@ -500,19 +540,165 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                     containerColor = if (metodoPago == "Mercado Pago") Color(0xFF009EE3) else Color.Black
                 ),
                 shape = RoundedCornerShape(12.dp)
-            ) {
-                if (isProcessing) {
-                    CircularProgressIndicator(
-                        color = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                } else {
-                    Text(
-                        "Pagar con Mercado Pago",
-                        color = Color.White,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
-                    )
+                ) {
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Text(
+                            "Pagar con Mercado Pago",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            if (metodoPago == "Stripe") {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Segundo botón: pago con tarjeta (Stripe Checkout como en el web)
+                Button(
+                    onClick = {
+                    val faltantes = mutableListOf<String>()
+                    if (nombresCompletos.isBlank()) faltantes.add("Nombres Completos")
+                    if (correo.isBlank()) faltantes.add("Correo electrónico")
+                    if (telefono.isBlank()) faltantes.add("Teléfono")
+                    if (numeroDocumento.isBlank()) faltantes.add(if (tipoDocumento == "RUC") "RUC" else "DNI")
+                    if (direccion.isBlank()) faltantes.add("Dirección")
+                    if (departamento.isBlank()) faltantes.add("Departamento")
+                    if (provincia.isBlank()) faltantes.add("Provincia")
+                    if (distrito.isBlank()) faltantes.add("Distrito")
+                    if (codigoPostal.isBlank()) faltantes.add("Código postal")
+
+                    if (faltantes.isNotEmpty()) {
+                        androidx.appcompat.app.AlertDialog.Builder(context)
+                            .setTitle("Campos incompletos ⚠️")
+                            .setMessage("Faltan: \n\n${faltantes.joinToString(", ")}")
+                            .setPositiveButton("Aceptar", null)
+                            .show()
+                    } else if (cartItems.isEmpty()) {
+                        androidx.appcompat.app.AlertDialog.Builder(context)
+                            .setTitle("Carrito vacío")
+                            .setMessage("No hay productos en el carrito")
+                            .setPositiveButton("Aceptar", null)
+                            .show()
+                    } else {
+                        isProcessing = true
+                        errorMessage = null
+
+                        scope.launch {
+                            try {
+                                val api = ApiClient.apiService
+
+                                // Guardar un resumen de los productos y dirección para el historial de pedidos
+                                val productosResumen = cartItems.map { item ->
+            "${item.name} x${item.quantity}"
+        }
+        val imagenesResumen = cartItems.map { it.imageUrl ?: "" }
+        val productIdsResumen = cartItems.map { it.productId.toString() }
+        val direccionTexto = direccion
+        val tempPrefs = context.getSharedPreferences("payment_temp", Context.MODE_PRIVATE)
+        tempPrefs.edit()
+            .putStringSet("productos_resumen", productosResumen.toSet())
+            .putStringSet("imagenes_resumen", imagenesResumen.toSet())
+            .putStringSet("product_ids_resumen", productIdsResumen.toSet())
+                                    .putString("direccion_texto", direccionTexto)
+                                    .putBoolean("order_saved", false)
+                                    .apply()
+
+                                // Construir payload de ítems igual que en Cart.jsx
+                                val itemsPayload = cartItems.map { it ->
+                                    CheckoutItemPayload(
+                                        product_id = it.productId,
+                                        size_id = it.sizeId,
+                                        color_id = it.colorId,
+                                        qty = it.quantity
+                                    )
+                                }
+
+                                val basePayload = CheckoutConfirmRequest(
+                                    userEmail = correo,
+                                    address_id = null,
+                                    items = itemsPayload,
+                                    pre_order = null,
+                                    platform = "android"
+                                )
+
+                                // 1) Confirmar checkout para generar order_number y reservar stock
+                                val confirmRes = api.checkoutConfirm(basePayload)
+                                if (!confirmRes.isSuccessful) {
+                                    val errBody = try { confirmRes.errorBody()?.string() } catch (_: Exception) { null }
+                                    val body = confirmRes.body()
+                                    errorMessage = body?.message
+                                        ?: errBody
+                                        ?: "Error al confirmar el pedido (${confirmRes.code()})"
+                                    return@launch
+                                }
+                                val confirmBody = confirmRes.body()
+                                val orderNum = confirmBody?.order_number ?: "LOCAL-${System.currentTimeMillis()}"
+
+                                // 2) Crear sesión de Stripe pasando el pre_order
+                                val stripePayload = basePayload.copy(pre_order = orderNum)
+                                val sessionRes = api.createStripeSession(stripePayload)
+                                val sessionBody = sessionRes.body()
+
+                                val url = sessionBody?.url
+                                if (sessionRes.isSuccessful && !url.isNullOrBlank()) {
+                                    // Guardar referencia del pedido y total temporalmente para la pantalla de confirmación
+                                    context.getSharedPreferences("pedidos", Context.MODE_PRIVATE)
+                                        .edit()
+                                        .putString("ultimo_pedido", orderNum)
+                                        .apply()
+
+                                    context.getSharedPreferences("payment_temp", Context.MODE_PRIVATE)
+                                        .edit()
+                                        .putFloat("total", total.toFloat())
+                                        .apply()
+
+                                    // Abrir Stripe Checkout en el navegador (igual que en web)
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    context.startActivity(intent)
+                                } else {
+                                    val errBody = try { sessionRes.errorBody()?.string() } catch (_: Exception) { null }
+                                    errorMessage = sessionBody?.message
+                                        ?: sessionBody?.status
+                                        ?: errBody
+                                        ?: "Error al crear sesión de pago (${sessionRes.code()})"
+                                }
+                            } catch (e: Exception) {
+                                errorMessage = "Error de conexión: ${e.message}"
+                            } finally {
+                                isProcessing = false
+                            }
+                        }
+                    }
+                },
+                enabled = !isProcessing,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF111827)
+                ),
+                shape = RoundedCornerShape(12.dp)
+                ) {
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    } else {
+                        Text(
+                            "Pagar con tarjeta (Stripe)",
+                            color = Color.White,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
 

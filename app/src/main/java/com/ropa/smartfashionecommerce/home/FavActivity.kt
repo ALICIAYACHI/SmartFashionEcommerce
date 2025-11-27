@@ -48,6 +48,7 @@ import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 import com.ropa.smartfashionecommerce.catalog.CatalogActivity
 import com.ropa.smartfashionecommerce.maps.MapsActivity
 import androidx.compose.material.icons.outlined.LocationOn
+import com.ropa.smartfashionecommerce.detalles.ProductDetailActivity
 
 class FavActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -288,19 +289,29 @@ fun FavApp(activity: ComponentActivity) {
                                     Toast.makeText(context, "Inicia sesión para agregar al carrito", Toast.LENGTH_SHORT).show()
                                     context.startActivity(Intent(context, com.ropa.smartfashionecommerce.DarkLoginActivity::class.java))
                                 } else {
-                                    val priceValue = selectedItem.price.replace("S/", "").trim().toDoubleOrNull() ?: 0.0
-                                    val cartItem = CartItem(
-                                        name = selectedItem.name,
-                                        size = "M",
-                                        color = "Negro",
-                                        quantity = 1,
-                                        price = priceValue,
-                                        imageRes = selectedItem.imageRes,
-                                        imageUrl = selectedItem.imageUrl
-                                    )
-                                    CartManager.addItem(cartItem)
-                                    CartManager.saveCart(context)
-                                    Toast.makeText(context, "Agregado al carrito 🛍️", Toast.LENGTH_SHORT).show()
+                                    // En lugar de agregar directo al carrito con talla/color fijos,
+                                    // llevamos al usuario al detalle para que elija talla y color.
+                                    val priceValue = selectedItem.price
+                                        .replace("S/", "")
+                                        .replace("s/", "")
+                                        .replace(" ", "")
+                                        .replace(",", ".")
+                                        .toDoubleOrNull() ?: 0.0
+
+                                    val intent = Intent(context, ProductDetailActivity::class.java).apply {
+                                        putExtra("productId", selectedItem.id)
+                                        putExtra("productName", selectedItem.name)
+                                        putExtra("productPrice", priceValue)
+                                        // La descripción y stock real se cargarán en ProductDetail desde la API.
+                                        if (selectedItem.imageUrl != null) {
+                                            putExtra("imageType", "url")
+                                            putExtra("productImageUrl", selectedItem.imageUrl)
+                                        } else {
+                                            putExtra("imageType", "local")
+                                            putExtra("productImageRes", selectedItem.imageRes)
+                                        }
+                                    }
+                                    context.startActivity(intent)
                                 }
                             }
                         )

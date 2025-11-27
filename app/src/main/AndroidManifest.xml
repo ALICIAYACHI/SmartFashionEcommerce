@@ -196,7 +196,17 @@
         <activity
             android:name=".pedidos.PedidoConfirmado"
             android:exported="true"
-            android:theme="@style/Theme.SmartFashionEcommerce" />
+            android:theme="@style/Theme.SmartFashionEcommerce">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="smartfashion"
+                    android:host="checkout"
+                    android:path="/success" />
+            </intent-filter>
+        </activity>
 
         <!-- 🚚 Seguimiento del pedido (NUEVA) -->
         <activity

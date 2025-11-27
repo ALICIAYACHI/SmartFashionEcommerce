@@ -66,7 +66,9 @@ class CardPaymentActivity : ComponentActivity() {
                                 context = context,
                                 total = total,
                                 productos = cartItems.map { "${it.name} x${it.quantity}" },
-                                direccionTexto = direccionFacturacion
+                                direccionTexto = direccionFacturacion,
+                                imagenes = cartItems.map { it.imageUrl },
+                                productIds = cartItems.map { it.productId }
                             )
 
                             // Limpiar carrito y mostrar pantalla de confirmación

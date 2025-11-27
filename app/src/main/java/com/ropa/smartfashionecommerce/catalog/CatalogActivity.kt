@@ -15,7 +15,6 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.ropa.smartfashionecommerce.R
-import androidx.appcompat.R as AppCompatR
 
 import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartManager
@@ -56,7 +55,11 @@ import com.ropa.smartfashionecommerce.miperfil.ProfileImageManager
 import com.ropa.smartfashionecommerce.maps.MapsActivity
 import androidx.compose.material.icons.outlined.LocationOn
 
-// import androidx.cardview.widget.CardView // (no se usa)
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+
+import com.ropa.smartfashionecommerce.network.ApiClient
+import com.ropa.smartfashionecommerce.network.SimpleCategoryDto
 
 class CatalogActivity : AppCompatActivity() {
 
@@ -73,64 +76,17 @@ class CatalogActivity : AppCompatActivity() {
         val subcategory = intent.getStringExtra("SUBCATEGORY")
         val initialQuery = intent.getStringExtra("SEARCH_QUERY")?.trim().orEmpty()
 
-        // Datos dummy para productos
-        val dummyList = when (category) {
-            "Hombres" -> listOf(
-                Product("Camisa Hombre", "S/120", R.drawable.hombres),
-                Product("Pantalón Hombre", "S/150", R.drawable.hombres),
-                Product("Zapatos Hombre", "S/200", R.drawable.hombres),
-                Product("Camisa Hombre", "S/120", R.drawable.hombres),
-                Product("Camisa Hombre", "S/120", R.drawable.hombres),
-                Product("Camisa Hombre", "S/120", R.drawable.hombres)
-            )
-            "Mujeres" -> listOf(
-                Product("Blusa Mujer", "S/130", R.drawable.mujeres),
-                Product("Falda Mujer", "S/160", R.drawable.mujeres),
-                Product("Tacones Mujer", "S/220", R.drawable.mujeres),
-                Product("Camisa Hombre", "S/120", R.drawable.mujeres),
-                Product("Camisa Hombre", "S/120", R.drawable.mujeres),
-                Product("Camisa Hombre", "S/120", R.drawable.mujeres)
-            )
-            "Niños" -> listOf(
-                Product("Camiseta Niño", "S/80", R.drawable.nino),
-                Product("Pantalón Niño", "S/100", R.drawable.nino),
-                Product("Zapatillas Niño", "S/120", R.drawable.nino),
-                Product("Camisa Hombre", "S/120", R.drawable.nino),
-                Product("Camisa Hombre", "S/120", R.drawable.nino),
-                Product("Camisa Hombre", "S/120", R.drawable.nino)
-            )
-            else -> emptyList()
-        }
+        // Lista base de productos para modo GRID (se llenará desde el backend)
+        var remoteProducts: List<Product> = emptyList()
 
         val recyclerView = findViewById<RecyclerView>(R.id.products_recycler_view)
         val categoriesCompose = findViewById<ComposeView>(R.id.categories_compose)
         val searchView = findViewById<SearchView>(R.id.search_view_products)
         val btnVerTienda = findViewById<ImageButton>(R.id.btn_ver_tienda)
 
-        // Mejorar visibilidad del buscador (solo borde negro, fondo del mismo color que la pantalla y texto negro)
+        // Configuración básica del SearchView
         searchView.setIconifiedByDefault(false)
         searchView.clearFocus()
-
-        val searchText = searchView.findViewById<android.widget.TextView>(AppCompatR.id.search_src_text)
-        val searchIcon = searchView.findViewById<android.widget.ImageView>(AppCompatR.id.search_mag_icon)
-
-        searchText?.let {
-            it.setTextColor(android.graphics.Color.BLACK)
-            it.setHintTextColor(android.graphics.Color.DKGRAY)
-            it.textSize = 16f
-        }
-
-        // Ocultar ícono de lupa interno para que solo se vea el de la derecha
-        searchIcon?.visibility = android.view.View.GONE
-
-        val plate = searchView.findViewById<android.view.View>(AppCompatR.id.search_plate)
-        plate?.background = GradientDrawable().apply {
-            // Color de fondo muy claro para que el borde se note
-            setColor(android.graphics.Color.parseColor("#FAFAFA"))
-            // Borde negro un poco más grueso para que sea visible
-            setStroke(3, android.graphics.Color.BLACK)
-            cornerRadius = 24f
-        }
 
         btnVerTienda.setOnClickListener {
             val intent = Intent(this, MapsActivity::class.java)
@@ -138,24 +94,53 @@ class CatalogActivity : AppCompatActivity() {
         }
 
         if (mode == "GRID") {
-            // Modo productos (grid)
-            val baseList = dummyList
-            val listForRecycler = if (!subcategory.isNullOrBlank()) {
-                baseList.filter { it.name.contains(subcategory, ignoreCase = true) }
-            } else baseList
-
+            // Modo productos (grid) usando backend Django (/api/home/)
             recyclerView.visibility = View.VISIBLE
             categoriesCompose.visibility = View.GONE
             searchView.visibility = View.VISIBLE
 
             recyclerView.layoutManager = GridLayoutManager(this, 2)
-            val adapter = ViewHolderAdapter(this, listForRecycler)
+            val adapter = ViewHolderAdapter(this, emptyList())
             recyclerView.adapter = adapter
 
-            if (initialQuery.isNotEmpty()) {
-                searchView.setQuery(initialQuery, false)
-                val filtered = listForRecycler.filter { it.name.contains(initialQuery, ignoreCase = true) }
-                adapter.updateList(filtered)
+            // Cargar productos reales desde /api/home/
+            lifecycleScope.launch {
+                try {
+                    val resp = ApiClient.apiService.getHome(
+                        // Por ahora no filtramos por categoría backend; mostramos el mismo listado general
+                        categoryId = null,
+                        query = if (initialQuery.isNotEmpty()) initialQuery else null,
+                        sizeId = null,
+                        colorId = null,
+                        page = 1,
+                        limit = 20
+                    )
+                    if (resp.isSuccessful) {
+                        val body = resp.body()
+                        val apiProducts = body?.data?.featured_products.orEmpty()
+
+                        remoteProducts = apiProducts.map { p ->
+                            Product(
+                                id = p.id,
+                                name = p.nombre,
+                                price = "S/ ${p.precio}",
+                                imageRes = R.drawable.modelo_ropa,
+                                imageUrl = p.image_preview,
+                                description = p.descripcion
+                            )
+                        }
+
+                        adapter.updateList(remoteProducts)
+
+                        if (initialQuery.isNotEmpty()) {
+                            searchView.setQuery(initialQuery, false)
+                            val filtered = remoteProducts.filter { it.name.contains(initialQuery, ignoreCase = true) }
+                            adapter.updateList(filtered)
+                        }
+                    }
+                } catch (_: Exception) {
+                    // Si falla la API dejamos la lista vacía por ahora
+                }
             }
 
             searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
@@ -165,10 +150,11 @@ class CatalogActivity : AppCompatActivity() {
 
                 override fun onQueryTextChange(newText: String?): Boolean {
                     val text = newText?.trim().orEmpty()
+                    val baseList = if (remoteProducts.isNotEmpty()) remoteProducts else emptyList()
                     val filtered = if (text.isEmpty()) {
-                        listForRecycler
+                        baseList
                     } else {
-                        listForRecycler.filter { it.name.contains(text, ignoreCase = true) }
+                        baseList.filter { it.name.contains(text, ignoreCase = true) }
                     }
                     adapter.updateList(filtered)
                     return true
@@ -182,39 +168,66 @@ class CatalogActivity : AppCompatActivity() {
             searchView.visibility = View.VISIBLE
             searchView.queryHint = "Buscar categorías"
 
-            // Datos compartidos para la vista de categorías
+            // Datos compartidos para la vista de categorías tipo web
             data class LeftCategory(val id: String, val nombre: String)
             data class CircleItem(val categoriaId: String, val subLabel: String, val imageUrl: String, val mapToCategory: String, val mapToSub: String)
-
-            val leftCategories = listOf(
-                LeftCategory("mujer", "Ropa de mujer"),
-                LeftCategory("hombre", "Ropa de hombre"),
-                LeftCategory("ninos", "Ropa de niño"),
-                LeftCategory("bebe", "Ropa de bebé"),
-                LeftCategory("black", "Ofertas Black Friday")
-            )
-
-            val circleItems = listOf(
-                // Mujer
-                CircleItem("mujer", "Vestidos de mujer", "https://i.pinimg.com/236x/e2/04/25/e20425efb02a5185ba8f4d1cd710183d.jpg", "Mujeres", "Vestido"),
-                CircleItem("mujer", "Casacas de mujer", "https://cuerosvelezpe.vtexassets.com/arquivos/ids/358118/1035983-02-01--Chaqueta-ebro.jpg?v=638482126287130000", "Mujeres", "Casaca"),
-                // Hombre
-                CircleItem("hombre", "Casacas hombre", "https://cuerosvelezpe.vtexassets.com/arquivos/ids/358118/1035983-02-01--Chaqueta-ebro.jpg?v=638482126287130000", "Hombres", "Casaca"),
-                CircleItem("hombre", "Camisas hombre", "https://images.pexels.com/photos/7697309/pexels-photo-7697309.jpeg?auto=compress&cs=tinysrgb&w=600", "Hombres", "Camisa"),
-                // Niños
-                CircleItem("ninos", "Ropa de niño", "https://hushpuppiespe.vtexassets.com/arquivos/ids/348758/https---s3.amazonaws.com-ecom-imagenes.forus-digital.xyz.peru-HUSHPUPPIESKIDS-HK211021504_287_1.jpg?v=638604628092130000", "Niños", "Niño"),
-                CircleItem("ninos", "Pantalones niño", "https://hushpuppiespe.vtexassets.com/arquivos/ids/336908-800-auto?v=638446729033670000&width=800&height=auto&aspect=true", "Niños", "Pantalón"),
-                // Bebé
-                CircleItem("bebe", "Conjuntos bebé niño", "https://img.kwcdn.com/product/Fancyalgo/VirtualModelMatting/fb03dd58d895a6436b3cfee2b5d7d766.jpg?imageMogr2/auto-orient%7CimageView2/2/w/800/q/70/format/webp", "Niños", "Bebé"),
-                CircleItem("bebe", "Conjuntos bebé niña", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQmGawIE-1oJ5wtsBQ9p9DFelbIJtmzeJd8ga0iA6SW3gaTX_-VHNCs02I33J5WvOiAe0s&usqp=CAU", "Niños", "Bebé"),
-                // Black Friday
-                CircleItem("black", "Ofertas Black Friday", "https://www.desire.pe/cdn/shop/files/CRI_2554_398b7b94-a0a2-4dc5-be42-30995f0c04e2.png?v=1726679347", "Mujeres", "Oferta")
-            )
 
             categoriesCompose.setContent {
                 val ctx = this@CatalogActivity
 
-                var selectedLeft by remember { mutableStateOf(leftCategories.first().id) }
+                var selectedLeft by remember { mutableStateOf("all") }
+                var backendCategories by remember { mutableStateOf<List<SimpleCategoryDto>>(emptyList()) }
+
+                LaunchedEffect(Unit) {
+                    try {
+                        val res = ApiClient.apiService.getCatalogCategories()
+                        if (res.isSuccessful) {
+                            backendCategories = res.body()?.data.orEmpty()
+                        }
+                    } catch (_: Exception) {
+                    }
+                }
+
+                // Construir leftCategories dinámicamente a partir del backend
+                val leftCategories = listOf(LeftCategory("all", "Todas")) +
+                        backendCategories.map { cat ->
+                            LeftCategory(cat.id.toString(), cat.nombre)
+                        }
+
+                // Círculos por tipo de producto (mapToSub ajusta singular/plural para búsquedas)
+                val circleItems = backendCategories.map { cat ->
+                    val nombre = cat.nombre
+                    val key = nombre.lowercase()
+                    val mapToSub = when (key) {
+                        "vestidos" -> "Vestido"
+                        "pantalones" -> "Pantalón"
+                        "polos" -> "Polo"
+                        "camisas" -> "Camisa"
+                        "casacas" -> "Casaca"
+                        "faldas" -> "Falda"
+                        else -> nombre
+                    }
+
+                    val imageUrl = when (key) {
+                        "camisas" -> "https://images.pexels.com/photos/7697309/pexels-photo-7697309.jpeg?auto=compress&cs=tinysrgb&w=600"
+                        "casacas" -> "https://cuerosvelezpe.vtexassets.com/arquivos/ids/358118/1035983-02-01--Chaqueta-ebro.jpg?v=638482126287130000"
+                        "pantalones" -> "https://oggi.mx/cdn/shop/files/ATRACTIONGABAKHAKIVISTA2.jpg?v=1753209029"
+                        "polos" -> "https://images.pexels.com/photos/428340/pexels-photo-428340.jpeg?auto=compress&cs=tinysrgb&w=600"
+                        "vestidos" -> "https://i.pinimg.com/236x/e2/04/25/e20425efb02a5185ba8f4d1cd710183d.jpg"
+                        "faldas" -> "https://i.pinimg.com/564x/6a/59/49/6a5949963b7705a7c3927c044b2f4c38.jpg"
+                        "zapatillas" -> "https://hushpuppiespe.vtexassets.com/arquivos/ids/336908-800-auto?v=638446729033670000&width=800&height=auto&aspect=true"
+                        else -> "https://i.pinimg.com/564x/6a/59/49/6a5949963b7705a7c3927c044b2f4c38.jpg" // placeholder
+                    }
+
+                    CircleItem(
+                        categoriaId = cat.id.toString(),
+                        subLabel = nombre,
+                        imageUrl = imageUrl,
+                        mapToCategory = "Mujeres",
+                        mapToSub = mapToSub
+                    )
+                }
+
                 // Copiamos el texto actual de búsqueda para que Compose lo observe
                 val searchText = categorySearchQuery
 
@@ -249,7 +262,7 @@ class CatalogActivity : AppCompatActivity() {
 
                     // Círculos derecha filtrados por categoría y texto de búsqueda
                     val filteredCircles = circleItems.filter { circle ->
-                        circle.categoriaId == selectedLeft &&
+                        (selectedLeft == "all" || circle.categoriaId == selectedLeft) &&
                                 (searchText.isBlank() || circle.subLabel.contains(searchText, ignoreCase = true))
                     }
 
