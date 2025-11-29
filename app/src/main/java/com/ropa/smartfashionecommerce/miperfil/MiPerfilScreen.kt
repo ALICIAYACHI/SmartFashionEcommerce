@@ -45,6 +45,7 @@ import com.ropa.smartfashionecommerce.catalog.CatalogActivity
 import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartManager
 import com.ropa.smartfashionecommerce.miperfil.MisResenasActivity
+import com.ropa.smartfashionecommerce.miperfil.OrderHistoryActivity
 
 import com.ropa.smartfashionecommerce.maps.MapsActivity
 import androidx.compose.material.icons.outlined.LocationOn
@@ -309,38 +310,13 @@ fun MiPerfilScreen(onBack: () -> Unit) {
 
             Spacer(modifier = Modifier.height(25.dp))
 
-            // 🟣 HISTORIAL DE PEDIDOS (REAL)
+            // 🟣 HISTORIAL DE PEDIDOS
             Text("Historial de Pedidos", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = Color(0xFF212121))
             Spacer(modifier = Modifier.height(10.dp))
 
-            if (pedidos.value.isEmpty()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Box(
-                        modifier = Modifier.fillMaxWidth().padding(24.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("No tienes pedidos aún", color = Color.Gray, fontSize = 14.sp)
-                    }
-                }
-            } else {
-                pedidos.value.forEach { pedido ->
-                    val colorEstado = when (pedido.estado) {
-                        "Entregado" -> Color(0xFF4CAF50)
-                        "En tránsito" -> Color(0xFF3F51B5)
-                        else -> Color(0xFFFFC107)
-                    }
-
-                    PedidoItem(
-                        codigo = pedido.codigo,
-                        estado = pedido.estado,
-                        colorEstado = colorEstado,
-                        precio = "S/ ${"%.2f".format(pedido.total)}"
-                    )
-                }
+            ProfileOptionCard(Icons.Default.ReceiptLong, "Ver historial de pedidos", "Pedidos web y móviles") {
+                val intent = Intent(context, OrderHistoryActivity::class.java)
+                context.startActivity(intent)
             }
 
             Spacer(modifier = Modifier.height(25.dp))

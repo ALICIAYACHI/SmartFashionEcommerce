@@ -3,8 +3,11 @@ package com.ropa.smartfashionecommerce.catalog
 import android.content.Intent
 import android.os.Bundle
 import android.graphics.drawable.GradientDrawable
+import android.widget.EditText
+import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.core.content.ContextCompat
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -321,13 +324,16 @@ class SubcategoryCatalogActivity : AppCompatActivity() {
         searchView.setIconifiedByDefault(false)
         searchView.clearFocus()
 
-        // Asegurar que el texto del buscador sea visible (negro) y el hint gris oscuro
-        (searchView.findViewById(
-            AppCompatR.id.search_src_text
-        ) as? android.widget.TextView)?.let { tv ->
-            tv.setTextColor(android.graphics.Color.BLACK)
-            tv.setHintTextColor(android.graphics.Color.DKGRAY)
-        }
+        // ✅ Mejorar visibilidad del texto y de los íconos del SearchView
+        val searchEditText = searchView.findViewById<EditText>(AppCompatR.id.search_src_text)
+        searchEditText.setTextColor(ContextCompat.getColor(this, android.R.color.black))
+        searchEditText.setHintTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+
+        val searchCloseButton = searchView.findViewById<ImageView>(AppCompatR.id.search_close_btn)
+        searchCloseButton.setColorFilter(ContextCompat.getColor(this, android.R.color.darker_gray))
+
+        val searchIcon = searchView.findViewById<ImageView>(AppCompatR.id.search_mag_icon)
+        searchIcon.setColorFilter(ContextCompat.getColor(this, android.R.color.darker_gray))
 
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean = false

@@ -15,6 +15,7 @@ import com.ropa.smartfashionecommerce.network.CartItemPayload
 import com.ropa.smartfashionecommerce.network.CartStateData
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 
 object CartManager {
 
@@ -119,6 +120,88 @@ object CartManager {
         loadCart(context)
         // Al iniciar sesión, intentar subir el carrito actual al backend
         syncCartToBackend()
+    }
+
+    fun refreshFromBackend() {
+        val context = appContext ?: return
+        val email = Firebase.auth.currentUser?.email
+        if (email.isNullOrEmpty()) return
+
+        ioScope.launch {
+            try {
+                val api = ApiClient.apiService
+                val resp = api.getCartState(email)
+                if (!resp.isSuccessful) return@launch
+                val data = resp.body()?.data ?: return@launch
+
+                val backendItems = data.items
+                val newItems = mutableListOf<CartItem>()
+
+                // Catálogos globales de tallas y colores (como en el web)
+                val sizesCatalog = try {
+                    api.getSizes().body()?.data ?: emptyList()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+                val colorsCatalog = try {
+                    api.getColors().body()?.data ?: emptyList()
+                } catch (_: Exception) {
+                    emptyList()
+                }
+
+                for (payload in backendItems) {
+                    try {
+                        val detailResp = api.getProductDetail(payload.product_id)
+                        if (!detailResp.isSuccessful) continue
+                        val body: com.ropa.smartfashionecommerce.model.ApiResponse<com.ropa.smartfashionecommerce.model.ProductDetailData>? = detailResp.body()
+                        val detail = body?.data
+                        val product = detail?.product
+
+                        val basePrice = product?.precio ?: 0.0
+                        val discountPrice = product?.precio_descuento
+                        val price = discountPrice ?: basePrice
+
+                        val images = detail?.images.orEmpty()
+                        val preview = product?.image_preview
+                        val imageUrl = when {
+                            !preview.isNullOrBlank() -> preview
+                            images.isNotEmpty() -> images.first()
+                            else -> null
+                        }
+
+                        val sizeName = payload.size_id?.let { id ->
+                            sizesCatalog.find { it.id == id }?.nombre
+                        } ?: ""
+
+                        val colorName = payload.color_id?.let { id ->
+                            colorsCatalog.find { it.id == id }?.nombre
+                        } ?: ""
+
+                        val item = CartItem(
+                            productId = payload.product_id,
+                            sizeId = payload.size_id,
+                            colorId = payload.color_id,
+                            name = product?.nombre ?: "Producto ${payload.product_id}",
+                            size = sizeName,
+                            color = colorName,
+                            quantity = payload.qty,
+                            price = price,
+                            imageRes = R.drawable.modelo_ropa,
+                            imageUrl = imageUrl
+                        )
+                        newItems.add(item)
+                    } catch (_: Exception) {
+                    }
+                }
+
+                withContext(Main) {
+                    _cartItems.clear()
+                    _cartItems.addAll(newItems)
+                    saveCart(context)
+                }
+            } catch (_: Exception) {
+            }
+        }
     }
 
     // Sincronizar carrito local completo con backend (/api/cart/)

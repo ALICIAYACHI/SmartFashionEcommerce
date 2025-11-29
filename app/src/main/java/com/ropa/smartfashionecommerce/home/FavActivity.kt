@@ -331,7 +331,6 @@ fun FavoriteProductCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(300.dp)
             .clip(RoundedCornerShape(16.dp))
             .border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(16.dp)),
         colors = CardDefaults.cardColors(containerColor = Color.White),

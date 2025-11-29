@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.ThumbUp
 import androidx.compose.material3.*
@@ -150,8 +151,7 @@ fun parseHexColor(hex: String): Color {
 fun ProductDetailScreen() {
     val context = LocalContext.current
     var expanded by remember { mutableStateOf(false) }
-    // Categorías reales de la app (las mismas que usa CatalogActivity)
-    val categorias = listOf("Mujeres", "Hombres", "Niños")
+    var categorias by remember { mutableStateOf<List<String>>(emptyList()) }
 
     // ✅ Cargar imagen de perfil guardada (reactiva)
     val sharedPref = context.getSharedPreferences("MiPerfil", Context.MODE_PRIVATE)
@@ -159,9 +159,20 @@ fun ProductDetailScreen() {
         mutableStateOf(sharedPref.getString("profile_image_uri", null))
     }
 
-    // 🔄 Si se vuelve del perfil, recarga la imagen
+    // 🔄 Si se vuelve del perfil, recarga la imagen y categorías reales desde backend
     LaunchedEffect(Unit) {
         profileImageUri = sharedPref.getString("profile_image_uri", null)
+
+        try {
+            val api = ApiClient.apiService
+            val resp = api.getCatalogCategories()
+            if (resp.isSuccessful) {
+                val body = resp.body()?.data
+                categorias = body?.map { it.nombre }?.filter { it.isNotBlank() } ?: emptyList()
+            }
+        } catch (_: Exception) {
+            // Si falla la carga, dejamos la lista de categorías vacía
+        }
     }
 
     Scaffold(
@@ -173,19 +184,18 @@ fun ProductDetailScreen() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // 🖋️ Logo SMARTFASHION
-                        Text(
-                            text = "SMARTFASHION",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp,
-                            color = Color(0xFF111111),
-                            modifier = Modifier.clickable {
-                                val intent = Intent(context, HomeActivity::class.java)
-                                context.startActivity(intent)
-                            }
-                        )
+                        // Flecha para regresar
+                        IconButton(onClick = {
+                            (context as? android.app.Activity)?.finish()
+                        }) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Regresar",
+                                tint = Color.Black
+                            )
+                        }
 
-                        // 🔽 Menú Categorías
+                        // 🔽 Menú Categorías (desde backend)
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             TextButton(onClick = { expanded = true }) {
                                 Text("Categorías ▼", color = Color.Black)
@@ -196,19 +206,28 @@ fun ProductDetailScreen() {
                                 onDismissRequest = { expanded = false },
                                 modifier = Modifier.background(Color.White)
                             ) {
-                                categorias.forEach { categoria ->
-                                    DropdownMenuItem(
-                                        text = { Text(categoria) },
-                                        onClick = {
-                                            expanded = false
-                                            val intent = Intent(
-                                                context,
-                                                com.ropa.smartfashionecommerce.catalog.CatalogActivity::class.java
-                                            )
-                                            intent.putExtra("CATEGORY", categoria)
-                                            context.startActivity(intent)
-                                        }
-                                    )
+                                // Mostramos las categorías en forma de chips horizontales agrupadas
+                                FlowRow(
+                                    modifier = Modifier
+                                        .padding(8.dp)
+                                        .widthIn(max = 260.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    categorias.forEach { categoria ->
+                                        AssistChip(
+                                            onClick = {
+                                                expanded = false
+                                                val intent = Intent(
+                                                    context,
+                                                    com.ropa.smartfashionecommerce.catalog.CatalogActivity::class.java
+                                                )
+                                                intent.putExtra("CATEGORY", categoria)
+                                                context.startActivity(intent)
+                                            },
+                                            label = { Text(categoria) }
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -912,6 +931,22 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                                 val sizeIdInt = selectedSize?.toIntOrNull()
                                 val colorIdInt = selectedColor?.toIntOrNull()
 
+                                // 📸 Elegir la imagen correcta según el color seleccionado
+                                // En el backend, imagesByColor puede estar indexado por ID o por nombre de color.
+                                // Probamos primero con el nombre del color (si existe en colorMap) y luego con el ID crudo.
+                                val colorKeyForImages: String? = if (!selectedColor.isNullOrBlank()) {
+                                    val byName = colorMap[selectedColor!!]?.nombre
+                                    byName ?: selectedColor
+                                } else {
+                                    null
+                                }
+
+                                val imageUrlForCart: String? = if (!colorKeyForImages.isNullOrBlank() && imagesByColor.isNotEmpty()) {
+                                    imagesByColor[colorKeyForImages]?.firstOrNull() ?: productImageUrl
+                                } else {
+                                    productImageUrl
+                                }
+
                                 val item = CartItem(
                                     productId = productId,
                                     sizeId = sizeIdInt,
@@ -922,7 +957,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
                                     quantity = quantity,
                                     price = productPrice,
                                     imageRes = productImageRes ?: R.drawable.modelo_ropa,
-                                    imageUrl = if (imageType == "url") productImageUrl else null
+                                    imageUrl = imageUrlForCart
                                 )
                                 CartManager.addItem(item)
                                 CartManager.saveCart(context)

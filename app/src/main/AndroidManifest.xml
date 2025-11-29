@@ -119,6 +119,12 @@
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
+        <!-- 📜 Historial de pedidos (web/móvil) -->
+        <activity
+            android:name=".miperfil.OrderHistoryActivity"
+            android:exported="true"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
         <!-- ✏️ Editar perfil -->
         <activity
             android:name=".miperfil.EditarPerfilActivity"

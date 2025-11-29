@@ -4,12 +4,15 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.graphics.drawable.GradientDrawable
+import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.ImageView
 
 import androidx.activity.enableEdgeToEdge
 
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
@@ -87,6 +90,17 @@ class CatalogActivity : AppCompatActivity() {
         // Configuración básica del SearchView
         searchView.setIconifiedByDefault(false)
         searchView.clearFocus()
+
+        // Mejorar visibilidad del texto y de los íconos del SearchView
+        val searchEditText = searchView.findViewById<EditText>(androidx.appcompat.R.id.search_src_text)
+        searchEditText.setTextColor(ContextCompat.getColor(this, android.R.color.black))
+        searchEditText.setHintTextColor(ContextCompat.getColor(this, android.R.color.darker_gray))
+
+        val searchCloseButton = searchView.findViewById<ImageView>(androidx.appcompat.R.id.search_close_btn)
+        searchCloseButton.setColorFilter(ContextCompat.getColor(this, android.R.color.darker_gray))
+
+        val searchIcon = searchView.findViewById<ImageView>(androidx.appcompat.R.id.search_mag_icon)
+        searchIcon.setColorFilter(ContextCompat.getColor(this, android.R.color.darker_gray))
 
         btnVerTienda.setOnClickListener {
             val intent = Intent(this, MapsActivity::class.java)

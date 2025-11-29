@@ -6,6 +6,7 @@ import com.ropa.smartfashionecommerce.model.HomeDataDto
 import com.ropa.smartfashionecommerce.model.ProductDetailData
 import com.ropa.smartfashionecommerce.model.ProductListData
 import com.ropa.smartfashionecommerce.model.SizeDto
+import com.ropa.smartfashionecommerce.model.UserOrdersResponse
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
@@ -58,6 +59,12 @@ interface ApiService {
     @GET("api/returns/")
     suspend fun listReturnRequests(): Response<ReturnListResponse>
 
+    // Historial de pedidos del usuario (web/móvil comparten orders)
+    @GET("api/profile/envios/")
+    suspend fun getUserOrders(
+        @Query("email") email: String? = null
+    ): Response<UserOrdersResponse>
+
     // Categorías de catálogo tipo web (para CatalogActivity)
     @GET("api/catalog/categories/")
     suspend fun getCatalogCategories(): Response<CatalogCategoriesResponse>
@@ -73,4 +80,16 @@ interface ApiService {
         @Body body: CartStateData,
         @Query("email") email: String? = null
     ): Response<CartStateResponse>
+
+    // Favoritos compartidos web/móvil
+    @GET("api/favorites/")
+    suspend fun getFavoritesState(
+        @Query("email") email: String? = null
+    ): Response<FavoritesStateResponse>
+
+    @POST("api/favorites/")
+    suspend fun setFavoritesState(
+        @Body body: FavoritesStateData,
+        @Query("email") email: String? = null
+    ): Response<FavoritesStateResponse>
 }

@@ -40,6 +40,9 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.input.KeyboardType
 import java.text.SimpleDateFormat
 import java.util.*
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class SeguimientoPedidoActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,29 +50,94 @@ class SeguimientoPedidoActivity : ComponentActivity() {
 
         val codigoPedido = intent.getStringExtra("codigo_pedido") ?: "N/A"
 
-        // Cargar pedidos del usuario
-        PedidosManager.cargarPedidos(this)
+        lifecycleScope.launch {
+            val context = this@SeguimientoPedidoActivity
 
-        // Buscar el pedido seleccionado
-        val pedido = PedidosManager.pedidos.find { it.codigo == codigoPedido }
+            // 1) Intentar obtener el pedido desde el backend (historial real)
+            var pedido: Pedido? = withContext(Dispatchers.IO) {
+                val email = Firebase.auth.currentUser?.email
+                if (email.isNullOrEmpty()) return@withContext null
 
-        // Calcular y actualizar estado dinámicamente según la fecha
-        val pedidoActualizado = pedido?.let { original ->
-            val nuevoEstado = calcularEstadoPedido(original.fecha)
-            if (nuevoEstado != original.estado) {
-                PedidosManager.actualizarEstado(this, original.codigo, nuevoEstado)
-                original.copy(estado = nuevoEstado)
-            } else {
-                original
+                try {
+                    val api = ApiClient.apiService
+                    val resp = api.getUserOrders(email)
+                    if (!resp.isSuccessful) return@withContext null
+
+                    val orders = resp.body()?.data ?: emptyList()
+                    val match = orders.firstOrNull { it.order_number == codigoPedido }
+                    if (match != null) {
+                        // Fecha en formato dd/MM/yyyy
+                        val fechaIso = match.created_at ?: ""
+                        val fechaLimpia = try {
+                            if (fechaIso.length >= 10) {
+                                val sdfIn = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                                val sdfOut = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                                val date = sdfIn.parse(fechaIso.substring(0, 10))
+                                if (date != null) sdfOut.format(date) else fechaIso
+                            } else fechaIso
+                        } catch (_: Exception) {
+                            fechaIso
+                        }
+
+                        val productos = match.items.map { item ->
+                            "${item.name} x${item.qty}"
+                        }
+
+                        val imagenes = match.items.map { it.image }
+                        val productIds = match.items.map { it.product_id }
+
+                        val direccionTexto = match.envio?.direccion ?: ""
+                        val estado = match.envio?.status ?: "Procesando"
+
+                        Pedido(
+                            codigo = match.order_number,
+                            fecha = fechaLimpia.ifBlank { "" },
+                            total = match.total,
+                            estado = estado,
+                            productos = productos,
+                            direccionTexto = direccionTexto,
+                            productIds = productIds,
+                            imagenes = imagenes
+                        )
+                    } else {
+                        null
+                    }
+                } catch (_: Exception) {
+                    null
+                }
             }
-        }
 
-        setContent {
-            MaterialTheme {
-                if (pedidoActualizado != null) {
-                    SeguimientoPedidoScreen(pedido = pedidoActualizado, onBack = { finish() })
+            var esLocal = false
+
+            // 2) Si backend no lo conoce (caso antiguo), usar PedidosManager local
+            if (pedido == null) {
+                PedidosManager.cargarPedidos(context)
+                val pedidoLocal = PedidosManager.pedidos.find { it.codigo == codigoPedido }
+                pedido = pedidoLocal
+                esLocal = pedidoLocal != null
+            }
+
+            // 3) Para pedidos locales antiguos, seguir usando cálculo por fecha.
+            //    Para pedidos nuevos del backend, respetar siempre el estado enviado por el servidor.
+            val pedidoFinal = if (pedido != null && esLocal) {
+                val nuevoEstado = calcularEstadoPedido(pedido!!.fecha)
+                if (nuevoEstado != pedido!!.estado) {
+                    PedidosManager.actualizarEstado(context, pedido!!.codigo, nuevoEstado)
+                    pedido!!.copy(estado = nuevoEstado)
                 } else {
-                    PedidoNoEncontradoScreen(codigoPedido = codigoPedido, onBack = { finish() })
+                    pedido!!
+                }
+            } else {
+                pedido
+            }
+
+            setContent {
+                MaterialTheme {
+                    if (pedidoFinal != null) {
+                        SeguimientoPedidoScreen(pedido = pedidoFinal, onBack = { finish() })
+                    } else {
+                        PedidoNoEncontradoScreen(codigoPedido = codigoPedido, onBack = { finish() })
+                    }
                 }
             }
         }
@@ -431,14 +499,33 @@ fun PedidoNoEncontradoScreen(codigoPedido: String, onBack: () -> Unit) {
 
 @Composable
 fun EstadoPedido(estado: String, fecha: String) {
-    val estados = listOf("Procesando", "En tránsito", "Entregado")
+    val pasos = listOf("Pagado", "Procesando envío", "En tránsito", "Entregado")
+
+    // Normalizar estado que viene del backend (ASIGNADO, EN_CAMINO, ENTREGADO, etc.)
+    val estadoNorm = estado.trim().lowercase()
+
+    val indiceActivo = when {
+        // 0: Pagado (token ya creado y pago confirmado)
+        //    Incluimos también estados iniciales como ASIGNADO/PROCESANDO/PENDIENTE
+        //    para que, por ahora, solo se marque "Pagado".
+        estadoNorm in listOf("pagado", "paid", "asignado", "procesando", "pendiente") -> 0
+        // 1: Procesando envío (solo cuando el backend mande algo explícito tipo "preparando envío")
+        estadoNorm.contains("prepar") -> 1
+        // 2: En tránsito
+        estadoNorm.contains("transito") || estadoNorm.contains("camino") -> 2
+        // 3: Entregado / Completado
+        estadoNorm.contains("entregado") || estadoNorm.contains("completado") -> 3
+        else -> 0 // si no reconocemos, lo dejamos en el primer paso
+    }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        estados.forEach { estadoItem ->
+        pasos.forEachIndexed { index, tituloPaso ->
+            val activo = index <= indiceActivo
+            val fechaPaso = if (index == indiceActivo) fecha else "-"
             EstadoItem(
-                titulo = estadoItem,
-                activo = estadoItem == estado || estados.indexOf(estadoItem) < estados.indexOf(estado),
-                fecha = if (estado == estadoItem) fecha else "-"
+                titulo = tituloPaso,
+                activo = activo,
+                fecha = fechaPaso
             )
         }
     }

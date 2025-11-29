@@ -3,6 +3,7 @@ package com.ropa.smartfashionecommerce.carrito
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Bundle
+import com.ropa.smartfashionecommerce.detalles.ProductDetailActivity
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
@@ -54,6 +55,12 @@ class Carrito : ComponentActivity() {
 fun ShoppingCartScreen(activity: ComponentActivity? = null) {
     val context = LocalContext.current
     val cartItems by remember { derivedStateOf { CartManager.cartItems } }
+
+    // Al abrir la pantalla, sincronizar carrito con el backend para reflejar
+    // también los productos agregados desde la web.
+    LaunchedEffect(Unit) {
+        CartManager.refreshFromBackend()
+    }
 
     // Subtotal de productos (precio final de los ítems)
     val subtotal = remember { derivedStateOf { CartManager.getTotal() } }
@@ -173,8 +180,34 @@ fun ShoppingCartScreen(activity: ComponentActivity? = null) {
 // ----------------------- Cart Item Card -----------------------
 @Composable
 fun CartItemCard(item: CartItem, onIncrease: () -> Unit, onDecrease: () -> Unit, onDelete: () -> Unit) {
+    val context = LocalContext.current
+    
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {
+                // Navegar al detalle del producto con toda la información necesaria
+                val intent = Intent(context, ProductDetailActivity::class.java).apply {
+                    putExtra("productId", item.productId)
+                    putExtra("productName", item.name)
+                    putExtra("productPrice", item.price)
+                    putExtra("productDescription", item.name) // Descripción básica
+                    
+                    // Pasar imagen URL si existe, sino usar recurso local
+                    if (item.imageUrl != null) {
+                        putExtra("imageType", "url")
+                        putExtra("productImageUrl", item.imageUrl)
+                    } else {
+                        putExtra("imageType", "resource")
+                        putExtra("productImageRes", item.imageRes)
+                    }
+                    
+                    // Pasar IDs de talla y color si existen
+                    item.sizeId?.let { putExtra("sizeId", it) }
+                    item.colorId?.let { putExtra("colorId", it) }
+                }
+                context.startActivity(intent)
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(6.dp)

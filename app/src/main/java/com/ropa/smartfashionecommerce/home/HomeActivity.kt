@@ -387,8 +387,28 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                         .onFocusChanged { focusState ->
                             searchHasFocus = focusState.isFocused
                         },
-                    placeholder = { Text("Buscar productos") },
+                    placeholder = { Text("Buscar productos", color = Color(0xFF9E9E9E)) },
                     singleLine = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color.Black,
+                        unfocusedTextColor = Color.Black,
+                        cursorColor = Color.Black,
+                        focusedBorderColor = Color(0xFF212121),
+                        unfocusedBorderColor = Color(0xFFBDBDBD),
+                        focusedPlaceholderColor = Color(0xFF9E9E9E),
+                        unfocusedPlaceholderColor = Color(0xFF9E9E9E)
+                    ),
+                    trailingIcon = {
+                        if (searchText.isNotEmpty()) {
+                            IconButton(onClick = { searchText = "" }) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Borrar texto",
+                                    tint = Color(0xFF616161)
+                                )
+                            }
+                        }
+                    },
                     // Detectar foco para mostrar búsquedas recientes
                     supportingText = null,
                 )

@@ -19,3 +19,19 @@ data class CartStateResponse(
     val data: CartStateData? = null,
     val message: String? = null
 )
+
+// ---------------- Favoritos compartidos web/móvil ----------------
+
+data class FavoriteItemPayload(
+    val product_id: Int
+)
+
+data class FavoritesStateData(
+    val items: List<FavoriteItemPayload> = emptyList()
+)
+
+data class FavoritesStateResponse(
+    val status: String?,
+    val data: FavoritesStateData? = null,
+    val message: String? = null
+)

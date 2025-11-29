@@ -1,36 +1,21 @@
-# Gradle
+# Android / Gradle
 .gradle/
 build/
-*/build/
+app/build/
+**/build/
 
-# Local configuration (no debe subirse)
-local.properties
-
-# Google services (credenciales Firebase)
-app/google-services.json
-
-# Android Studio / IntelliJ IDEA
+# IDEs
 .idea/
 *.iml
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-
-# macOS
-.DS_Store
-
-# Capturas y compilaciones nativas
-/captures
-.externalNativeBuild
-.cxx
-
-# Ignorar carpetas de errores de Kotlin
 .kotlin/
-*.log
 
-# No subir estas carpetas
+# Local configs
+local.properties
+
+# Firebase
+google-services.json
+
+# Admin folder (tu carpeta que no quieres subir)
+
 SmarthFashion/
 admin/
