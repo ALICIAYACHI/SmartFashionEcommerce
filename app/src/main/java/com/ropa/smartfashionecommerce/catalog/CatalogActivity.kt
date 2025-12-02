@@ -194,9 +194,23 @@ class CatalogActivity : AppCompatActivity() {
 
                 LaunchedEffect(Unit) {
                     try {
-                        val res = ApiClient.apiService.getCatalogCategories()
+                        val res = ApiClient.apiService.getHome(
+                            categoryId = null,
+                            query = null,
+                            sizeId = null,
+                            colorId = null,
+                            page = 1,
+                            limit = 20
+                        )
                         if (res.isSuccessful) {
-                            backendCategories = res.body()?.data.orEmpty()
+                            // Extract categories from the home response
+                            val categoryDtos = res.body()?.data?.categories.orEmpty()
+                            backendCategories = categoryDtos.map { cat ->
+                                SimpleCategoryDto(
+                                    id = cat.id,
+                                    nombre = cat.nombre
+                                )
+                            }
                         }
                     } catch (_: Exception) {
                     }
