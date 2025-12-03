@@ -3,6 +3,7 @@ package com.ropa.smartfashionecommerce.home
 import android.content.Context
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import com.ropa.smartfashionecommerce.R
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import com.google.gson.Gson
@@ -13,7 +14,12 @@ import com.ropa.smartfashionecommerce.network.FavoritesStateData
 import com.ropa.smartfashionecommerce.utils.UserSessionManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.isActive
+import android.util.Log
+import com.ropa.smartfashionecommerce.sync.FirestoreSyncManager
 
 /** 💖 Data class para representar un artículo favorito */
 data class FavoriteItem(
@@ -21,7 +27,7 @@ data class FavoriteItem(
     val name: String,
     val price: String,
     val sizes: List<String> = listOf("S", "M", "L"),
-    val imageRes: Int,
+    val imageRes: Int = 0,
     val imageUrl: String? = null,
     var isFavorite: Boolean = true
 )
@@ -39,11 +45,54 @@ object FavoritesManager {
     private var appContext: Context? = null
     private val ioScope = CoroutineScope(Dispatchers.IO)
 
+    // Job para monitoreo en tiempo real
+    private var syncJob: Job? = null
+    private val SYNC_INTERVAL_MS = 5000L // 5 segundos
+
     // ✅ Inicializa y carga favoritos del usuario actual
     fun initialize(context: Context) {
         appContext = context.applicationContext
         loadFavorites(context)
         refreshFromBackend()
+        // Cargar desde Firestore también
+        FirestoreSyncManager.loadFavoritesFromFirestore { firestoreItems ->
+            if (firestoreItems.isNotEmpty()) {
+                Log.d("FavoritesManager", "initialize: Cargando ${firestoreItems.size} favoritos desde Firestore")
+                // Convertir de Firestore a FavoriteItem
+                val favItems = firestoreItems.map {
+                    FavoriteItem(
+                        id = it.product_id,
+                        name = it.name,
+                        price = it.price,
+                        imageUrl = it.imageUrl,
+                        imageRes = 0,
+                        isFavorite = true
+                    )
+                }
+                _favoriteItems.clear()
+                _favoriteItems.addAll(favItems)
+                saveFavorites(context)
+            }
+        }
+        // Escuchar cambios en tiempo real
+        FirestoreSyncManager.listenToFavoritesChanges { firestoreItems ->
+            if (firestoreItems.isNotEmpty()) {
+                val favItems = firestoreItems.map {
+                    FavoriteItem(
+                        id = it.product_id,
+                        name = it.name,
+                        price = it.price,
+                        imageUrl = it.imageUrl,
+                        imageRes = 0,
+                        isFavorite = true
+                    )
+                }
+                _favoriteItems.clear()
+                _favoriteItems.addAll(favItems)
+                saveFavorites(context)
+            }
+        }
+        startRealtimeSync()
     }
 
     // ✅ Agregar favorito y guardar (evita duplicados por ID)
@@ -51,7 +100,10 @@ object FavoritesManager {
         if (_favoriteItems.none { it.id == item.id }) {
             _favoriteItems.add(item)
             saveFavorites(context)
+            Log.d("FavoritesManager", "Agregado favorito: ${item.name} (ID: ${item.id})")
             syncToBackend()
+            // Guardar en Firestore
+            FirestoreSyncManager.saveFavoritesToFirestore(_favoriteItems)
         }
     }
 
@@ -59,7 +111,10 @@ object FavoritesManager {
     fun removeFavorite(context: Context, item: FavoriteItem) {
         _favoriteItems.removeIf { it.id == item.id }
         saveFavorites(context)
+        Log.d("FavoritesManager", "Eliminado favorito: ${item.name} (ID: ${item.id})")
         syncToBackend()
+        // Guardar en Firestore
+        FirestoreSyncManager.saveFavoritesToFirestore(_favoriteItems)
     }
 
     // ✅ Guardar favoritos con UID del usuario
@@ -97,16 +152,24 @@ object FavoritesManager {
     private fun syncToBackend() {
         val context = appContext ?: return
         val email = Firebase.auth.currentUser?.email
-        if (email.isNullOrEmpty()) return
+        if (email.isNullOrEmpty()) {
+            Log.d("FavoritesManager", "syncToBackend: Email vacío")
+            return
+        }
 
         val payloadItems = _favoriteItems.map { FavoriteItemPayload(product_id = it.id) }
+        Log.d("FavoritesManager", "syncToBackend: Enviando ${payloadItems.size} favoritos para $email")
 
         ioScope.launch {
             try {
                 val api = ApiClient.apiService
-                api.setFavoritesState(FavoritesStateData(items = payloadItems), email)
-            } catch (_: Exception) {
-                // ignorar errores de red
+                val resp = api.setFavoritesState(FavoritesStateData(items = payloadItems), email)
+                Log.d("FavoritesManager", "syncToBackend: Response code ${resp.code()}")
+                if (!resp.isSuccessful) {
+                    Log.e("FavoritesManager", "syncToBackend: Error ${resp.code()} - ${resp.errorBody()?.string()}")
+                }
+            } catch (e: Exception) {
+                Log.e("FavoritesManager", "syncToBackend: Exception - ${e.message}", e)
             }
         }
     }
@@ -115,16 +178,29 @@ object FavoritesManager {
     fun refreshFromBackend() {
         val context = appContext ?: return
         val email = Firebase.auth.currentUser?.email
-        if (email.isNullOrEmpty()) return
+        if (email.isNullOrEmpty()) {
+            Log.d("FavoritesManager", "refreshFromBackend: Email vacío")
+            return
+        }
 
+        Log.d("FavoritesManager", "refreshFromBackend: Sincronizando favoritos para $email")
         ioScope.launch {
             try {
                 val api = ApiClient.apiService
                 val resp = api.getFavoritesState(email)
-                if (!resp.isSuccessful) return@launch
-                val data = resp.body()?.data ?: return@launch
+                Log.d("FavoritesManager", "refreshFromBackend: Response code ${resp.code()}")
+                if (!resp.isSuccessful) {
+                    Log.e("FavoritesManager", "refreshFromBackend: Error ${resp.code()}")
+                    return@launch
+                }
+                val data = resp.body()?.data
+                if (data == null) {
+                    Log.w("FavoritesManager", "refreshFromBackend: Data es null")
+                    return@launch
+                }
 
                 val backendItems = data.items
+                Log.d("FavoritesManager", "refreshFromBackend: ${backendItems.size} favoritos en backend")
                 val newList = mutableListOf<FavoriteItem>()
 
                 for (fav in backendItems) {
@@ -154,8 +230,34 @@ object FavoritesManager {
                 _favoriteItems.clear()
                 _favoriteItems.addAll(newList)
                 saveFavorites(context)
-            } catch (_: Exception) {
+                Log.d("FavoritesManager", "refreshFromBackend: Favoritos actualizados con ${newList.size} items")
+            } catch (e: Exception) {
+                Log.e("FavoritesManager", "refreshFromBackend: Exception - ${e.message}", e)
             }
         }
+    }
+
+    // ✅ Iniciar monitoreo en tiempo real (polling cada 5 segundos)
+    fun startRealtimeSync() {
+        if (syncJob?.isActive == true) return // Ya está activo
+
+        Log.d("FavoritesManager", "startRealtimeSync: Iniciando monitoreo")
+        syncJob = ioScope.launch {
+            while (isActive) {
+                try {
+                    delay(SYNC_INTERVAL_MS)
+                    refreshFromBackend()
+                } catch (_: Exception) {
+                    // Ignorar errores, continuar intentando
+                }
+            }
+        }
+    }
+
+    // ✅ Detener monitoreo en tiempo real
+    fun stopRealtimeSync() {
+        Log.d("FavoritesManager", "stopRealtimeSync: Deteniendo monitoreo")
+        syncJob?.cancel()
+        syncJob = null
     }
 }

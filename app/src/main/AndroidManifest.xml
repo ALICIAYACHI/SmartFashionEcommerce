@@ -220,6 +220,12 @@
             android:exported="true"
             android:theme="@style/Theme.SmartFashionEcommerce" />
 
+        <!-- 💬 Chat IA con asistente -->
+        <activity
+            android:name=".chat.ChatActivity"
+            android:exported="false"
+            android:theme="@style/Theme.SmartFashionEcommerce" />
+
         <!-- 🔗 Firebase Auth App Links -->
         <activity
             android:name=".LinkHandlerActivity"

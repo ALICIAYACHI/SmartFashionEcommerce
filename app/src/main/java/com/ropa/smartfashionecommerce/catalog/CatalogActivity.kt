@@ -3,7 +3,7 @@ package com.ropa.smartfashionecommerce.catalog
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
-import android.graphics.drawable.GradientDrawable
+// import android.graphics.drawable.GradientDrawable (removed - unused)
 import android.widget.EditText
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -17,7 +17,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.ropa.smartfashionecommerce.R
+import com.ropa.smartfashionecommerce.R as AppR
 
 import com.ropa.smartfashionecommerce.carrito.Carrito
 import com.ropa.smartfashionecommerce.carrito.CartManager
@@ -56,7 +56,7 @@ import com.google.firebase.ktx.Firebase
 import com.ropa.smartfashionecommerce.miperfil.ProfileImageManager
 
 import com.ropa.smartfashionecommerce.maps.MapsActivity
-import androidx.compose.material.icons.outlined.LocationOn
+// import androidx.compose.material.icons.outlined.LocationOn (removed - unused)
 
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
@@ -72,20 +72,18 @@ class CatalogActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        setContentView(R.layout.activity_catalog)
+        setContentView(AppR.layout.activity_catalog)
 
         val mode = intent.getStringExtra("MODE") ?: "CATEGORIES"
-        val category = intent.getStringExtra("CATEGORY") ?: "Hombres"
-        val subcategory = intent.getStringExtra("SUBCATEGORY")
         val initialQuery = intent.getStringExtra("SEARCH_QUERY")?.trim().orEmpty()
 
         // Lista base de productos para modo GRID (se llenará desde el backend)
         var remoteProducts: List<Product> = emptyList()
 
-        val recyclerView = findViewById<RecyclerView>(R.id.products_recycler_view)
-        val categoriesCompose = findViewById<ComposeView>(R.id.categories_compose)
-        val searchView = findViewById<SearchView>(R.id.search_view_products)
-        val btnVerTienda = findViewById<ImageButton>(R.id.btn_ver_tienda)
+        val recyclerView = findViewById<RecyclerView>(AppR.id.products_recycler_view)
+        val categoriesCompose = findViewById<ComposeView>(AppR.id.categories_compose)
+        val searchView = findViewById<SearchView>(AppR.id.search_view_products)
+        val btnVerTienda = findViewById<ImageButton>(AppR.id.btn_ver_tienda)
 
         // Configuración básica del SearchView
         searchView.setIconifiedByDefault(false)
@@ -138,7 +136,7 @@ class CatalogActivity : AppCompatActivity() {
                                 id = p.id,
                                 name = p.nombre,
                                 price = "S/ ${p.precio}",
-                                imageRes = R.drawable.modelo_ropa,
+                                imageRes = AppR.drawable.modelo_ropa,
                                 imageUrl = p.image_preview,
                                 description = p.descripcion
                             )
@@ -352,7 +350,7 @@ class CatalogActivity : AppCompatActivity() {
         }
 
         // Navegación inferior con Compose
-        val composeView = findViewById<ComposeView>(R.id.bottom_navigation_compose)
+        val composeView = findViewById<ComposeView>(AppR.id.bottom_navigation_compose)
         composeView.setContent {
             var selectedTab by remember { mutableStateOf("Categorias") }
 
@@ -487,13 +485,13 @@ class CatalogActivity : AppCompatActivity() {
 
     private fun showFilterBottomSheet() {
         val dialog = BottomSheetDialog(this)
-        val view = layoutInflater.inflate(R.layout.bottomsheet_filter, null)
+            val view = layoutInflater.inflate(AppR.layout.bottomsheet_filter, null)
         dialog.setContentView(view)
 
-        val chipHombres = view.findViewById<com.google.android.material.chip.Chip>(R.id.chipHombres)
-        val chipMujeres = view.findViewById<com.google.android.material.chip.Chip>(R.id.chipMujeres)
-        val chipNinos = view.findViewById<com.google.android.material.chip.Chip>(R.id.chipNinos)
-        val btnApplyFilter = view.findViewById<MaterialButton>(R.id.btnApplyFilter)
+        val chipHombres = view.findViewById<com.google.android.material.chip.Chip>(AppR.id.chipHombres)
+        val chipMujeres = view.findViewById<com.google.android.material.chip.Chip>(AppR.id.chipMujeres)
+        val chipNinos = view.findViewById<com.google.android.material.chip.Chip>(AppR.id.chipNinos)
+            val btnApplyFilter = view.findViewById<MaterialButton>(AppR.id.btnApplyFilter)
 
         // Marcar el chip actual al abrir
         val currentCategory = intent.getStringExtra("CATEGORY")

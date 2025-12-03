@@ -356,6 +356,7 @@ fun MiPerfilScreen(onBack: () -> Unit) {
 
             // 🟣 CERRAR SESIÓN
             ProfileOptionCard(Icons.AutoMirrored.Filled.ExitToApp, "Cerrar Sesión", "Salir de tu cuenta") {
+                FavoritesManager.stopRealtimeSync()
                 FavoritesManager.clearFavorites()
                 Toast.makeText(context, "Sesión cerrada", Toast.LENGTH_SHORT).show()
                 Firebase.auth.signOut()

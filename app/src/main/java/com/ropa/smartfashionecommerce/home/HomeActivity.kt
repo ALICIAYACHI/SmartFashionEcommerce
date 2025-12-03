@@ -62,6 +62,7 @@ import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
 import kotlinx.coroutines.launch
 import com.ropa.smartfashionecommerce.maps.MapsActivity
 import androidx.compose.material.icons.outlined.LocationOn
+import com.ropa.smartfashionecommerce.chat.ChatFAB
 
 
 
@@ -227,6 +228,10 @@ fun FashionHomeScreen(activity: ComponentActivity) {
     }
 
     Scaffold(
+        floatingActionButton = {
+            ChatFAB(modifier = Modifier.padding(bottom = 16.dp, end = 16.dp))
+        },
+        floatingActionButtonPosition = FabPosition.End,
         bottomBar = {
             NavigationBar(containerColor = Color.White, tonalElevation = 4.dp) {
                 val selectedColor = Color(0xFFE53935)

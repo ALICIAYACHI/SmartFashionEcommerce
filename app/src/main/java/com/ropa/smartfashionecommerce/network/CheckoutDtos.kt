@@ -14,7 +14,22 @@ data class CheckoutConfirmRequest(
     val address_id: Int? = null,
     val items: List<CheckoutItemPayload>,
     val pre_order: String? = null,
-    val platform: String? = null
+    val platform: String? = null,
+    // Datos de dirección alternativa si no hay address_id
+    val address: AddressData? = null,
+    val phone: String? = null,
+    val document_type: String? = null,
+    val document_number: String? = null
+)
+
+// Datos de dirección para envío
+data class AddressData(
+    val address: String?,
+    val department: String?,
+    val province: String?,
+    val district: String?,
+    val postal_code: String?,
+    val references: String?
 )
 
 // Respuesta de /api/checkout/confirm/
@@ -29,4 +44,26 @@ data class CreateSessionResponse(
     val status: String?,
     val url: String?,
     val message: String? = null
+)
+
+// Respuesta del chatbot IA
+data class ChatbotResponse(
+    val response: String? = null,
+    val message: String? = null,
+    val status: String? = null
+)
+
+// Request para el chatbot
+data class ChatbotRequest(
+    val query: String,
+    val question: String? = null,
+    val text: String? = null,
+    val message: String? = null,
+    val input: String? = null,
+    val prompt: String? = null
+)
+
+data class ChatbotQueryRequest(
+    val query: String,
+    val question: String? = null
 )

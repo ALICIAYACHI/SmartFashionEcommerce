@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.sp
 import com.ropa.smartfashionecommerce.R
 import com.ropa.smartfashionecommerce.home.HomeActivity
 import com.ropa.smartfashionecommerce.ui.theme.SmartFashionEcommerceTheme
+import com.ropa.smartfashionecommerce.chat.ChatFAB
 
 // ----------------------- Carrito Activity -----------------------
 class Carrito : ComponentActivity() {
@@ -46,6 +47,11 @@ class Carrito : ComponentActivity() {
                 ShoppingCartScreen(this)
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        CartManager.stopRealtimeSync()
     }
 }
 
@@ -60,6 +66,7 @@ fun ShoppingCartScreen(activity: ComponentActivity? = null) {
     // también los productos agregados desde la web.
     LaunchedEffect(Unit) {
         CartManager.refreshFromBackend()
+        CartManager.startRealtimeSync()
     }
 
     // Subtotal de productos (precio final de los ítems)
@@ -73,6 +80,10 @@ fun ShoppingCartScreen(activity: ComponentActivity? = null) {
     val missingForFreeShipping = (shippingThreshold - subtotal.value).coerceAtLeast(0.0)
 
     Scaffold(
+        floatingActionButton = {
+            ChatFAB(modifier = Modifier.padding(bottom = 16.dp, end = 16.dp))
+        },
+        floatingActionButtonPosition = FabPosition.End,
         topBar = {
             TopAppBar(
                 title = {

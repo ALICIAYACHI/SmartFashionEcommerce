@@ -16,6 +16,8 @@ import com.ropa.smartfashionecommerce.network.CartStateData
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
+import android.util.Log
+import com.ropa.smartfashionecommerce.sync.FirestoreSyncManager
 
 object CartManager {
 
@@ -30,6 +32,10 @@ object CartManager {
 
     // Scope simple para llamadas de red en segundo plano
     private val ioScope = CoroutineScope(IO)
+    
+    // Job para monitoreo en tiempo real
+    private var syncJob: Job? = null
+    private val SYNC_INTERVAL_MS = 5000L // 5 segundos
 
     // ✅ Inicializar con contexto
     fun initialize(context: Context) {
@@ -51,6 +57,8 @@ object CartManager {
         }
         saveCart(appContext)
         syncCartToBackend()
+        // Guardar en Firestore
+        FirestoreSyncManager.saveCartToFirestore(_cartItems)
     }
 
     // ✅ Eliminar producto
@@ -58,6 +66,8 @@ object CartManager {
         _cartItems.remove(item)
         saveCart(appContext)
         syncCartToBackend()
+        // Guardar en Firestore
+        FirestoreSyncManager.saveCartToFirestore(_cartItems)
     }
 
     // ✅ Actualizar cantidad
@@ -67,6 +77,8 @@ object CartManager {
             _cartItems[index] = _cartItems[index].copy(quantity = newQuantity)
             saveCart(appContext)
             syncCartToBackend()
+            // Guardar en Firestore
+            FirestoreSyncManager.saveCartToFirestore(_cartItems)
         }
     }
 
@@ -103,6 +115,54 @@ object CartManager {
             val items: List<CartItem> = gson.fromJson(json, type)
             _cartItems.addAll(items)
         }
+        
+        // Cargar también desde Firestore
+        FirestoreSyncManager.loadCartFromFirestore { firestoreItems ->
+            if (firestoreItems.isNotEmpty()) {
+                Log.d("CartManager", "loadCart: Cargando ${firestoreItems.size} items desde Firestore")
+                val cartItems = firestoreItems.map { item ->
+                    CartItem(
+                        productId = item.product_id,
+                        sizeId = item.size_id,
+                        colorId = item.color_id,
+                        name = item.name,
+                        size = "",
+                        color = "",
+                        quantity = item.qty,
+                        price = item.price,
+                        imageRes = R.drawable.modelo_ropa,
+                        imageUrl = item.imageUrl
+                    )
+                }
+                _cartItems.clear()
+                _cartItems.addAll(cartItems)
+                saveCart(context)
+            }
+        }
+        
+        // Escuchar cambios en tiempo real
+        FirestoreSyncManager.listenToCartChanges { firestoreItems ->
+            if (firestoreItems.isNotEmpty()) {
+                val cartItems = firestoreItems.map { item ->
+                    CartItem(
+                        productId = item.product_id,
+                        sizeId = item.size_id,
+                        colorId = item.color_id,
+                        name = item.name,
+                        size = "",
+                        color = "",
+                        quantity = item.qty,
+                        price = item.price,
+                        imageRes = R.drawable.modelo_ropa,
+                        imageUrl = item.imageUrl
+                    )
+                }
+                _cartItems.clear()
+                _cartItems.addAll(cartItems)
+                saveCart(context)
+                Log.d("CartManager", "listenToCartChanges: Carrito actualizado desde Firestore")
+            }
+        }
     }
 
     // ✅ Limpiar carrito temporalmente (sin guardar)
@@ -112,6 +172,7 @@ object CartManager {
 
     // ✅ Cuando el usuario cierra sesión
     fun onLogout() {
+        stopRealtimeSync()
         clearCartMemory()
     }
 
@@ -120,21 +181,40 @@ object CartManager {
         loadCart(context)
         // Al iniciar sesión, intentar subir el carrito actual al backend
         syncCartToBackend()
+        // Iniciar monitoreo en tiempo real
+        startRealtimeSync()
     }
 
     fun refreshFromBackend() {
         val context = appContext ?: return
         val email = Firebase.auth.currentUser?.email
-        if (email.isNullOrEmpty()) return
+        if (email.isNullOrEmpty()) {
+            Log.d("CartManager", "refreshFromBackend: Email vacío, no se sincroniza")
+            return
+        }
 
+        Log.d("CartManager", "refreshFromBackend: Sincronizando carrito para $email")
         ioScope.launch {
             try {
                 val api = ApiClient.apiService
                 val resp = api.getCartState(email)
-                if (!resp.isSuccessful) return@launch
-                val data = resp.body()?.data ?: return@launch
+                Log.d("CartManager", "refreshFromBackend: Response code ${resp.code()}")
+                
+                if (!resp.isSuccessful) {
+                    Log.e("CartManager", "refreshFromBackend: Error ${resp.code()} - ${resp.errorBody()?.string()}")
+                    return@launch
+                }
+                
+                val data = resp.body()?.data
+                Log.d("CartManager", "refreshFromBackend: Data recibido: $data")
+                
+                if (data == null) {
+                    Log.w("CartManager", "refreshFromBackend: Data es null")
+                    return@launch
+                }
 
                 val backendItems = data.items
+                Log.d("CartManager", "refreshFromBackend: ${backendItems.size} items en backend")
                 val newItems = mutableListOf<CartItem>()
 
                 // Catálogos globales de tallas y colores (como en el web)
@@ -198,6 +278,7 @@ object CartManager {
                     _cartItems.clear()
                     _cartItems.addAll(newItems)
                     saveCart(context)
+                    Log.d("CartManager", "refreshFromBackend: Carrito actualizado con ${newItems.size} items")
                 }
             } catch (_: Exception) {
             }
@@ -209,7 +290,10 @@ object CartManager {
         val context = appContext ?: return
         val uid = UserSessionManager.getCurrentUserUID()
         val email = Firebase.auth.currentUser?.email
-        if (uid.isNullOrEmpty() || email.isNullOrEmpty()) return
+        if (uid.isNullOrEmpty() || email.isNullOrEmpty()) {
+            Log.d("CartManager", "syncCartToBackend: UID o Email vacíos")
+            return
+        }
 
         val payloadItems = _cartItems.map {
             CartItemPayload(
@@ -220,13 +304,45 @@ object CartManager {
             )
         }.filter { it.product_id > 0 && it.qty > 0 }
 
+        Log.d("CartManager", "syncCartToBackend: Enviando ${payloadItems.size} items para $email")
+        Log.d("CartManager", "syncCartToBackend: Items: $payloadItems")
+
         ioScope.launch {
             try {
                 val api = ApiClient.apiService
-                api.setCartState(CartStateData(items = payloadItems), email = email)
-            } catch (_: Exception) {
-                // Ignorar errores de red; el carrito local sigue funcionando
+                val resp = api.setCartState(CartStateData(items = payloadItems), email = email)
+                Log.d("CartManager", "syncCartToBackend: Response code ${resp.code()}")
+                
+                if (!resp.isSuccessful) {
+                    Log.e("CartManager", "syncCartToBackend: Error ${resp.code()} - ${resp.errorBody()?.string()}")
+                } else {
+                    Log.d("CartManager", "syncCartToBackend: Éxito - ${resp.body()}")
+                }
+            } catch (e: Exception) {
+                Log.e("CartManager", "syncCartToBackend: Exception - ${e.message}", e)
             }
         }
+    }
+
+    // ✅ Iniciar monitoreo en tiempo real (polling cada 5 segundos)
+    fun startRealtimeSync() {
+        if (syncJob?.isActive == true) return // Ya está activo
+        
+        syncJob = ioScope.launch {
+            while (isActive) {
+                try {
+                    delay(SYNC_INTERVAL_MS)
+                    refreshFromBackend()
+                } catch (_: Exception) {
+                    // Ignorar errores, continuar intentando
+                }
+            }
+        }
+    }
+
+    // ✅ Detener monitoreo en tiempo real
+    fun stopRealtimeSync() {
+        syncJob?.cancel()
+        syncJob = null
     }
 }

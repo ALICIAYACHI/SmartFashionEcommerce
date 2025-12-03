@@ -1,5 +1,6 @@
 package com.ropa.smartfashionecommerce
 
+import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -9,15 +10,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.ropa.smartfashionecommerce.chat.ChatActivity
+import com.ropa.smartfashionecommerce.chat.ChatFAB
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,17 +41,9 @@ fun PantallaPrincipal(
         Scaffold(
             containerColor = Color.Transparent,
             floatingActionButton = {
-                FloatingActionButton(
-                    onClick = { /* futuro chat */ },
-                    containerColor = Color(0xFF0D6EFD),
+                ChatFAB(
                     modifier = Modifier.padding(bottom = 24.dp, end = 12.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Chat,
-                        contentDescription = "Chat",
-                        tint = Color.White
-                    )
-                }
+                )
             },
             floatingActionButtonPosition = FabPosition.End
         ) { paddingValues ->

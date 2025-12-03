@@ -9,6 +9,8 @@ import com.ropa.smartfashionecommerce.model.SizeDto
 import com.ropa.smartfashionecommerce.model.UserOrdersResponse
 import retrofit2.Response
 import retrofit2.http.Body
+import retrofit2.http.FormUrlEncoded
+import retrofit2.http.Field
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -65,6 +67,12 @@ interface ApiService {
         @Query("email") email: String? = null
     ): Response<UserOrdersResponse>
 
+    // Direcciones guardadas del usuario
+    @GET("api/addresses/")
+    suspend fun getUserAddresses(
+        @Query("email") email: String? = null
+    ): Response<UserAddressesResponse>
+
     // Categorías de catálogo tipo web (para CatalogActivity)
     @GET("api/catalog/categories/")
     suspend fun getCatalogCategories(): Response<CatalogCategoriesResponse>
@@ -92,4 +100,10 @@ interface ApiService {
         @Body body: FavoritesStateData,
         @Query("email") email: String? = null
     ): Response<FavoritesStateResponse>
+
+    // Chat IA con el asistente de SmartFashion
+    @POST("api/chatbot/query")
+    suspend fun chatbotQuery(
+        @Body body: ChatbotRequest
+    ): Response<ChatbotResponse>
 }

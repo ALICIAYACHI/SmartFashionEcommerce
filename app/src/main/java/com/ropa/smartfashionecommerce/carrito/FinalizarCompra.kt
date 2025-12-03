@@ -10,6 +10,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.clickable
+import androidx.compose.ui.draw.clip
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -34,7 +36,11 @@ import com.ropa.smartfashionecommerce.network.PaymentResult
 import com.ropa.smartfashionecommerce.network.ApiClient
 import com.ropa.smartfashionecommerce.network.CheckoutItemPayload
 import com.ropa.smartfashionecommerce.network.CheckoutConfirmRequest
+import com.ropa.smartfashionecommerce.network.AddressData
+import com.ropa.smartfashionecommerce.network.AddressDto
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import com.ropa.smartfashionecommerce.chat.ChatFAB
 
 class FinalizarCompra : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -149,11 +155,42 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                 referencias != baseReferencias
     }
 
-    // Direcciones guardadas
-    var direccionesGuardadas by remember {
-        mutableStateOf(direccionesPrefs.getStringSet("direcciones_envio", emptySet())?.toList() ?: emptyList())
-    }
+    // Direcciones guardadas desde el backend
+    var direccionesGuardadas by remember { mutableStateOf<List<com.ropa.smartfashionecommerce.network.AddressDto>>(emptyList()) }
+    var selectedAddressId by remember { mutableStateOf<Int?>(null) }
     var showDireccionesDialog by remember { mutableStateOf(false) }
+    var loadingAddresses by remember { mutableStateOf(true) }
+    var addressLoadError by remember { mutableStateOf<String?>(null) }
+
+    // Cargar direcciones del backend al iniciar
+    LaunchedEffect(userEmail) {
+        if (userEmail.isNotBlank()) {
+            loadingAddresses = true
+            try {
+                val api = ApiClient.apiService
+                val res = api.getUserAddresses(email = userEmail)
+                if (res.isSuccessful) {
+                    val body = res.body()
+                    direccionesGuardadas = body?.data ?: emptyList()
+                    android.util.Log.d("FinalizarCompra", "Direcciones cargadas: ${direccionesGuardadas.size}")
+                    // Seleccionar la primera o la que está marcada como default
+                    selectedAddressId = direccionesGuardadas.firstOrNull { it.is_default }?.id 
+                        ?: direccionesGuardadas.firstOrNull()?.id
+                } else {
+                    val errBody = try { res.errorBody()?.string() } catch (_: Exception) { null }
+                    addressLoadError = "Error: ${res.code()} - $errBody"
+                    android.util.Log.e("FinalizarCompra", "Error al cargar direcciones: ${res.code()}")
+                }
+            } catch (e: Exception) {
+                addressLoadError = "Error de conexión: ${e.message}"
+                android.util.Log.e("FinalizarCompra", "Excepción al cargar direcciones", e)
+            } finally {
+                loadingAddresses = false
+            }
+        } else {
+            loadingAddresses = false
+        }
+    }
 
     // Método de pago seleccionado
     var metodoPago by remember { mutableStateOf("Mercado Pago") }
@@ -163,6 +200,10 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
     var numeroYape by remember { mutableStateOf("") }
 
     Scaffold(
+        floatingActionButton = {
+            ChatFAB(modifier = Modifier.padding(bottom = 16.dp, end = 16.dp))
+        },
+        floatingActionButtonPosition = FabPosition.End,
         containerColor = Color(0xFFF9F9F9),
         topBar = {
             TopAppBar(
@@ -250,16 +291,75 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
 
             // Sección: Dirección de envío
             SectionCard(title = "Dirección de envío") {
-                if (direccionesGuardadas.isNotEmpty()) {
-                    OutlinedButton(
-                        onClick = { showDireccionesDialog = true },
-                        modifier = Modifier.fillMaxWidth()
+                if (loadingAddresses) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
                     ) {
-                        Text("Elegir de mis direcciones", color = Color.Black)
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp))
                     }
+                } else if (addressLoadError != null) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 12.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                    ) {
+                        Text(
+                            text = "Error al cargar direcciones: ${addressLoadError}",
+                            color = Color(0xFFD32F2F),
+                            fontSize = 12.sp,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                } else if (direccionesGuardadas.isNotEmpty()) {
+                    Text("Mis direcciones guardadas:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
                     Spacer(modifier = Modifier.height(8.dp))
+                    
+                    Column {
+                        direccionesGuardadas.forEach { addr ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable { selectedAddressId = addr.id }
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = selectedAddressId == addr.id,
+                                    onClick = { selectedAddressId = addr.id }
+                                )
+                                Column(modifier = Modifier.padding(start = 12.dp)) {
+                                    Text(
+                                        "${addr.address}, ${addr.district}, ${addr.province}",
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.Black
+                                    )
+                                    if (addr.references?.isNotBlank() == true) {
+                                        Text(
+                                            "Ref: ${addr.references}",
+                                            fontSize = 11.sp,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(4.dp))
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Divider(color = Color.LightGray, thickness = 1.dp)
+                    Spacer(modifier = Modifier.height(12.dp))
+                } else {
+                    Text("No tienes direcciones guardadas. Ingresa una dirección aquí para esta compra.", fontSize = 13.sp, color = Color.Gray)
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
-                // Orden: Departamento, Provincia, Distrito, Código postal, Dirección, Referencias
+                
+                // Mostrar siempre los campos para editar o crear nueva dirección
+                Text("Dirección para esta compra:", fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = Color.Black)
+                Spacer(modifier = Modifier.height(8.dp))
                 CustomTextField("Departamento", departamento) { departamento = it }
                 CustomTextField("Provincia", provincia) { provincia = it }
                 CustomTextField("Distrito", distrito) { distrito = it }
@@ -463,11 +563,14 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                     if (correo.isBlank()) faltantes.add("Correo electrónico")
                     if (telefono.isBlank()) faltantes.add("Teléfono")
                     if (numeroDocumento.isBlank()) faltantes.add(if (tipoDocumento == "RUC") "RUC" else "DNI")
-                    if (direccion.isBlank()) faltantes.add("Dirección")
-                    if (departamento.isBlank()) faltantes.add("Departamento")
-                    if (provincia.isBlank()) faltantes.add("Provincia")
-                    if (distrito.isBlank()) faltantes.add("Distrito")
-                    if (codigoPostal.isBlank()) faltantes.add("Código postal")
+                    // Si no hay dirección seleccionada, requieren campos de dirección
+                    if (selectedAddressId == null) {
+                        if (direccion.isBlank()) faltantes.add("Dirección")
+                        if (departamento.isBlank()) faltantes.add("Departamento")
+                        if (provincia.isBlank()) faltantes.add("Provincia")
+                        if (distrito.isBlank()) faltantes.add("Distrito")
+                        if (codigoPostal.isBlank()) faltantes.add("Código postal")
+                    }
 
                     if (faltantes.isNotEmpty()) {
                         androidx.appcompat.app.AlertDialog.Builder(context)
@@ -568,11 +671,14 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                     if (correo.isBlank()) faltantes.add("Correo electrónico")
                     if (telefono.isBlank()) faltantes.add("Teléfono")
                     if (numeroDocumento.isBlank()) faltantes.add(if (tipoDocumento == "RUC") "RUC" else "DNI")
-                    if (direccion.isBlank()) faltantes.add("Dirección")
-                    if (departamento.isBlank()) faltantes.add("Departamento")
-                    if (provincia.isBlank()) faltantes.add("Provincia")
-                    if (distrito.isBlank()) faltantes.add("Distrito")
-                    if (codigoPostal.isBlank()) faltantes.add("Código postal")
+                    // Si no hay dirección seleccionada, requieren campos de dirección
+                    if (selectedAddressId == null) {
+                        if (direccion.isBlank()) faltantes.add("Dirección")
+                        if (departamento.isBlank()) faltantes.add("Departamento")
+                        if (provincia.isBlank()) faltantes.add("Provincia")
+                        if (distrito.isBlank()) faltantes.add("Distrito")
+                        if (codigoPostal.isBlank()) faltantes.add("Código postal")
+                    }
 
                     if (faltantes.isNotEmpty()) {
                         androidx.appcompat.app.AlertDialog.Builder(context)
@@ -610,7 +716,6 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                                     .putBoolean("order_saved", false)
                                     .apply()
 
-                                // Construir payload de ítems igual que en Cart.jsx
                                 val itemsPayload = cartItems.map { it ->
                                     CheckoutItemPayload(
                                         product_id = it.productId,
@@ -620,13 +725,36 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                                     )
                                 }
 
-                                val basePayload = CheckoutConfirmRequest(
-                                    userEmail = correo,
-                                    address_id = null,
-                                    items = itemsPayload,
-                                    pre_order = null,
-                                    platform = "android"
-                                )
+                                // Usar address_id si fue seleccionada, sino enviar datos de dirección
+                                val basePayload = if (selectedAddressId != null) {
+                                    CheckoutConfirmRequest(
+                                        userEmail = correo,
+                                        address_id = selectedAddressId,
+                                        items = itemsPayload,
+                                        pre_order = null,
+                                        platform = "android"
+                                    )
+                                } else {
+                                    val addressData = AddressData(
+                                        address = direccion,
+                                        department = departamento,
+                                        province = provincia,
+                                        district = distrito,
+                                        postal_code = codigoPostal,
+                                        references = referencias
+                                    )
+                                    CheckoutConfirmRequest(
+                                        userEmail = correo,
+                                        address_id = -1, // -1 = usar datos de address
+                                        items = itemsPayload,
+                                        pre_order = null,
+                                        platform = "android",
+                                        address = addressData,
+                                        phone = telefono,
+                                        document_type = tipoDocumento,
+                                        document_number = numeroDocumento
+                                    )
+                                }
 
                                 // 1) Confirmar checkout para generar order_number y reservar stock
                                 val confirmRes = api.checkoutConfirm(basePayload)
@@ -662,6 +790,18 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                                     // Abrir Stripe Checkout en el navegador (igual que en web)
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                                     context.startActivity(intent)
+                                    
+                                    // Esperar 2 segundos y luego ir a la pantalla de confirmación
+                                    // (en realidad Stripe maneja el return_url, pero aquí nos preparamos)
+                                    scope.launch {
+                                        kotlinx.coroutines.delay(2000)
+                                        val confirmIntent = Intent(context, com.ropa.smartfashionecommerce.pedidos.PedidoConfirmado::class.java)
+                                        confirmIntent.putExtra("order_number", orderNum)
+                                        confirmIntent.flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                                        context.startActivity(confirmIntent)
+                                        // Cerrar FinalizarCompra
+                                        (context as? android.app.Activity)?.finish()
+                                    }
                                 } else {
                                     val errBody = try { sessionRes.errorBody()?.string() } catch (_: Exception) { null }
                                     errorMessage = sessionBody?.message
@@ -709,28 +849,6 @@ fun FinalizarCompraScreen(onBack: () -> Unit) {
                 fontSize = 13.sp,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
-
-            // Diálogo para elegir dirección guardada
-            if (showDireccionesDialog && direccionesGuardadas.isNotEmpty()) {
-                AlertDialog(
-                    onDismissRequest = { showDireccionesDialog = false },
-                    confirmButton = {},
-                    title = { Text("Mis direcciones", fontWeight = FontWeight.Bold, color = Color.Black) },
-                    text = {
-                        Column {
-                            direccionesGuardadas.forEach { dir ->
-                                TextButton(onClick = {
-                                    direccion = dir
-                                    showDireccionesDialog = false
-                                }) {
-                                    Text(dir, color = Color.Black)
-                                }
-                            }
-                        }
-                    },
-                    containerColor = Color.White
-                )
-            }
         }
     }
 }
