@@ -62,10 +62,6 @@
             android:name=".RegisterActivity"
             android:exported="true" />
 
-        <activity
-            android:name=".detalles.BabySizeGuideActivity"
-            android:exported="false" />
-
         <!-- 🏠 Home -->
         <activity
             android:name=".home.HomeActivity"

@@ -53,14 +53,11 @@ data class ChatbotResponse(
     val status: String? = null
 )
 
-// Request para el chatbot
+// Request para el chatbot - intentamos con múltiples nombres de campo
 data class ChatbotRequest(
-    val query: String,
-    val question: String? = null,
-    val text: String? = null,
+    val query: String? = null,
     val message: String? = null,
-    val input: String? = null,
-    val prompt: String? = null
+    val question: String? = null
 )
 
 data class ChatbotQueryRequest(

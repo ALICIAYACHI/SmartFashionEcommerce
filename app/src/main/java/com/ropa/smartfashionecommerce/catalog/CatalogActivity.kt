@@ -136,7 +136,7 @@ class CatalogActivity : AppCompatActivity() {
                                 id = p.id,
                                 name = p.nombre,
                                 price = "S/ ${p.precio}",
-                                imageRes = AppR.drawable.modelo_ropa,
+                                imageRes = android.R.color.transparent,
                                 imageUrl = p.image_preview,
                                 description = p.descripcion
                             )
@@ -220,8 +220,34 @@ class CatalogActivity : AppCompatActivity() {
                             LeftCategory(cat.id.toString(), cat.nombre)
                         }
 
+                // Load category images from backend products
+                var categoryImages by remember { mutableStateOf<Map<Int, String>>(emptyMap()) }
+                
+                LaunchedEffect(backendCategories) {
+                    val imageMap = mutableMapOf<Int, String>()
+                    backendCategories.forEach { cat ->
+                        try {
+                            val res = ApiClient.apiService.getHome(
+                                categoryId = cat.id,
+                                query = null,
+                                sizeId = null,
+                                colorId = null,
+                                page = 1,
+                                limit = 1
+                            )
+                            if (res.isSuccessful) {
+                                val firstProduct = res.body()?.data?.featured_products?.firstOrNull()
+                                firstProduct?.image_preview?.let { url ->
+                                    imageMap[cat.id] = url
+                                }
+                            }
+                        } catch (_: Exception) {}
+                    }
+                    categoryImages = imageMap
+                }
+
                 // Círculos por tipo de producto (mapToSub ajusta singular/plural para búsquedas)
-                val circleItems = backendCategories.map { cat ->
+                val circleItems = backendCategories.mapNotNull { cat ->
                     val nombre = cat.nombre
                     val key = nombre.lowercase()
                     val mapToSub = when (key) {
@@ -234,16 +260,8 @@ class CatalogActivity : AppCompatActivity() {
                         else -> nombre
                     }
 
-                    val imageUrl = when (key) {
-                        "camisas" -> "https://images.pexels.com/photos/7697309/pexels-photo-7697309.jpeg?auto=compress&cs=tinysrgb&w=600"
-                        "casacas" -> "https://cuerosvelezpe.vtexassets.com/arquivos/ids/358118/1035983-02-01--Chaqueta-ebro.jpg?v=638482126287130000"
-                        "pantalones" -> "https://oggi.mx/cdn/shop/files/ATRACTIONGABAKHAKIVISTA2.jpg?v=1753209029"
-                        "polos" -> "https://images.pexels.com/photos/428340/pexels-photo-428340.jpeg?auto=compress&cs=tinysrgb&w=600"
-                        "vestidos" -> "https://i.pinimg.com/236x/e2/04/25/e20425efb02a5185ba8f4d1cd710183d.jpg"
-                        "faldas" -> "https://i.pinimg.com/564x/6a/59/49/6a5949963b7705a7c3927c044b2f4c38.jpg"
-                        "zapatillas" -> "https://hushpuppiespe.vtexassets.com/arquivos/ids/336908-800-auto?v=638446729033670000&width=800&height=auto&aspect=true"
-                        else -> "https://i.pinimg.com/564x/6a/59/49/6a5949963b7705a7c3927c044b2f4c38.jpg" // placeholder
-                    }
+                    // Get real product image for this category
+                    val imageUrl = categoryImages[cat.id] ?: return@mapNotNull null
 
                     CircleItem(
                         categoriaId = cat.id.toString(),
@@ -306,6 +324,7 @@ class CatalogActivity : AppCompatActivity() {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier.clickable {
                                     val intent = Intent(ctx, SubcategoryCatalogActivity::class.java)
+                                    intent.putExtra("CATEGORY_ID", circle.categoriaId.toIntOrNull() ?: 0)
                                     intent.putExtra("CATEGORY", circle.mapToCategory)
                                     intent.putExtra("SUBCATEGORY", circle.mapToSub)
                                     ctx.startActivity(intent)

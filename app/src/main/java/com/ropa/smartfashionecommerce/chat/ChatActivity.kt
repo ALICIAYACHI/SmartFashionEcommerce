@@ -136,16 +136,7 @@ fun ChatScreen(onBack: () -> Unit) {
                             scope.launch {
                                 try {
                                     Log.d("ChatActivity", "Enviando solicitud con query: $userMessage")
-                                    val response = ApiClient.apiService.chatbotQuery(
-                                        ChatbotRequest(
-                                            query = userMessage,
-                                            question = userMessage,
-                                            text = userMessage,
-                                            message = userMessage,
-                                            input = userMessage,
-                                            prompt = userMessage
-                                        )
-                                    )
+                                    val response = ApiClient.apiService.chatbotQuery(userMessage)
                                     Log.d("ChatActivity", "Response code: ${response.code()}")
                                     if (response.isSuccessful) {
                                         val body = response.body()

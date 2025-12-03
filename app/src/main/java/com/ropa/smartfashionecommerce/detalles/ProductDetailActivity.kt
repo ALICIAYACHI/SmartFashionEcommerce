@@ -720,14 +720,7 @@ fun ProductDetailContent(modifier: Modifier = Modifier) {
             ) {
                 Text(sizeLabel, fontWeight = FontWeight.Bold, fontSize = 16.sp)
 
-                if (productCategory == "BEBE") {
-                    TextButton(onClick = {
-                        val intent = Intent(context, com.ropa.smartfashionecommerce.detalles.BabySizeGuideActivity::class.java)
-                        context.startActivity(intent)
-                    }) {
-                        Text("Guía de tallas", color = Color(0xFF0D47A1), fontSize = 14.sp)
-                    }
-                }
+
             }
 
             FlowRow(

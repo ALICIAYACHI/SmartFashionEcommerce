@@ -155,7 +155,7 @@ fun FashionHomeScreen(activity: ComponentActivity) {
 
     val cartCount by remember { derivedStateOf { CartManager.cartItems.sumOf { it.quantity } } }
 
-    // ✅ CORREGIDO: Obtener usuario actual de Firebase
+    // Obtener usuario actual de Firebase
     val firebaseUser = Firebase.auth.currentUser
     val googlePhotoUrl = firebaseUser?.photoUrl
 
@@ -509,31 +509,8 @@ fun FashionHomeScreen(activity: ComponentActivity) {
                 }
             }
 
-            val categoriesTabs = listOf("Todos", "Black Friday", "Mujer", "Hombre", "Niños", "Bebé")
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 8.dp)
-            ) {
-                items(categoriesTabs) { category ->
-                    val isSelected = selectedCategory == category
-                    Box(
-                        modifier = Modifier
-                            .padding(horizontal = 4.dp)
-                            .clip(RoundedCornerShape(20.dp))
-                            .background(if (isSelected) Color(0xFF212121) else Color(0xFFE0E0E0))
-                            .clickable { selectedCategory = category }
-                            .padding(horizontal = 16.dp, vertical = 8.dp)
-                    ) {
-                        Text(
-                            text = category,
-                            color = if (isSelected) Color.White else Color(0xFF212121),
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 14.sp
-                        )
-                    }
-                }
-            }
+            // Categorías eliminadas - solo se muestra "Todos"
+            selectedCategory = "Todos"
 
             // Circulitos de filtro por tipo de producto según categoría
             if (selectedCategory in listOf("Mujer", "Hombre")) {

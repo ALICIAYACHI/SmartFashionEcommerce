@@ -41,8 +41,8 @@ class ViewHolderAdapter(
         if (product.imageUrl != null) {
             holder.image.load(product.imageUrl) {
                 crossfade(true)
-                placeholder(product.imageRes)
-                error(product.imageRes)
+                // No placeholder - show images from web directly
+                error(android.R.drawable.ic_menu_gallery)
             }
         } else {
             holder.image.setImageResource(product.imageRes)

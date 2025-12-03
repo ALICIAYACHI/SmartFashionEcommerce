@@ -46,13 +46,15 @@ class SubcategoryCatalogActivity : AppCompatActivity() {
         // Lista remota cargada desde /api/home/
         var remoteProducts: List<Product> = emptyList()
 
-        // Cargar productos reales filtrando por la subcategoría como texto de búsqueda
+        val categoryId = intent.getIntExtra("CATEGORY_ID", 0)
+
+        // Cargar productos reales filtrando por categoryId
         lifecycleScope.launch {
             try {
                 val resp = ApiClient.apiService.getHome(
-                    // Por ahora usamos la subcategoría como búsqueda libre (q) para aproximar la misma vista
-                    categoryId = null,
-                    query = subcategory,
+                    // Filtrar por ID de categoría en lugar de text search
+                    categoryId = if (categoryId > 0) categoryId else null,
+                    query = null,
                     sizeId = null,
                     colorId = null,
                     page = 1,
@@ -67,7 +69,7 @@ class SubcategoryCatalogActivity : AppCompatActivity() {
                             id = p.id,
                             name = p.nombre,
                             price = "S/ ${p.precio}",
-                            imageRes = R.drawable.modelo_ropa,
+                            imageRes = android.R.color.transparent,
                             imageUrl = p.image_preview,
                             description = p.descripcion
                         )

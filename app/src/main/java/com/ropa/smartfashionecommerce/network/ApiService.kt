@@ -102,8 +102,9 @@ interface ApiService {
     ): Response<FavoritesStateResponse>
 
     // Chat IA con el asistente de SmartFashion
+    @FormUrlEncoded
     @POST("api/chatbot/query")
     suspend fun chatbotQuery(
-        @Body body: ChatbotRequest
+        @Field("message") query: String
     ): Response<ChatbotResponse>
 }
