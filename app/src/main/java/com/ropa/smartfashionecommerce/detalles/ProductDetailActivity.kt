@@ -45,6 +45,7 @@ import com.ropa.smartfashionecommerce.carrito.CartManager
 import com.ropa.smartfashionecommerce.carrito.StockManager
 import com.ropa.smartfashionecommerce.home.FavoriteItem
 import com.ropa.smartfashionecommerce.home.FavoritesManager
+import com.ropa.smartfashionecommerce.home.FavActivity
 import com.ropa.smartfashionecommerce.home.HomeActivity
 import com.ropa.smartfashionecommerce.miperfil.MiPerfilActivity
 import com.ropa.smartfashionecommerce.miperfil.ProfileImageManager
@@ -165,10 +166,11 @@ fun ProductDetailScreen() {
 
         try {
             val api = ApiClient.apiService
-            val resp = api.getCatalogCategories()
+            // Intentar cargar desde /api/home/ que incluye las categorías
+            val resp = api.getHome(categoryId = null, query = null, sizeId = null, colorId = null, page = 1, limit = 5)
             if (resp.isSuccessful) {
-                val body = resp.body()?.data
-                categorias = body?.map { it.nombre }?.filter { it.isNotBlank() } ?: emptyList()
+                val categories = resp.body()?.data?.categories
+                categorias = categories?.map { it.nombre }?.filter { it.isNotBlank() } ?: emptyList()
             }
         } catch (_: Exception) {
             // Si falla la carga, dejamos la lista de categorías vacía
@@ -206,27 +208,35 @@ fun ProductDetailScreen() {
                                 onDismissRequest = { expanded = false },
                                 modifier = Modifier.background(Color.White)
                             ) {
-                                // Mostramos las categorías en forma de chips horizontales agrupadas
-                                FlowRow(
-                                    modifier = Modifier
-                                        .padding(8.dp)
-                                        .widthIn(max = 260.dp),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    categorias.forEach { categoria ->
-                                        AssistChip(
-                                            onClick = {
-                                                expanded = false
-                                                val intent = Intent(
-                                                    context,
-                                                    com.ropa.smartfashionecommerce.catalog.CatalogActivity::class.java
-                                                )
-                                                intent.putExtra("CATEGORY", categoria)
-                                                context.startActivity(intent)
-                                            },
-                                            label = { Text(categoria) }
-                                        )
+                                if (categorias.isEmpty()) {
+                                    // Mostrar mensaje mientras se cargan las categorías
+                                    DropdownMenuItem(
+                                        text = { Text("Cargando categorías...") },
+                                        onClick = {}
+                                    )
+                                } else {
+                                    // Mostramos las categorías en forma de chips horizontales agrupadas
+                                    FlowRow(
+                                        modifier = Modifier
+                                            .padding(8.dp)
+                                            .widthIn(max = 260.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        categorias.forEach { categoria ->
+                                            AssistChip(
+                                                onClick = {
+                                                    expanded = false
+                                                    val intent = Intent(
+                                                        context,
+                                                        com.ropa.smartfashionecommerce.catalog.CatalogActivity::class.java
+                                                    )
+                                                    intent.putExtra("CATEGORY", categoria)
+                                                    context.startActivity(intent)
+                                                },
+                                                label = { Text(categoria) }
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -257,60 +267,21 @@ fun ProductDetailActions(
     profileImageUri: String?
 ) {
     val activity = context as? ProductDetailActivity
-    val intent = activity?.intent
-
-    val productId = intent?.getIntExtra("productId", 0) ?: 0
-    val productName = intent?.getStringExtra("productName") ?: "Producto"
-    val initialPrice = intent?.getDoubleExtra("productPrice", 0.0) ?: 0.0
-    val productImageRes = intent?.getIntExtra("productImageRes", R.drawable.modelo_ropa) ?: R.drawable.modelo_ropa
-
-    // ✅ Verificar si el producto está en favoritos - Solo si tiene ID válido
+    
+    // ✅ Verificar si hay productos en favoritos
     val favoriteItems = FavoritesManager.favoriteItems
-    var isFavorite by remember(productId) {
-        mutableStateOf(favoriteItems.any { it.id == productId && productId != 0 })
-    }
-
-    // Actualizar estado cuando cambia la lista de favoritos
-    LaunchedEffect(favoriteItems.size, productId) {
-        isFavorite = favoriteItems.any { it.id == productId && productId != 0 }
-    }
-
+    val hasFavorites = favoriteItems.isNotEmpty()
+    
     Row(verticalAlignment = Alignment.CenterVertically) {
-        // ❤️ Botón Favoritos
+        // ❤️ Botón Favoritos - Ir a FavActivity
         IconButton(onClick = {
-            if (productId == 0) {
-                Toast.makeText(context, "Error: Producto sin ID válido", Toast.LENGTH_SHORT).show()
-                return@IconButton
-            }
-
-            if (isFavorite) {
-                // Eliminar de favoritos
-                val itemToRemove = favoriteItems.find { it.id == productId }
-                itemToRemove?.let {
-                    FavoritesManager.removeFavorite(context, it)
-                    isFavorite = false
-                    Toast.makeText(context, "Eliminado de favoritos 💔", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                // Agregar a favoritos
-                val favoriteItem = FavoriteItem(
-                    id = productId,
-                    name = productName,
-                    price = "S/ %.2f".format(initialPrice),
-                    sizes = listOf("S", "M", "L", "XL"),
-                    imageRes = productImageRes,
-                    imageUrl = null,
-                    isFavorite = true
-                )
-                FavoritesManager.addFavorite(context, favoriteItem)
-                isFavorite = true
-                Toast.makeText(context, "Agregado a favoritos ❤️", Toast.LENGTH_SHORT).show()
-            }
+            context.startActivity(Intent(context, FavActivity::class.java))
         }) {
             Icon(
-                imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                contentDescription = if (isFavorite) "Quitar de favoritos" else "Agregar a favoritos",
-                tint = if (isFavorite) Color.Red else Color.Black
+                imageVector = if (hasFavorites) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                contentDescription = "Ver favoritos",
+                tint = if (hasFavorites) Color.Red else Color.Black,
+                modifier = Modifier.size(28.dp)
             )
         }
 

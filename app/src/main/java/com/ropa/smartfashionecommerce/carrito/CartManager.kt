@@ -120,47 +120,103 @@ object CartManager {
         FirestoreSyncManager.loadCartFromFirestore { firestoreItems ->
             if (firestoreItems.isNotEmpty()) {
                 Log.d("CartManager", "loadCart: Cargando ${firestoreItems.size} items desde Firestore")
-                val cartItems = firestoreItems.map { item ->
-                    CartItem(
-                        productId = item.product_id,
-                        sizeId = item.size_id,
-                        colorId = item.color_id,
-                        name = item.name,
-                        size = "",
-                        color = "",
-                        quantity = item.qty,
-                        price = item.price,
-                        imageRes = R.drawable.modelo_ropa,
-                        imageUrl = item.imageUrl
-                    )
+                ioScope.launch {
+                    try {
+                        // Obtener catálogos de tallas y colores
+                        val sizesCatalog = try {
+                            ApiClient.apiService.getSizes().body()?.data ?: emptyList()
+                        } catch (_: Exception) {
+                            emptyList()
+                        }
+                        val colorsCatalog = try {
+                            ApiClient.apiService.getColors().body()?.data ?: emptyList()
+                        } catch (_: Exception) {
+                            emptyList()
+                        }
+
+                        val cartItems = firestoreItems.map { item ->
+                            val sizeName = item.size_id?.let { id ->
+                                sizesCatalog.find { it.id == id }?.nombre
+                            } ?: ""
+
+                            val colorName = item.color_id?.let { id ->
+                                colorsCatalog.find { it.id == id }?.nombre
+                            } ?: ""
+
+                            CartItem(
+                                productId = item.product_id,
+                                sizeId = item.size_id,
+                                colorId = item.color_id,
+                                name = item.name,
+                                size = sizeName,
+                                color = colorName,
+                                quantity = item.qty,
+                                price = item.price,
+                                imageRes = R.drawable.modelo_ropa,
+                                imageUrl = item.imageUrl
+                            )
+                        }
+                        withContext(Main) {
+                            _cartItems.clear()
+                            _cartItems.addAll(cartItems)
+                            saveCart(context)
+                        }
+                    } catch (e: Exception) {
+                        Log.e("CartManager", "Error loading cart from Firestore: ${e.message}", e)
+                    }
                 }
-                _cartItems.clear()
-                _cartItems.addAll(cartItems)
-                saveCart(context)
             }
         }
         
         // Escuchar cambios en tiempo real
         FirestoreSyncManager.listenToCartChanges { firestoreItems ->
             if (firestoreItems.isNotEmpty()) {
-                val cartItems = firestoreItems.map { item ->
-                    CartItem(
-                        productId = item.product_id,
-                        sizeId = item.size_id,
-                        colorId = item.color_id,
-                        name = item.name,
-                        size = "",
-                        color = "",
-                        quantity = item.qty,
-                        price = item.price,
-                        imageRes = R.drawable.modelo_ropa,
-                        imageUrl = item.imageUrl
-                    )
+                ioScope.launch {
+                    try {
+                        // Obtener catálogos de tallas y colores
+                        val sizesCatalog = try {
+                            ApiClient.apiService.getSizes().body()?.data ?: emptyList()
+                        } catch (_: Exception) {
+                            emptyList()
+                        }
+                        val colorsCatalog = try {
+                            ApiClient.apiService.getColors().body()?.data ?: emptyList()
+                        } catch (_: Exception) {
+                            emptyList()
+                        }
+
+                        val cartItems = firestoreItems.map { item ->
+                            val sizeName = item.size_id?.let { id ->
+                                sizesCatalog.find { it.id == id }?.nombre
+                            } ?: ""
+
+                            val colorName = item.color_id?.let { id ->
+                                colorsCatalog.find { it.id == id }?.nombre
+                            } ?: ""
+
+                            CartItem(
+                                productId = item.product_id,
+                                sizeId = item.size_id,
+                                colorId = item.color_id,
+                                name = item.name,
+                                size = sizeName,
+                                color = colorName,
+                                quantity = item.qty,
+                                price = item.price,
+                                imageRes = R.drawable.modelo_ropa,
+                                imageUrl = item.imageUrl
+                            )
+                        }
+                        withContext(Main) {
+                            _cartItems.clear()
+                            _cartItems.addAll(cartItems)
+                            saveCart(context)
+                            Log.d("CartManager", "listenToCartChanges: Carrito actualizado desde Firestore")
+                        }
+                    } catch (e: Exception) {
+                        Log.e("CartManager", "Error listening to cart changes: ${e.message}", e)
+                    }
                 }
-                _cartItems.clear()
-                _cartItems.addAll(cartItems)
-                saveCart(context)
-                Log.d("CartManager", "listenToCartChanges: Carrito actualizado desde Firestore")
             }
         }
     }
